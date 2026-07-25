@@ -5,11 +5,21 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import ListingCard from "@/components/ListingCard";
-import { Brand, Mark } from "@/components/Brand";
+import { AccountButton, Brand, Mark } from "@/components/Brand";
+import { FavoritesProvider } from "@/lib/favorites";
+import { recordView } from "@/lib/analytics";
 
 type Tab = "home" | ModuleKey;
 
-export default function Home() {
+export default function HomePage() {
+  return (
+    <FavoritesProvider>
+      <Home />
+    </FavoritesProvider>
+  );
+}
+
+function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<string | null>(null);
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -25,6 +35,8 @@ export default function Home() {
   const accent = m ? m.color : "var(--gold)";
   // Le filet du bandeau peut rester en or ; un aplat de chip, non (texte blanc).
   const accentSolid = m ? m.color : "var(--green)";
+
+  useEffect(() => { recordView("/"); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,9 +76,12 @@ export default function Home() {
         <div className="container" style={{ paddingTop: 16 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand onClick={() => { setTab("home"); setSub(null); }} />
-            <Link href="/deposer" className="btn btn-gold only-desktop">
-              + Déposer une annonce
-            </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+              <Link href="/deposer" className="btn btn-gold only-desktop">
+                + Déposer une annonce
+              </Link>
+              <AccountButton />
+            </div>
           </div>
 
           <div style={{ position: "relative", margin: "16px 0 12px" }}>

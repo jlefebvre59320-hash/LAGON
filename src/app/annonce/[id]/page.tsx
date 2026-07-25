@@ -7,8 +7,19 @@ import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { photoUrl } from "@/components/ListingCard";
 import { SiteHeader, Mark } from "@/components/Brand";
+import FavoriteButton from "@/components/FavoriteButton";
+import { FavoritesProvider } from "@/lib/favorites";
+import { recordView } from "@/lib/analytics";
 
 export default function AnnoncePage() {
+  return (
+    <FavoritesProvider>
+      <Annonce />
+    </FavoritesProvider>
+  );
+}
+
+function Annonce() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [l, setL] = useState<Listing | null>(null);
@@ -25,7 +36,10 @@ export default function AnnoncePage() {
         .eq("id", id)
         .single();
       if (error || !data) setNotFound(true);
-      else setL(data as Listing);
+      else {
+        setL(data as Listing);
+        recordView(`/annonce/${id}`, id);
+      }
     })();
   }, [id]);
 
@@ -123,9 +137,14 @@ export default function AnnoncePage() {
             ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
             : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-muted)", margin: "6px 0 18px" }}>
-          {l.location} · publié le {new Date(l.created_at).toLocaleDateString("fr-FR")}
-          {l.profile?.display_name ? ` · par ${l.profile.display_name}` : ""}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "6px 0 18px" }}>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            {l.location} · publié le {new Date(l.created_at).toLocaleDateString("fr-FR")}
+            {l.profile?.display_name ? ` · par ${l.profile.display_name}` : ""}
+          </span>
+          <span style={{ marginLeft: "auto" }}>
+            <FavoriteButton listingId={l.id} variant="plain" label />
+          </span>
         </div>
 
         {attrs.length > 0 && (

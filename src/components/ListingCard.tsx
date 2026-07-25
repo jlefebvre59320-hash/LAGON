@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { Mark } from "@/components/Brand";
+import FavoriteButton from "@/components/FavoriteButton";
 
 const ago = (iso: string) => {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -54,6 +55,9 @@ export default function ListingCard({ l }: { l: Listing }) {
           }}
         >
           {l.subcategory}
+        </span>
+        <span style={{ position: "absolute", right: 8, bottom: 8 }}>
+          <FavoriteButton listingId={l.id} />
         </span>
         {badge && (
           <span

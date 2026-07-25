@@ -113,6 +113,11 @@ h1, h2, h3 {
   min-width: 0;
 }
 
+/* Baseline du logo : masquée sur les écrans étroits, où le bouton de compte
+   la ferait passer à la ligne et casserait le verrouillage typographique. */
+.brand-baseline { display: none; }
+@media (min-width: 480px) { .brand-baseline { display: block; } }
+
 /* Cadre filet or du logo, réutilisé comme motif de section */
 .gold-frame {
   border: 1px solid rgba(201, 168, 106, 0.45);

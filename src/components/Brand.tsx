@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { useSession } from "@/lib/session";
 
 /* Marque « feuille de lagon » du logo, redessinée en SVG :
    deux arcs extérieurs en amande + deux arcs intérieurs, filet or.
@@ -42,13 +44,32 @@ export function Brand({ compact = false, href = "/", onClick }: {
         </span>
         {!compact && (
           <span
-            className="overline"
-            style={{ display: "block", marginTop: 4, fontSize: 8.5, letterSpacing: "0.24em" }}
+            className="overline brand-baseline"
+            style={{ marginTop: 4, fontSize: 8.5, letterSpacing: "0.24em" }}
           >
             Échanges &amp; petites annonces
           </span>
         )}
       </span>
+    </Link>
+  );
+}
+
+/* Accès au compte, en haut à droite de toutes les pages : « Se connecter »
+   quand on ne l'est pas, « Mon espace » quand on l'est. Tant que la session
+   n'est pas connue, on n'affiche rien plutôt que de faire clignoter le mauvais
+   libellé. */
+export function AccountButton() {
+  const { userId, ready } = useSession();
+  if (!ready) return <span style={{ minWidth: 92, minHeight: 40 }} aria-hidden="true" />;
+
+  return (
+    <Link
+      href={userId ? "/mon-espace" : "/connexion"}
+      className="btn btn-outline-gold"
+      style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
+    >
+      {userId ? "Mon espace" : "Se connecter"}
     </Link>
   );
 }
@@ -59,12 +80,15 @@ export function SiteHeader({ accent = "var(--gold)" }: { accent?: string }) {
     <header className="site-header">
       <div
         className="container"
-        style={{ paddingTop: 12, paddingBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
+        style={{ paddingTop: 12, paddingBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
       >
         <Brand compact />
-        <Link href="/deposer" className="btn btn-gold only-desktop" style={{ fontSize: 13.5 }}>
-          + Déposer une annonce
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Link href="/deposer" className="btn btn-gold only-desktop" style={{ fontSize: 13.5 }}>
+            + Déposer une annonce
+          </Link>
+          <AccountButton />
+        </div>
       </div>
       <div className="header-accent" style={{ background: accent }} />
     </header>
