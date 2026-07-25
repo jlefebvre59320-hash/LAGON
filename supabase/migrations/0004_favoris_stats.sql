@@ -1,7 +1,22 @@
 -- ============================================================
 -- Ti Kanal — Favoris, espace personnel et statistiques
 -- Idempotent : rejouable sur un projet déjà en service.
+-- L'ordre compte : is_admin() est définie avant les policies qui l'appellent.
 -- ============================================================
+
+-- ---------- Administrateur (d'abord : les policies plus bas s'en servent) ----------
+alter table public.profiles add column if not exists is_admin boolean not null default false;
+
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select p.is_admin from public.profiles p where p.id = auth.uid()), false);
+$$;
+
+-- Les profils sont en lecture publique (nom affiché, numéro WhatsApp) : il ne
+-- faut pas que cette lecture révèle qui administre le site. La colonne est donc
+-- retirée du SELECT côté client ; on passe par is_admin(), qui ne répond que
+-- pour l'appelant lui-même.
+revoke select (is_admin) on public.profiles from anon, authenticated;
 
 -- ---------- Favoris ----------
 create table if not exists public.favorites (
@@ -56,20 +71,6 @@ drop policy if exists "page_views_select_admin" on public.page_views;
 create policy "page_views_select_admin" on public.page_views
   for select using (public.is_admin());
 
--- ---------- Administrateur ----------
-alter table public.profiles add column if not exists is_admin boolean not null default false;
-
-create or replace function public.is_admin()
-returns boolean language sql stable security definer set search_path = public as $$
-  select coalesce((select p.is_admin from public.profiles p where p.id = auth.uid()), false);
-$$;
-
--- Les profils sont en lecture publique (nom affiché, numéro WhatsApp) : il ne
--- faut pas que cette lecture révèle qui administre le site. La colonne est donc
--- retirée du SELECT côté client ; on passe par is_admin(), qui ne répond que
--- pour l'appelant lui-même.
-revoke select (is_admin) on public.profiles from anon, authenticated;
-
 -- ---------- Statistiques d'un annonceur sur ses propres annonces ----------
 -- security definer : lit page_views (fermé en lecture) mais ne rend que des
 -- compteurs, et seulement pour les annonces de l'appelant.
@@ -77,9 +78,9 @@ create or replace function public.my_listings_stats()
 returns table (listing_id uuid, views bigint, unique_viewers bigint, favorites bigint)
 language sql stable security definer set search_path = public as $$
   select l.id,
-         (select count(*)                    from page_views v where v.listing_id = l.id),
-         (select count(distinct v.viewer_key) from page_views v where v.listing_id = l.id),
-         (select count(*)                    from favorites  f where f.listing_id = l.id)
+         (select count(*)                     from page_views v where v.listing_id = l.id),
+         (select count(distinct v.viewer_key)  from page_views v where v.listing_id = l.id),
+         (select count(*)                     from favorites  f where f.listing_id = l.id)
   from listings l
   where l.user_id = auth.uid();
 $$;
@@ -152,6 +153,6 @@ begin
 end $$;
 
 -- ---------- Se donner les droits d'administrateur ----------
--- Remplacer l'adresse par la vôtre, puis exécuter cette ligne une fois :
+-- À exécuter séparément, après avoir créé son compte depuis le site :
 -- update public.profiles set is_admin = true
 --   where id = (select id from auth.users where email = 'vous@exemple.com');
