@@ -40,6 +40,14 @@
 
 * { box-sizing: border-box; }
 
+/* Aucune barre de défilement visible, ni sur la page ni dans les rangées qui
+   défilent au doigt (onglets, filtres, miniatures). Le défilement lui-même
+   reste intact : molette, doigt, clavier. */
+html { scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;

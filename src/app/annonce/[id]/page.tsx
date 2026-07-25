@@ -101,7 +101,7 @@ function Annonce() {
               <img src={photoUrl(photos[photoIdx].storage_key)} alt={l.title}
                 style={{ width: "100%", aspectRatio: "4 / 3", maxHeight: 460, objectFit: "cover", display: "block" }} />
               {photos.length > 1 && (
-                <div style={{ display: "flex", gap: 6, padding: 8, background: "var(--surface)", overflowX: "auto" }}>
+                <div className="no-scrollbar" style={{ display: "flex", gap: 6, padding: 8, background: "var(--surface)", overflowX: "auto" }}>
                   {photos.map((p, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img key={p.storage_key} src={photoUrl(p.storage_key)} alt=""
@@ -114,7 +114,7 @@ function Annonce() {
             </>
           ) : (
             <div style={{ aspectRatio: "16 / 9", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Mark size={54} color={m.color} />
+              <Mark size={150} color={m.color} />
             </div>
           )}
         </div>

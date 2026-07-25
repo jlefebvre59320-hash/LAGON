@@ -130,15 +130,6 @@ export default function Deposer() {
             : "Étape 3 sur 3 · Décrivez votre annonce"}
         </p>
 
-        {/* Progression : trois filets, lisibles d'un coup d'œil sur mobile */}
-        <div style={{ display: "flex", gap: 6, margin: "0 0 4px" }} aria-hidden="true">
-          {[0, 1, 2].map((i) => (
-            <span key={i} style={{
-              height: 3, flex: 1, borderRadius: 99,
-              background: i <= step ? (m ? m.color : "var(--gold)") : "var(--cream-dark)",
-            }} />
-          ))}
-        </div>
 
         {step === 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 18 }}>
@@ -149,7 +140,7 @@ export default function Deposer() {
                   onClick={() => { setMod(key); setSub(null); setAttrs({}); setShowMore(false); setStep(1); }}
                   style={{ border: `1.5px solid ${mm.color}55`, background: mm.soft, borderRadius: 16, padding: "20px 16px",
                     cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 14, minHeight: 84 }}>
-                  <Mark size={26} color={mm.color} />
+                  <Mark size={54} color={mm.color} />
                   <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 17, color: mm.dark }}>
                     {mm.label}
                   </span>

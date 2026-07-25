@@ -216,7 +216,7 @@ function Home() {
         ) : listings.length === 0 ? (
           <div className="panel gold-frame" style={{ textAlign: "center", padding: "44px 20px" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-              <Mark size={34} color="var(--gold-deep)" />
+              <Mark size={84} color="var(--gold-deep)" />
             </div>
             <p style={{ fontWeight: 700, color: "var(--green)", margin: "0 0 4px" }}>
               Aucune annonce ici pour l&apos;instant.
@@ -237,7 +237,7 @@ function Home() {
 
       <footer style={{ background: "var(--green)", color: "rgba(246,242,233,.72)", padding: "26px 0 30px", marginTop: "auto" }}>
         <div className="container" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-          <Mark size={26} />
+          <Mark size={72} />
           <span className="overline">Ti Kanal · St Barth</span>
           <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>
             Les échanges et petites annonces de Saint-Barthélemy, entre particuliers.

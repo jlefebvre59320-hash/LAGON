@@ -202,7 +202,7 @@ function MonEspace() {
                         <img src={photoUrl(photo.storage_key)} alt="" style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 10 }} />
                       ) : (
                         <div style={{ width: 76, height: 76, borderRadius: 10, background: m.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <Mark size={20} color={m.color} />
+                          <Mark size={46} color={m.color} />
                         </div>
                       )}
                     </Link>
@@ -278,7 +278,7 @@ function Empty({ titre, texte, lien, bouton }: { titre: string; texte: string; l
   return (
     <div className="panel gold-frame" style={{ textAlign: "center", padding: "40px 20px" }}>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-        <Mark size={30} color="var(--gold-deep)" />
+        <Mark size={72} color="var(--gold-deep)" />
       </div>
       <p style={{ fontWeight: 700, color: "var(--green)", margin: "0 0 4px" }}>{titre}</p>
       <p style={{ fontSize: 13.5, color: "var(--text-muted)", margin: "0 0 16px" }}>{texte}</p>

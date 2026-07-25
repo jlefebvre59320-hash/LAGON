@@ -40,7 +40,7 @@ export default function ListingCard({ l }: { l: Listing }) {
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >
-            <Mark size={30} color={m.color} />
+            <Mark size={64} color={m.color} />
           </div>
         )}
         {/* Sous-catégorie en haut, sens de l'annonce en bas : les deux pastilles

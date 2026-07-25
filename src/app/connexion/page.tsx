@@ -143,7 +143,7 @@ export default function Connexion() {
       <main className="container" style={{ maxWidth: 440, paddingTop: 32, paddingBottom: 56, flex: 1 }}>
         <div className="panel gold-frame" style={{ padding: "24px 20px" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-            <Mark size={28} color="var(--gold-deep)" />
+            <Mark size={72} color="var(--gold-deep)" />
           </div>
           <h1 style={{ fontSize: 23, margin: "0 0 16px", textAlign: "center" }}>{title}</h1>
 

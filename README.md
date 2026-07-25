@@ -5,7 +5,8 @@ Next.js 15 (App Router) + Supabase (Postgres, Auth par lien magique, Storage pho
 
 ## Charte graphique
 
-Reprise du logo Ti Kanal (cadre filet or, feuille de lagon, sérif haute densité).
+Reprise du logo Ti Kanal : contour de Saint-Barthélemy en filet or, sérif haute
+densité, capitales très espacées.
 Tokens dans `src/app/globals.css`, marque vectorielle dans `src/components/Brand.tsx`.
 
 | Rôle | Valeur | Usage |
@@ -137,7 +138,7 @@ src/app/stats/page.tsx              Tableau de bord du site (administrateurs)
 src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques + couleurs
 src/lib/supabase.ts                 Client Supabase (navigateur)
 src/app/globals.css                 Charte graphique (tokens, composants, breakpoints)
-src/components/Brand.tsx            Marque : logo SVG, verrouillage typo, bandeau partagé
+src/components/Brand.tsx            Marque : île en SVG (2 niveaux de détail), verrouillage typo, bandeau
 src/app/page.tsx                    Accueil : onglets modules, chips, recherche, filtre prix
 src/app/annonce/[id]/page.tsx       Fiche annonce : photos, détails, WhatsApp, signalement
 src/app/deposer/page.tsx            Dépôt en 3 étapes, champs par catégorie, upload photos
