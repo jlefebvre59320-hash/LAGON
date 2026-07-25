@@ -44,8 +44,8 @@ presque entièrement téléphone) :
 
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
-- Dans **SQL Editor**, exécuter `supabase/migrations/0001_init.sql` puis
-  `supabase/migrations/0002_auth_password.sql`, dans cet ordre.
+- Dans **SQL Editor**, exécuter dans l'ordre `supabase/migrations/0001_init.sql`,
+  `0002_auth_password.sql` puis `0003_intent.sql`.
   Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
   Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
@@ -127,6 +127,7 @@ du site dans Supabase après le changement de domaine.
 ```
 supabase/migrations/0001_init.sql   Schéma complet + RLS + storage
 supabase/migrations/0002_auth_password.sql  Nom affiché repris à l'inscription
+supabase/migrations/0003_intent.sql Sens de l'annonce : proposition ou recherche
 src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques + couleurs
 src/lib/supabase.ts                 Client Supabase (navigateur)
 src/app/globals.css                 Charte graphique (tokens, composants, breakpoints)
@@ -136,6 +137,21 @@ src/app/annonce/[id]/page.tsx       Fiche annonce : photos, détails, WhatsApp, 
 src/app/deposer/page.tsx            Dépôt en 3 étapes, champs par catégorie, upload photos
 src/app/connexion/page.tsx          Compte : inscription, connexion, mot de passe oublié
 ```
+
+## Proposition ou recherche
+
+Chaque annonce porte un sens (`listings.intent`) : `offer` (je vends / je propose)
+ou `wanted` (je recherche). Il vaut pour les quatre univers — on cherche un
+logement comme on cherche une perceuse — et se choisit en premier au dépôt.
+
+- Vocabulaire par univers dans `INTENT_LABEL` (`src/lib/taxonomy.ts`) : on ne
+  « vend » pas une location saisonnière ni un poste, d'où « Je propose ».
+- Sur les cartes et la fiche, seule une recherche porte une pastille : une
+  proposition est le cas courant, l'étiqueter n'apprendrait rien.
+- Le prix d'une recherche s'affiche comme un **budget**.
+- Filtre *Afficher : Tout · Propositions · Recherches* sur l'accueil et dans
+  chaque univers.
+- Les annonces créées avant la migration `0003` sont des propositions (défaut SQL).
 
 ## Ajouter un critère à une catégorie
 

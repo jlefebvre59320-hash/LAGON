@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { MODULES, eur, priceSuffix } from "@/lib/taxonomy";
+import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { Mark } from "@/components/Brand";
 
@@ -17,6 +17,8 @@ export default function ListingCard({ l }: { l: Listing }) {
   const m = MODULES[l.module];
   const photo = l.photos?.slice().sort((a, b) => a.position - b.position)[0];
   const price = eur(l.price_cents);
+  const badge = INTENT_BADGE[l.intent ?? "offer"];
+  const wanted = l.intent === "wanted";
 
   return (
     <Link href={`/annonce/${l.id}`} className="card">
@@ -40,9 +42,12 @@ export default function ListingCard({ l }: { l: Listing }) {
             <Mark size={30} color={m.color} />
           </div>
         )}
+        {/* Sous-catégorie en haut, sens de l'annonce en bas : les deux pastilles
+            ne se disputent jamais la même ligne, même sur un libellé long. */}
         <span
           style={{
-            position: "absolute", left: 8, top: 8,
+            position: "absolute", left: 8, top: 8, maxWidth: "calc(100% - 16px)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             background: "rgba(255,253,248,.94)", color: m.dark,
             fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase",
             padding: "4px 9px", borderRadius: 999,
@@ -50,14 +55,26 @@ export default function ListingCard({ l }: { l: Listing }) {
         >
           {l.subcategory}
         </span>
+        {badge && (
+          <span
+            style={{
+              position: "absolute", left: 8, bottom: 8,
+              background: "var(--green)", color: "var(--gold-light)",
+              fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+              padding: "4px 9px", borderRadius: 999,
+            }}
+          >
+            {badge}
+          </span>
+        )}
       </div>
 
       <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
         <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: "var(--text)" }}>{l.title}</span>
         <span className="price" style={{ fontSize: 18, color: m.color, marginTop: 2 }}>
           {price == null
-            ? l.module === "job" ? "Selon profil" : "Prix à discuter"
-            : price + priceSuffix(l.module, l.subcategory)}
+            ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
+            : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </span>
         <span style={{ fontSize: 12, color: "var(--text-muted)", marginTop: "auto", paddingTop: 6 }}>
           {l.location} · {ago(l.created_at)}

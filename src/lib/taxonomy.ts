@@ -5,6 +5,33 @@
 
 export type ModuleKey = "vehicle" | "housing" | "job" | "goods";
 
+/* Sens de l'annonce : 'offer' = je propose (le cas courant, valeur par défaut),
+   'wanted' = je recherche. Le vocabulaire change selon l'univers — on ne « vend »
+   pas une location ni un poste. */
+export type Intent = "offer" | "wanted";
+
+export const INTENT_ORDER: Intent[] = ["offer", "wanted"];
+
+export const INTENT_LABEL: Record<ModuleKey, Record<Intent, string>> = {
+  vehicle: { offer: "Je vends", wanted: "Je recherche" },
+  housing: { offer: "Je propose", wanted: "Je recherche" },
+  job:     { offer: "Je propose", wanted: "Je recherche" },
+  goods:   { offer: "Je vends", wanted: "Je recherche" },
+};
+
+/* Filtre de l'accueil : on se place du côté du visiteur, pas de l'annonceur. */
+export const INTENT_FILTER: Record<Intent, string> = {
+  offer: "Propositions",
+  wanted: "Recherches",
+};
+
+/* Pastille sur la carte : rien pour une proposition (c'est la norme, l'afficher
+   ne dirait rien), une pastille nette pour une recherche. */
+export const INTENT_BADGE: Record<Intent, string | null> = {
+  offer: null,
+  wanted: "Recherche",
+};
+
 export type FieldDef = {
   k: string;                       // libellé = clé dans attrs (affichage direct)
   t: "text" | "number" | "select";
@@ -50,12 +77,18 @@ export const MODULES: Record<ModuleKey, {
   goods: {
     label: "Achats & Ventes", short: "Achats",
     color: "#a04e30", soft: "#f8ece6", dark: "#7a3a22",
+    /* Ordonné par thème : la maison d'abord (le plus demandé sur l'île),
+       puis l'électronique, la personne, les loisirs, le pro. */
     subs: [
-      "Meubles", "Électroménager", "Électronique & TV", "Informatique",
-      "Téléphonie", "Jeux vidéo & Consoles", "Vêtements & Chaussures",
-      "Maison & Déco", "Sport & Loisirs", "Plage & Plein air",
-      "Bricolage & Jardin", "Puériculture", "Animaux (accessoires)",
-      "Dons (gratuit)", "Autre",
+      "Meubles", "Maison & Déco", "Cuisine & Arts de la table", "Linge de maison",
+      "Électroménager", "Climatisation & Ventilation", "Énergie & Groupe électrogène",
+      "Mobilier de jardin & Extérieur", "Piscine & Spa",
+      "Bricolage & Jardin", "Outillage", "Matériaux & Chantier",
+      "Électronique & TV", "Informatique", "Téléphonie", "Jeux vidéo & Consoles",
+      "Vêtements & Chaussures", "Bagagerie & Voyage", "Beauté & Bien-être",
+      "Sport & Loisirs", "Plage & Plein air", "Instruments de musique",
+      "Livres, Musique & Films", "Puériculture", "Animaux (accessoires)",
+      "Matériel pro & Restauration", "Dons (gratuit)", "Autre",
     ],
   },
 };
@@ -148,13 +181,21 @@ export function fieldsFor(module: ModuleKey, sub: string): FieldDef[] {
       { k: "Langues", t: "text", ph: "ex : français, anglais", adv: true },
       { k: "Nourri", t: "select", o: ["Oui", "Non"], adv: true },
     ];
-    case "goods": return [
-      ETAT,
-      { k: "Marque", t: "text", ph: "optionnel", adv: true },
-      { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
-      { k: "Sous garantie", t: "select", o: ["Oui", "Non"], adv: true },
-      { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
-    ];
+    case "goods": {
+      if (sub === "Matériaux & Chantier") return [
+        ETAT,
+        { k: "Quantité", t: "text", ph: "ex : 12 sacs, 30 m²" },
+        { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
+        { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
+      ];
+      return [
+        ETAT,
+        { k: "Marque", t: "text", ph: "optionnel", adv: true },
+        { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
+        { k: "Sous garantie", t: "select", o: ["Oui", "Non"], adv: true },
+        { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
+      ];
+    }
   }
 }
 

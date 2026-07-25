@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { MODULES, MODULE_ORDER, fieldsFor, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
+import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
 import { SiteHeader, Mark } from "@/components/Brand";
 
 const MAX_PHOTOS = 5;
@@ -33,6 +33,7 @@ export default function Deposer() {
   const [step, setStep] = useState(0);
   const [mod, setMod] = useState<ModuleKey | null>(null);
   const [sub, setSub] = useState<string | null>(null);
+  const [intent, setIntent] = useState<Intent>("offer");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -88,6 +89,7 @@ export default function Deposer() {
           user_id: userId,
           module: mod,
           subcategory: sub,
+          intent,
           title: title.trim(),
           description: description.trim(),
           price_cents: price === "" ? null : Math.round(parseFloat(price.replace(",", ".")) * 100),
@@ -169,20 +171,39 @@ export default function Deposer() {
           </div>
         )}
 
-        {step === 2 && m && sub && (
+        {step === 2 && mod && m && sub && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
             <span style={{ alignSelf: "flex-start", fontSize: 11, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
               color: m.dark, background: m.soft, padding: "5px 12px", borderRadius: 99 }}>
               {m.label} · {sub}
             </span>
+            {/* Proposition ou recherche : le premier choix du formulaire, il
+                change le sens de tout le reste. */}
+            <div role="radiogroup" aria-label="Sens de l'annonce"
+              style={{ display: "flex", gap: 4, background: "var(--cream-dark)", borderRadius: 999, padding: 4 }}>
+              {INTENT_ORDER.map((k) => (
+                <button key={k} role="radio" aria-checked={intent === k} onClick={() => setIntent(k)}
+                  style={{
+                    flex: 1, minHeight: 42, borderRadius: 999, border: "none", cursor: "pointer",
+                    fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                    background: intent === k ? m.color : "transparent",
+                    color: intent === k ? "#fff" : "var(--text-muted)",
+                  }}>
+                  {INTENT_LABEL[mod][k]}
+                </button>
+              ))}
+            </div>
+
             <input className="input" value={title} onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titre de l'annonce" maxLength={100} style={{ fontSize: 15 }} />
+              placeholder={intent === "wanted" ? "Ce que vous recherchez" : "Titre de l'annonce"}
+              maxLength={100} style={{ fontSize: 15 }} />
             <textarea className="input" value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Description" rows={4} maxLength={5000} style={{ resize: "vertical" }} />
             {/* Deux colonnes dès 420 px, empilées sur les petits téléphones */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
               <input className="input" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ""))}
-                placeholder="Prix (€) — vide si à discuter" inputMode="decimal" />
+                placeholder={intent === "wanted" ? "Budget (€) — vide si à discuter" : "Prix (€) — vide si à discuter"}
+                inputMode="decimal" />
               <input className="input" value={location} onChange={(e) => setLocation(e.target.value)}
                 placeholder="Quartier (ex. Lorient)" />
             </div>

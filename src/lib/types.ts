@@ -1,10 +1,11 @@
-import type { ModuleKey } from "./taxonomy";
+import type { Intent, ModuleKey } from "./taxonomy";
 
 export type Listing = {
   id: string;
   user_id: string;
   module: ModuleKey;
   subcategory: string;
+  intent: Intent;
   status: "active" | "sold" | "expired" | "removed";
   title: string;
   description: string;

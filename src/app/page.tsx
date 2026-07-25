@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { MODULES, MODULE_ORDER, type ModuleKey } from "@/lib/taxonomy";
+import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import ListingCard from "@/components/ListingCard";
 import { Brand, Mark } from "@/components/Brand";
@@ -12,6 +12,7 @@ type Tab = "home" | ModuleKey;
 export default function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<string | null>(null);
+  const [intent, setIntent] = useState<Intent | null>(null);
   const [query, setQuery] = useState("");
   const [minP, setMinP] = useState("");
   const [maxP, setMaxP] = useState("");
@@ -22,6 +23,8 @@ export default function Home() {
   const activeModule = tab === "home" ? null : tab;
   const m = activeModule ? MODULES[activeModule] : null;
   const accent = m ? m.color : "var(--gold)";
+  // Le filet du bandeau peut rester en or ; un aplat de chip, non (texte blanc).
+  const accentSolid = m ? m.color : "var(--green)";
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +41,7 @@ export default function Home() {
 
       if (activeModule) q = q.eq("module", activeModule);
       if (activeModule && sub) q = q.eq("subcategory", sub);
+      if (intent) q = q.eq("intent", intent);
       if (minP !== "") q = q.gte("price_cents", parseInt(minP, 10) * 100);
       if (maxP !== "") q = q.lte("price_cents", parseInt(maxP, 10) * 100);
       if (query.trim()) q = q.textSearch("search_tsv", query.trim(), { type: "websearch", config: "french" });
@@ -50,7 +54,7 @@ export default function Home() {
     })();
 
     return () => { cancelled = true; };
-  }, [activeModule, sub, query, minP, maxP]);
+  }, [activeModule, sub, intent, query, minP, maxP]);
 
   const subs = useMemo(() => (m ? m.subs : []), [m]);
 
@@ -100,8 +104,8 @@ export default function Home() {
         <div className="header-accent" style={{ background: accent }} />
       </header>
 
-      {m && (
-        <div className="container">
+      <div className="container">
+        {m && (
           <div className="filter-row">
             <button
               className="chip"
@@ -121,8 +125,35 @@ export default function Home() {
               </button>
             ))}
           </div>
+        )}
 
-          <div className="filter-row" style={{ paddingTop: 8 }}>
+        {/* Sens de l'annonce : proposé ou recherché. Valable dans tous les
+            univers, donc affiché aussi sur l'accueil. */}
+        <div className="filter-row" style={{ paddingTop: m ? 8 : 14 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+            Afficher
+          </span>
+          <button
+            className="chip"
+            onClick={() => setIntent(null)}
+            style={!intent ? { background: accentSolid, borderColor: accentSolid, color: "#fff" } : undefined}
+          >
+            Tout
+          </button>
+          {INTENT_ORDER.map((k) => (
+            <button
+              key={k}
+              className="chip"
+              onClick={() => setIntent(intent === k ? null : k)}
+              style={intent === k ? { background: accentSolid, borderColor: accentSolid, color: "#fff" } : undefined}
+            >
+              {INTENT_FILTER[k]}
+            </button>
+          ))}
+
+          {m && (
+            <>
+            <span style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 4px", flex: "0 0 auto" }} />
             <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               Prix
             </span>
@@ -142,9 +173,10 @@ export default function Home() {
                 effacer
               </button>
             )}
-          </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 90, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>

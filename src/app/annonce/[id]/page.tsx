@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { MODULES, eur, priceSuffix } from "@/lib/taxonomy";
+import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { photoUrl } from "@/components/ListingCard";
 import { SiteHeader, Mark } from "@/components/Brand";
@@ -49,6 +49,8 @@ export default function AnnoncePage() {
   const photos = (l.photos ?? []).slice().sort((a, b) => a.position - b.position);
   const price = eur(l.price_cents);
   const attrs = Object.entries(l.attrs ?? {}).filter(([, v]) => v !== "" && v != null);
+  const wanted = l.intent === "wanted";
+  const badge = INTENT_BADGE[l.intent ?? "offer"];
   const wa = l.profile?.phone_wa
     ? `https://wa.me/${l.profile.phone_wa.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour, je vous contacte au sujet de votre annonce "${l.title}" sur Ti Kanal.`)}`
     : null;
@@ -103,15 +105,23 @@ export default function AnnoncePage() {
           )}
         </div>
 
-        <span style={{ display: "inline-block", fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
-          color: m.dark, background: m.soft, padding: "5px 12px", borderRadius: 99, margin: "16px 0 8px" }}>
-          {m.label} · {l.subcategory}
-        </span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "16px 0 8px" }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+            color: m.dark, background: m.soft, padding: "5px 12px", borderRadius: 99 }}>
+            {m.label} · {l.subcategory}
+          </span>
+          {badge && (
+            <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+              color: "var(--gold-light)", background: "var(--green)", padding: "5px 12px", borderRadius: 99 }}>
+              {badge}
+            </span>
+          )}
+        </div>
         <h1 style={{ margin: "2px 0 8px", fontSize: 24, lineHeight: 1.2 }}>{l.title}</h1>
         <div className="price" style={{ fontSize: 27, color: m.color }}>
           {price == null
-            ? l.module === "job" ? "Selon profil" : "Prix à discuter"
-            : price + priceSuffix(l.module, l.subcategory)}
+            ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
+            : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", margin: "6px 0 18px" }}>
           {l.location} · publié le {new Date(l.created_at).toLocaleDateString("fr-FR")}
