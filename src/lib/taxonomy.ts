@@ -13,13 +13,17 @@ export type FieldDef = {
   adv?: boolean;                   // replié derrière "Plus de détails"
 };
 
+/* Palette dérivée de la charte Ti Kanal : chaque univers est une déclinaison
+   du vert lagon / or / terre cuite, jamais une couleur vive hors charte.
+   `color` : aplats et texte sur blanc (contraste ≥ 4.5:1)
+   `soft`  : fond teinté crème · `dark` : texte sur ce fond. */
 export const MODULES: Record<ModuleKey, {
   label: string; short: string; color: string; soft: string; dark: string;
-  icon: string; subs: string[];
+  subs: string[];
 }> = {
   vehicle: {
     label: "Véhicules & Nautisme", short: "Véhicules",
-    color: "#1e6fd9", soft: "#e8f1fc", dark: "#154e99", icon: "🛵",
+    color: "#12626d", soft: "#e6eff0", dark: "#0b4650",
     subs: [
       "Voitures", "Utilitaires", "Scooters & Motos", "Quads & Buggys",
       "Vélos & Trottinettes", "Bateaux à moteur", "Voiliers", "Jetskis",
@@ -28,7 +32,7 @@ export const MODULES: Record<ModuleKey, {
   },
   housing: {
     label: "Immobilier", short: "Immobilier",
-    color: "#c78f00", soft: "#fdf6e0", dark: "#8f6700", icon: "🏠",
+    color: "#96691d", soft: "#f6eeda", dark: "#6f4c10",
     subs: [
       "Location à l'année", "Location saisonnière", "Colocation",
       "Vente", "Bureaux & Locaux", "Terrains",
@@ -36,14 +40,14 @@ export const MODULES: Record<ModuleKey, {
   },
   job: {
     label: "Emploi & Services", short: "Emploi",
-    color: "#1f9d55", soft: "#e6f6ec", dark: "#15703c", icon: "💼",
+    color: "#2f6b4f", soft: "#e8f1eb", dark: "#1e4b37",
     subs: [
       "Offres d'emploi", "Candidats", "Services entre particuliers", "Cours & Formations",
     ],
   },
   goods: {
     label: "Achats & Ventes", short: "Achats",
-    color: "#e0532f", soft: "#fdece7", dark: "#a83a1e", icon: "📦",
+    color: "#a04e30", soft: "#f8ece6", dark: "#7a3a22",
     subs: [
       "Meubles", "Électroménager", "Électronique & TV", "Informatique",
       "Téléphonie", "Jeux vidéo & Consoles", "Vêtements & Chaussures",

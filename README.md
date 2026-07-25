@@ -1,7 +1,44 @@
-# LAGON — Petites annonces Saint-Barthélemy
+# Ti Kanal — Échanges & petites annonces · St Barth
 
 4 univers : Véhicules & Nautisme, Immobilier, Emploi & Services, Achats & Ventes.
 Next.js 15 (App Router) + Supabase (Postgres, Auth par lien magique, Storage photos).
+
+## Charte graphique
+
+Reprise du logo Ti Kanal (cadre filet or, feuille de lagon, sérif haute densité).
+Tokens dans `src/app/globals.css`, marque vectorielle dans `src/components/Brand.tsx`.
+
+| Rôle | Valeur | Usage |
+| --- | --- | --- |
+| Vert lagon | `#05282c` (`--green`) | bandeaux, pied de page, boutons principaux |
+| Or sable | `#c9a86a` (`--gold`) | filets, sur-titres, CTA sur fond vert |
+| Or profond | `#8a6a2a` (`--gold-deep`) | seul or lisible sur fond clair (≥ 4.5:1) |
+| Crème | `#f6f2e9` (`--cream`) | fond de page |
+| Encre | `#16292b` (`--text`) | texte courant |
+
+Typographie : **Playfair Display** (marque, titres, prix) + **Inter** (interface).
+Capitales très espacées (`.overline`, `letter-spacing: .32em`) pour les sur-titres.
+
+Couleurs d'univers (`src/lib/taxonomy.ts`) : déclinaisons de la charte — lagon
+`#12626d`, bronze `#96691d`, palme `#2f6b4f`, terre cuite `#a04e30`. Chacune passe
+4.5:1 sur blanc, avec une variante `dark` pour le texte sur fond `soft`.
+
+Le logo fourni sert d'icône et d'image de partage : `src/app/icon.png`,
+`apple-icon.png`, `opengraph-image.jpg`, et `public/logo-ti-kanal.jpg`.
+
+## Mobile
+
+Le site est construit mobile-first (le trafic d'une petite annonce locale est
+presque entièrement téléphone) :
+
+- `viewport` avec `viewport-fit=cover` + `themeColor` vert, zoom utilisateur conservé ;
+- champs à `font-size: 16px` — en dessous, Safari iOS zoome automatiquement à la saisie ;
+- cibles tactiles ≥ 44 px (`.btn`, `.tab`, `.chip`) ;
+- grille 2 colonnes sous 560 px, `auto-fill` au-delà ;
+- onglets et filtres en défilement horizontal avec accroche (`scroll-snap`), barre masquée ;
+- bouton flottant « + Déposer » sur mobile (masqué ≥ 720 px, où le bouton du bandeau prend le relais) ;
+- barre de contact WhatsApp collée en bas de la fiche annonce, à portée de pouce ;
+- respect de `env(safe-area-inset-*)` (encoche et barre gestuelle iOS).
 
 ## Installation
 
@@ -37,8 +74,10 @@ npm run dev
 
 ```
 supabase/migrations/0001_init.sql   Schéma complet + RLS + storage
-src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques (source unique)
+src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques + couleurs
 src/lib/supabase.ts                 Client Supabase (navigateur)
+src/app/globals.css                 Charte graphique (tokens, composants, breakpoints)
+src/components/Brand.tsx            Marque : logo SVG, verrouillage typo, bandeau partagé
 src/app/page.tsx                    Accueil : onglets modules, chips, recherche, filtre prix
 src/app/annonce/[id]/page.tsx       Fiche annonce : photos, détails, WhatsApp, signalement
 src/app/deposer/page.tsx            Dépôt en 3 étapes, champs par catégorie, upload photos

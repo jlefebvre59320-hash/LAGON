@@ -1,87 +1,284 @@
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap");
+
+/* ==========================================================================
+   Ti Kanal — charte graphique
+   Vert lagon profond (#05282c) · Or sable (#c9a86a) · Crème (#f6f2e9)
+   Reprise directe du logo : cadre filet or, sérif haute densité, capitales
+   très espacées. Tout le site est construit mobile-first.
+   ========================================================================== */
 
 :root {
-  --bg: #fafaf8;
-  --surface: #ffffff;
-  --text: #1a1a1a;
-  --text-muted: #6b6b6b;
-  --border: #ececea;
-  --border-input: #dddad4;
-  --radius: 12px;
-  --ink: #12242e;
-  --wa: #25d366;
+  /* Marque */
+  --green: #05282c;
+  --green-700: #0a3a3f;
+  --green-600: #12525a;
+  --green-100: #dfeae9;
+  --gold: #c9a86a;
+  --gold-light: #e2cfa4;
+  --gold-deep: #8a6a2a;      /* seule variante or lisible sur fond clair */
+  --cream: #f6f2e9;
+  --cream-dark: #ece5d6;
+
+  /* Surfaces & texte */
+  --bg: var(--cream);
+  --surface: #fffdf8;
+  --text: #16292b;
+  --text-muted: #5f6f70;
+  --border: #e4ddcd;
+  --border-input: #d8cfba;
+
+  --ink: var(--green);
+  --danger: #a3341f;
+  --wa: #1f8f4d;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 10px rgba(5, 40, 44, 0.06);
+  --shadow-lg: 0 10px 30px rgba(5, 40, 44, 0.14);
+  --header-h: 0px;
 }
 
 * { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
 
 html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 15px;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+body {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 a { color: inherit; }
 
-.wordmark {
-  font-family: "Archivo", sans-serif;
-  font-variation-settings: "wdth" 120, "wght" 900;
-  font-size: 26px;
-  letter-spacing: -0.5px;
-  color: var(--ink);
-  text-decoration: none;
+img { max-width: 100%; }
+
+h1, h2, h3 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--green);
 }
 
-.container { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+/* --- Layout ------------------------------------------------------------- */
+
+.container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 14px;
+}
+@media (min-width: 720px) { .container { padding: 0 24px; } }
+
+/* --- Identité ----------------------------------------------------------- */
+
+.wordmark {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+  font-size: 25px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--cream);
+  text-decoration: none;
+  display: block;
+}
+@media (min-width: 720px) { .wordmark { font-size: 30px; } }
+
+.overline {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0;
+}
+@media (min-width: 720px) { .overline { font-size: 10.5px; } }
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  min-width: 0;
+}
+
+/* Cadre filet or du logo, réutilisé comme motif de section */
+.gold-frame {
+  border: 1px solid rgba(201, 168, 106, 0.45);
+  border-radius: 18px;
+}
+
+/* --- Bandeau ------------------------------------------------------------ */
+
+.site-header {
+  background:
+    radial-gradient(120% 140% at 15% 0%, #0b3a3f 0%, #05282c 55%, #032023 100%),
+    var(--green);
+  color: var(--cream);
+  border-bottom: 1px solid rgba(201, 168, 106, 0.35);
+  padding-top: env(safe-area-inset-top);
+}
+
+.site-header .wordmark { color: var(--cream); }
+
+.header-accent {
+  height: 3px;
+  width: 100%;
+  background: var(--gold);
+}
+
+/* --- Boutons ------------------------------------------------------------ */
 
 .btn {
   border: none;
-  border-radius: 10px;
-  padding: 10px 18px;
+  border-radius: 999px;
+  padding: 12px 20px;
   font-weight: 700;
   font-size: 14px;
+  line-height: 1;
   cursor: pointer;
   font-family: inherit;
   color: #fff;
+  background: var(--green);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: filter 0.15s, transform 0.1s;
 }
-.btn:disabled { background: #ccc !important; cursor: default; }
+.btn:active { transform: translateY(1px); }
+.btn:hover { filter: brightness(1.07); }
+.btn:disabled { background: #cfc7b6 !important; color: #fff; cursor: default; filter: none; }
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--green);
+}
+.btn-outline-gold {
+  background: transparent;
+  border: 1.5px solid var(--gold);
+  color: var(--gold);
+}
+
+.btn-block { width: 100%; }
+
+.link-quiet {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* --- Champs ------------------------------------------------------------- */
 
 .input {
   width: 100%;
-  padding: 11px 13px;
-  border-radius: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-input);
-  font-size: 14px;
+  /* 16px : empêche le zoom automatique de Safari iOS à la saisie */
+  font-size: 16px;
   font-family: inherit;
+  color: var(--text);
   background: #fff;
+  min-height: 46px;
+}
+.input::placeholder { color: #9aa3a0; }
+.input:focus { border-color: var(--green-600); outline: none; box-shadow: 0 0 0 3px rgba(18, 82, 90, 0.12); }
+
+.search-input {
+  background: rgba(255, 253, 248, 0.97);
+  border: 1px solid rgba(201, 168, 106, 0.5);
+  border-radius: 999px;
+  padding-left: 18px;
 }
 
+/* --- Chips & onglets ---------------------------------------------------- */
+
 .chip {
-  border-radius: 99px;
-  padding: 6px 14px;
-  font-size: 12.5px;
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  background: #fff;
+  background: var(--surface);
   border: 1.5px solid var(--border-input);
-  color: #3a3a3a;
+  color: #3c4a4a;
+  white-space: nowrap;
+  min-height: 38px;
 }
 
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -14px;
+  padding: 0 14px 10px;
+}
+.tabs::-webkit-scrollbar { display: none; }
+@media (min-width: 720px) { .tabs { margin: 0; padding: 0 0 10px; } }
+
 .tab {
-  border: none;
+  border: 1px solid rgba(201, 168, 106, 0.3);
   cursor: pointer;
   font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
-  padding: 10px 16px;
-  border-radius: 10px 10px 0 0;
-  background: transparent;
-  color: #3a3a3a;
+  padding: 10px 15px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(246, 242, 233, 0.82);
+  scroll-snap-align: start;
+  min-height: 40px;
+  flex: 0 0 auto;
+  transition: background 0.15s, color 0.15s;
 }
+.tab-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Barre de filtres horizontale, défilable au pouce sur mobile */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -14px;
+  padding: 12px 14px 2px;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+@media (min-width: 720px) {
+  .filter-row { flex-wrap: wrap; overflow: visible; margin: 0; padding: 14px 0 2px; }
+}
+
+/* --- Cartes ------------------------------------------------------------- */
 
 .card {
   text-align: left;
@@ -93,21 +290,62 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   text-decoration: none;
-  transition: box-shadow 0.15s;
+  transition: box-shadow 0.18s, transform 0.18s;
 }
-.card:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); }
+@media (hover: hover) {
+  .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+}
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 560px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
 }
 
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* --- Bouton flottant mobile --------------------------------------------- */
+
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 40;
+  box-shadow: var(--shadow-lg);
+  padding: 14px 22px;
+  font-size: 15px;
+}
+@media (min-width: 720px) { .fab { display: none; } }
+
+.only-desktop { display: none; }
+@media (min-width: 720px) { .only-desktop { display: inline-flex; } }
+
+.only-mobile { display: block; }
+@media (min-width: 720px) { .only-mobile { display: none; } }
+
+/* --- Divers ------------------------------------------------------------- */
+
+.price {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.muted { color: var(--text-muted); }
+
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

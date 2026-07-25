@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, fieldsFor, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
+import { SiteHeader, Mark } from "@/components/Brand";
 
 const MAX_PHOTOS = 5;
 
 function Field({ f, v, set }: { f: FieldDef; v: string; set: (k: string, v: string) => void }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 600, color: "#4a4a4a" }}>
+    <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: 12, fontWeight: 600, color: "#4a5654" }}>
       {f.k}
       {f.t === "select" ? (
         <select className="input" value={v} onChange={(e) => set(f.k, e.target.value)}>
@@ -55,7 +56,12 @@ export default function Deposer() {
     })();
   }, [router]);
 
-  if (!checked) return <div className="container" style={{ padding: "40px 16px", color: "var(--text-muted)" }}>Chargement…</div>;
+  if (!checked) return (
+    <>
+      <SiteHeader />
+      <div className="container" style={{ padding: "40px 16px", color: "var(--text-muted)" }}>Chargement…</div>
+    </>
+  );
 
   const m = mod ? MODULES[mod] : null;
   const fields = mod && sub ? fieldsFor(mod, sub) : [];
@@ -111,34 +117,40 @@ export default function Deposer() {
   }
 
   return (
-    <div>
-      <header style={{ background: m ? m.soft : "#f0f4f5", borderBottom: `3px solid ${m ? m.color : "var(--ink)"}` }}>
-        <div className="container" style={{ padding: "14px 16px" }}>
-          <Link href="/" className="wordmark">LAGON</Link>
-        </div>
-      </header>
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      <SiteHeader accent={m ? m.color : "var(--gold)"} />
 
-      <main className="container" style={{ maxWidth: 640, paddingTop: 24, paddingBottom: 48 }}>
-        <h1 style={{ fontFamily: "'Archivo', sans-serif", fontVariationSettings: "'wght' 800", fontSize: 24, margin: "0 0 4px" }}>
-          Déposer une annonce
-        </h1>
+      <main className="container" style={{ maxWidth: 640, paddingTop: 24, paddingBottom: 56, flex: 1 }}>
+        <h1 style={{ fontSize: 24, margin: "0 0 6px" }}>Déposer une annonce</h1>
         <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 0 }}>
           {step === 0 ? "Étape 1 sur 3 · Choisissez l'univers"
             : step === 1 ? "Étape 2 sur 3 · Choisissez la catégorie"
             : "Étape 3 sur 3 · Décrivez votre annonce"}
         </p>
 
+        {/* Progression : trois filets, lisibles d'un coup d'œil sur mobile */}
+        <div style={{ display: "flex", gap: 6, margin: "0 0 4px" }} aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <span key={i} style={{
+              height: 3, flex: 1, borderRadius: 99,
+              background: i <= step ? (m ? m.color : "var(--gold)") : "var(--cream-dark)",
+            }} />
+          ))}
+        </div>
+
         {step === 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12, marginTop: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 18 }}>
             {MODULE_ORDER.map((key) => {
               const mm = MODULES[key];
               return (
                 <button key={key}
                   onClick={() => { setMod(key); setSub(null); setAttrs({}); setShowMore(false); setStep(1); }}
-                  style={{ border: `2px solid ${mm.color}`, background: mm.soft, borderRadius: 14, padding: "22px 16px",
-                    cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                  <div style={{ fontSize: 30 }}>{mm.icon}</div>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: mm.dark, marginTop: 6 }}>{mm.label}</div>
+                  style={{ border: `1.5px solid ${mm.color}55`, background: mm.soft, borderRadius: 16, padding: "20px 16px",
+                    cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 14, minHeight: 84 }}>
+                  <Mark size={26} color={mm.color} />
+                  <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 17, color: mm.dark }}>
+                    {mm.label}
+                  </span>
                 </button>
               );
             })}
@@ -159,41 +171,43 @@ export default function Deposer() {
 
         {step === 2 && m && sub && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
-            <span style={{ alignSelf: "flex-start", fontSize: 12, fontWeight: 700, color: m.dark, background: m.soft, padding: "4px 12px", borderRadius: 99 }}>
+            <span style={{ alignSelf: "flex-start", fontSize: 11, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+              color: m.dark, background: m.soft, padding: "5px 12px", borderRadius: 99 }}>
               {m.label} · {sub}
             </span>
             <input className="input" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre de l'annonce" maxLength={100} style={{ fontSize: 15 }} />
             <textarea className="input" value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Description" rows={4} maxLength={5000} style={{ resize: "vertical" }} />
-            <div style={{ display: "flex", gap: 12 }}>
+            {/* Deux colonnes dès 420 px, empilées sur les petits téléphones */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
               <input className="input" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ""))}
-                placeholder="Prix (€) — laisser vide si à discuter" inputMode="decimal" style={{ flex: 1 }} />
+                placeholder="Prix (€) — vide si à discuter" inputMode="decimal" />
               <input className="input" value={location} onChange={(e) => setLocation(e.target.value)}
-                placeholder="Quartier (ex. Lorient)" style={{ flex: 1 }} />
+                placeholder="Quartier (ex. Lorient)" />
             </div>
             <input className="input" value={phoneWa} onChange={(e) => setPhoneWa(e.target.value)}
               placeholder="Numéro WhatsApp (ex. +590690XXXXXX)" inputMode="tel" />
 
             {fields.length > 0 && (
-              <div style={{ border: `1.5px solid ${m.color}33`, background: m.soft + "66", borderRadius: 12, padding: "14px 14px 16px" }}>
-                <div style={{ fontSize: 12.5, fontWeight: 800, color: m.dark, marginBottom: 10, letterSpacing: ".03em", textTransform: "uppercase" }}>
+              <div style={{ border: `1px solid ${m.color}33`, background: m.soft + "66", borderRadius: 14, padding: "14px 14px 16px" }}>
+                <div style={{ fontSize: 11.5, fontWeight: 800, color: m.dark, marginBottom: 12, letterSpacing: ".07em", textTransform: "uppercase" }}>
                   Détails · {sub}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
                   {baseFields.map((f) => <Field key={f.k} f={f} v={attrs[f.k] || ""} set={setAttr} />)}
                   {showMore && advFields.map((f) => <Field key={f.k} f={f} v={attrs[f.k] || ""} set={setAttr} />)}
                 </div>
                 {advFields.length > 0 && (
                   <button onClick={() => setShowMore(!showMore)}
-                    style={{ marginTop: 12, background: "#fff", border: `1.5px solid ${m.color}`, color: m.dark,
-                      borderRadius: 99, padding: "7px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    style={{ marginTop: 14, background: "var(--surface)", border: `1.5px solid ${m.color}`, color: m.dark,
+                      borderRadius: 99, padding: "9px 16px", minHeight: 40, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                     {showMore
                       ? "− Masquer les détails supplémentaires"
                       : `+ Plus de détails (${advFields.length} champs${advFilled ? `, ${advFilled} rempli${advFilled > 1 ? "s" : ""}` : ""})`}
                   </button>
                 )}
-                <div style={{ fontSize: 11.5, color: "#8a8a8a", marginTop: 10 }}>
+                <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 10 }}>
                   Tous ces champs sont facultatifs, mais une annonce détaillée se vend plus vite.
                 </div>
               </div>
@@ -201,10 +215,11 @@ export default function Deposer() {
 
             <div>
               <label htmlFor="photos" style={{
-                display: "block", border: "2px dashed var(--border-input)", borderRadius: 12,
-                padding: "22px 0", textAlign: "center", color: "#9a9a9a", fontSize: 13, cursor: "pointer",
+                display: "block", border: "1.5px dashed var(--border-input)", borderRadius: 14,
+                padding: "24px 12px", textAlign: "center", color: "var(--text-muted)", fontSize: 13.5,
+                cursor: "pointer", background: "var(--surface)",
               }}>
-                📷 {files.length === 0 ? `Ajouter des photos (${MAX_PHOTOS} max)` : `${files.length} photo${files.length > 1 ? "s" : ""} sélectionnée${files.length > 1 ? "s" : ""} — cliquer pour changer`}
+                {files.length === 0 ? `+ Ajouter des photos (${MAX_PHOTOS} max)` : `${files.length} photo${files.length > 1 ? "s" : ""} sélectionnée${files.length > 1 ? "s" : ""} — appuyer pour changer`}
               </label>
               <input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple
                 style={{ display: "none" }}
@@ -220,18 +235,17 @@ export default function Deposer() {
               )}
             </div>
 
-            {error && <p style={{ color: "#b0341f", fontSize: 13, fontWeight: 600 }}>{error}</p>}
-            <button className="btn" disabled={title.trim().length < 3 || publishing} onClick={publish}
-              style={{ background: m.color, padding: "13px 0", fontSize: 15 }}>
+            {error && <p style={{ color: "var(--danger)", fontSize: 13, fontWeight: 600 }}>{error}</p>}
+            <button className="btn btn-block" disabled={title.trim().length < 3 || publishing} onClick={publish}
+              style={{ background: m.color, padding: "15px 0", fontSize: 15.5 }}>
               {publishing ? "Publication…" : "Publier l'annonce"}
             </button>
           </div>
         )}
 
-        <div style={{ marginTop: 18, display: "flex", gap: 16 }}>
+        <div style={{ marginTop: 20, display: "flex", gap: 18, alignItems: "center" }}>
           {step > 0 && (
-            <button onClick={() => setStep(step - 1)}
-              style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 13, cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}>
+            <button onClick={() => setStep(step - 1)} className="link-quiet">
               ← Retour
             </button>
           )}
