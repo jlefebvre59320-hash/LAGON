@@ -250,6 +250,13 @@ export default function Deposer() {
             </button>
           )}
           <Link href="/" style={{ color: "var(--text-muted)", fontSize: 13 }}>Annuler</Link>
+          <button
+            className="link-quiet"
+            style={{ marginLeft: "auto" }}
+            onClick={async () => { await supabase().auth.signOut(); router.replace("/"); }}
+          >
+            Se déconnecter
+          </button>
         </div>
       </main>
     </div>

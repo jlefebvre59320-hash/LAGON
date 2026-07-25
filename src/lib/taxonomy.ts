@@ -13,8 +13,10 @@ export type FieldDef = {
   adv?: boolean;                   // replié derrière "Plus de détails"
 };
 
-/* Palette dérivée de la charte Ti Kanal : chaque univers est une déclinaison
-   du vert lagon / or / terre cuite, jamais une couleur vive hors charte.
+/* Palette dérivée de la charte Ti Kanal : chaque univers garde sa couleur
+   propre — marine, bronze, palme, terre cuite — mais toujours dans les tons
+   de la charte, jamais une couleur vive hors charte. L'accueil, lui, reste
+   en vert lagon et or : la marque d'abord, les univers ensuite.
    `color` : aplats et texte sur blanc (contraste ≥ 4.5:1)
    `soft`  : fond teinté crème · `dark` : texte sur ce fond. */
 export const MODULES: Record<ModuleKey, {
@@ -23,7 +25,7 @@ export const MODULES: Record<ModuleKey, {
 }> = {
   vehicle: {
     label: "Véhicules & Nautisme", short: "Véhicules",
-    color: "#12626d", soft: "#e6eff0", dark: "#0b4650",
+    color: "#14607f", soft: "#e5eef2", dark: "#0f4c63",
     subs: [
       "Voitures", "Utilitaires", "Scooters & Motos", "Quads & Buggys",
       "Vélos & Trottinettes", "Bateaux à moteur", "Voiliers", "Jetskis",

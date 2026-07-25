@@ -44,16 +44,31 @@ presque entièrement téléphone) :
 
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
-- Dans **SQL Editor**, coller et exécuter le contenu de `supabase/migrations/0001_init.sql`.
-  Ce script crée les tables (profiles, listings, listing_photos, reports), les index,
+- Dans **SQL Editor**, exécuter `supabase/migrations/0001_init.sql` puis
+  `supabase/migrations/0002_auth_password.sql`, dans cet ordre.
+  Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
+  Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
 
 ### 2. Configurer l'authentification
-- Dans **Authentication → Providers**, vérifier que Email est activé (lien magique, pas de mot de passe).
-- Dans **Authentication → URL Configuration**, ajouter l'URL du site
-  (en dev : `http://localhost:3000`) dans *Site URL* et *Redirect URLs*.
+
+Les comptes se créent avec **email + mot de passe** (8 caractères minimum),
+avec mot de passe oublié, et un lien magique par email en secours.
+
+- **Authentication → Providers → Email** : activé, avec *Confirm email* — un
+  compte n'est utilisable qu'après clic sur le lien de confirmation. C'est ce
+  qui empêche l'inscription avec l'adresse de quelqu'un d'autre. Si vous le
+  désactivez, la connexion est immédiate après inscription (le code gère les
+  deux cas), mais n'importe quelle adresse inventée devient utilisable.
+- **Authentication → URL Configuration** : renseigner *Site URL* et ajouter
+  dans *Redirect URLs* l'URL de production **et** `http://localhost:3000`.
+  Les emails de confirmation et de réinitialisation pointent vers ces URLs ;
+  sans elles, les liens ramènent sur `localhost` et ne fonctionnent pour personne.
+- **Authentication → Providers → Email → Minimum password length** : mettre 8,
+  pour coller à ce que le formulaire annonce à l'utilisateur.
 - En production, configurer un SMTP dédié (Resend, Brevo…) : le SMTP par défaut
-  de Supabase est limité à quelques emails/heure, insuffisant dès les premiers utilisateurs.
+  de Supabase est limité à quelques emails/heure — largement insuffisant dès que
+  chaque inscription et chaque oubli de mot de passe déclenchent un envoi.
 
 ### 3. Variables d'environnement
 ```
@@ -111,6 +126,7 @@ du site dans Supabase après le changement de domaine.
 
 ```
 supabase/migrations/0001_init.sql   Schéma complet + RLS + storage
+supabase/migrations/0002_auth_password.sql  Nom affiché repris à l'inscription
 src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques + couleurs
 src/lib/supabase.ts                 Client Supabase (navigateur)
 src/app/globals.css                 Charte graphique (tokens, composants, breakpoints)
@@ -118,7 +134,7 @@ src/components/Brand.tsx            Marque : logo SVG, verrouillage typo, bandea
 src/app/page.tsx                    Accueil : onglets modules, chips, recherche, filtre prix
 src/app/annonce/[id]/page.tsx       Fiche annonce : photos, détails, WhatsApp, signalement
 src/app/deposer/page.tsx            Dépôt en 3 étapes, champs par catégorie, upload photos
-src/app/connexion/page.tsx          Connexion par lien magique email
+src/app/connexion/page.tsx          Compte : inscription, connexion, mot de passe oublié
 ```
 
 ## Ajouter un critère à une catégorie
