@@ -5,11 +5,21 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import ListingCard from "@/components/ListingCard";
-import { Brand, Mark } from "@/components/Brand";
+import { AccountButton, Brand, Mark } from "@/components/Brand";
+import { FavoritesProvider } from "@/lib/favorites";
+import { recordView } from "@/lib/analytics";
 
 type Tab = "home" | ModuleKey;
 
-export default function Home() {
+export default function HomePage() {
+  return (
+    <FavoritesProvider>
+      <Home />
+    </FavoritesProvider>
+  );
+}
+
+function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<string | null>(null);
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -25,6 +35,8 @@ export default function Home() {
   const accent = m ? m.color : "var(--gold)";
   // Le filet du bandeau peut rester en or ; un aplat de chip, non (texte blanc).
   const accentSolid = m ? m.color : "var(--green)";
+
+  useEffect(() => { recordView("/"); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,9 +76,12 @@ export default function Home() {
         <div className="container" style={{ paddingTop: 16 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand onClick={() => { setTab("home"); setSub(null); }} />
-            <Link href="/deposer" className="btn btn-gold only-desktop">
-              + Déposer une annonce
-            </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+              <Link href="/deposer" className="btn btn-gold only-desktop">
+                + Déposer une annonce
+              </Link>
+              <AccountButton />
+            </div>
           </div>
 
           <div style={{ position: "relative", margin: "16px 0 12px" }}>
@@ -201,7 +216,7 @@ export default function Home() {
         ) : listings.length === 0 ? (
           <div className="panel gold-frame" style={{ textAlign: "center", padding: "44px 20px" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-              <Mark size={34} color="var(--gold-deep)" />
+              <Mark size={84} color="var(--gold-deep)" />
             </div>
             <p style={{ fontWeight: 700, color: "var(--green)", margin: "0 0 4px" }}>
               Aucune annonce ici pour l&apos;instant.
@@ -222,7 +237,7 @@ export default function Home() {
 
       <footer style={{ background: "var(--green)", color: "rgba(246,242,233,.72)", padding: "26px 0 30px", marginTop: "auto" }}>
         <div className="container" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-          <Mark size={26} />
+          <Mark size={72} />
           <span className="overline">Ti Kanal · St Barth</span>
           <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>
             Les échanges et petites annonces de Saint-Barthélemy, entre particuliers.

@@ -5,7 +5,8 @@ Next.js 15 (App Router) + Supabase (Postgres, Auth par lien magique, Storage pho
 
 ## Charte graphique
 
-Reprise du logo Ti Kanal (cadre filet or, feuille de lagon, sérif haute densité).
+Reprise du logo Ti Kanal : contour de Saint-Barthélemy en filet or, sérif haute
+densité, capitales très espacées.
 Tokens dans `src/app/globals.css`, marque vectorielle dans `src/components/Brand.tsx`.
 
 | Rôle | Valeur | Usage |
@@ -45,7 +46,7 @@ presque entièrement téléphone) :
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
 - Dans **SQL Editor**, exécuter dans l'ordre `supabase/migrations/0001_init.sql`,
-  `0002_auth_password.sql` puis `0003_intent.sql`.
+  `0002_auth_password.sql`, `0003_intent.sql` puis `0004_favoris_stats.sql`.
   Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
   Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
@@ -128,15 +129,65 @@ du site dans Supabase après le changement de domaine.
 supabase/migrations/0001_init.sql   Schéma complet + RLS + storage
 supabase/migrations/0002_auth_password.sql  Nom affiché repris à l'inscription
 supabase/migrations/0003_intent.sql Sens de l'annonce : proposition ou recherche
+supabase/migrations/0004_favoris_stats.sql  Favoris, fréquentation, droits admin
+src/lib/session.ts                  Session courante (hook useSession)
+src/lib/favorites.tsx               Favoris chargés une fois pour toute la page
+src/lib/analytics.ts                Enregistrement des pages vues
+src/app/mon-espace/page.tsx         Mes annonces (avec stats) et mes favoris
+src/app/stats/page.tsx              Tableau de bord du site (administrateurs)
 src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques + couleurs
 src/lib/supabase.ts                 Client Supabase (navigateur)
 src/app/globals.css                 Charte graphique (tokens, composants, breakpoints)
-src/components/Brand.tsx            Marque : logo SVG, verrouillage typo, bandeau partagé
+src/components/Brand.tsx            Marque : île en SVG (2 niveaux de détail), verrouillage typo, bandeau
 src/app/page.tsx                    Accueil : onglets modules, chips, recherche, filtre prix
 src/app/annonce/[id]/page.tsx       Fiche annonce : photos, détails, WhatsApp, signalement
 src/app/deposer/page.tsx            Dépôt en 3 étapes, champs par catégorie, upload photos
 src/app/connexion/page.tsx          Compte : inscription, connexion, mot de passe oublié
 ```
+
+## Compte, favoris et statistiques
+
+- **Accès au compte** en haut à droite de toutes les pages : *Se connecter* si on
+  ne l'est pas, *Mon espace* sinon. Le dépôt d'annonce continue de rediriger vers
+  la connexion, inscription comprise.
+- **Favoris** : cœur sur chaque carte et sur la fiche annonce, retrouvés dans
+  *Mon espace → Mes favoris*. Un visiteur non connecté qui appuie sur un cœur est
+  envoyé vers la page de connexion.
+- **Mes annonces** : statut, vues, visiteurs uniques, mises en favori, et les
+  actions *Marquer vendu* / *Remettre en ligne* / *Supprimer*.
+- **Fréquentation** : chaque page vue est enregistrée dans `page_views` avec un
+  `viewer_key` — un identifiant aléatoire tiré dans le navigateur, sans lien avec
+  un compte, qui sert uniquement à ne pas compter dix fois la même personne.
+
+### Ce qu'un annonceur voit — et ce qu'il ne voit pas
+
+Un annonceur voit **combien** de personnes ont consulté son annonce, jamais
+**qui**. La table des favoris n'est lisible que par son propriétaire, et
+`my_listings_stats()` ne rend que des compteurs, pour ses propres annonces.
+Publier l'identité des visiteurs d'une petite annonce serait à la fois une faute
+vis-à-vis du RGPD et un très bon moyen de faire fuir les acheteurs.
+
+### Créer le compte administrateur
+
+Il n'y a pas de compte administrateur livré avec le site — un mot de passe écrit
+dans le code serait le premier trou de sécurité venu. On promeut un compte
+existant :
+
+1. Créer un compte normal depuis le site (par exemple `admin@ti-kanal.fr`) et
+   confirmer l'email.
+2. Dans Supabase → **SQL Editor**, exécuter une fois :
+
+```sql
+update public.profiles set is_admin = true
+  where id = (select id from auth.users where email = 'admin@ti-kanal.fr');
+```
+
+3. Se reconnecter : *Mon espace* affiche alors le bouton **Statistiques du site**.
+
+Tout est verrouillé côté base, pas seulement côté écran : `site_stats()` refuse de
+répondre à un non-administrateur, la table `page_views` n'est lisible que par un
+administrateur, et la colonne `is_admin` est retirée du `select` public pour que
+personne ne puisse lister les administrateurs du site.
 
 ## Proposition ou recherche
 

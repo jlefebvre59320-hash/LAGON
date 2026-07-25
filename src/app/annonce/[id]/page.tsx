@@ -7,8 +7,19 @@ import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { photoUrl } from "@/components/ListingCard";
 import { SiteHeader, Mark } from "@/components/Brand";
+import FavoriteButton from "@/components/FavoriteButton";
+import { FavoritesProvider } from "@/lib/favorites";
+import { recordView } from "@/lib/analytics";
 
 export default function AnnoncePage() {
+  return (
+    <FavoritesProvider>
+      <Annonce />
+    </FavoritesProvider>
+  );
+}
+
+function Annonce() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [l, setL] = useState<Listing | null>(null);
@@ -25,7 +36,10 @@ export default function AnnoncePage() {
         .eq("id", id)
         .single();
       if (error || !data) setNotFound(true);
-      else setL(data as Listing);
+      else {
+        setL(data as Listing);
+        recordView(`/annonce/${id}`, id);
+      }
     })();
   }, [id]);
 
@@ -87,7 +101,7 @@ export default function AnnoncePage() {
               <img src={photoUrl(photos[photoIdx].storage_key)} alt={l.title}
                 style={{ width: "100%", aspectRatio: "4 / 3", maxHeight: 460, objectFit: "cover", display: "block" }} />
               {photos.length > 1 && (
-                <div style={{ display: "flex", gap: 6, padding: 8, background: "var(--surface)", overflowX: "auto" }}>
+                <div className="no-scrollbar" style={{ display: "flex", gap: 6, padding: 8, background: "var(--surface)", overflowX: "auto" }}>
                   {photos.map((p, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img key={p.storage_key} src={photoUrl(p.storage_key)} alt=""
@@ -100,7 +114,7 @@ export default function AnnoncePage() {
             </>
           ) : (
             <div style={{ aspectRatio: "16 / 9", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Mark size={54} color={m.color} />
+              <Mark size={150} color={m.color} />
             </div>
           )}
         </div>
@@ -123,9 +137,14 @@ export default function AnnoncePage() {
             ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
             : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-muted)", margin: "6px 0 18px" }}>
-          {l.location} · publié le {new Date(l.created_at).toLocaleDateString("fr-FR")}
-          {l.profile?.display_name ? ` · par ${l.profile.display_name}` : ""}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "6px 0 18px" }}>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            {l.location} · publié le {new Date(l.created_at).toLocaleDateString("fr-FR")}
+            {l.profile?.display_name ? ` · par ${l.profile.display_name}` : ""}
+          </span>
+          <span style={{ marginLeft: "auto" }}>
+            <FavoriteButton listingId={l.id} variant="plain" label />
+          </span>
         </div>
 
         {attrs.length > 0 && (
