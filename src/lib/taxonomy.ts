@@ -5,6 +5,33 @@
 
 export type ModuleKey = "vehicle" | "housing" | "job" | "goods";
 
+/* Sens de l'annonce : 'offer' = je propose (le cas courant, valeur par défaut),
+   'wanted' = je recherche. Le vocabulaire change selon l'univers — on ne « vend »
+   pas une location ni un poste. */
+export type Intent = "offer" | "wanted";
+
+export const INTENT_ORDER: Intent[] = ["offer", "wanted"];
+
+export const INTENT_LABEL: Record<ModuleKey, Record<Intent, string>> = {
+  vehicle: { offer: "Je vends", wanted: "Je recherche" },
+  housing: { offer: "Je propose", wanted: "Je recherche" },
+  job:     { offer: "Je propose", wanted: "Je recherche" },
+  goods:   { offer: "Je vends", wanted: "Je recherche" },
+};
+
+/* Filtre de l'accueil : on se place du côté du visiteur, pas de l'annonceur. */
+export const INTENT_FILTER: Record<Intent, string> = {
+  offer: "Propositions",
+  wanted: "Recherches",
+};
+
+/* Pastille sur la carte : rien pour une proposition (c'est la norme, l'afficher
+   ne dirait rien), une pastille nette pour une recherche. */
+export const INTENT_BADGE: Record<Intent, string | null> = {
+  offer: null,
+  wanted: "Recherche",
+};
+
 export type FieldDef = {
   k: string;                       // libellé = clé dans attrs (affichage direct)
   t: "text" | "number" | "select";
@@ -13,13 +40,19 @@ export type FieldDef = {
   adv?: boolean;                   // replié derrière "Plus de détails"
 };
 
+/* Palette dérivée de la charte Ti Kanal : chaque univers garde sa couleur
+   propre — marine, bronze, palme, terre cuite — mais toujours dans les tons
+   de la charte, jamais une couleur vive hors charte. L'accueil, lui, reste
+   en vert lagon et or : la marque d'abord, les univers ensuite.
+   `color` : aplats et texte sur blanc (contraste ≥ 4.5:1)
+   `soft`  : fond teinté crème · `dark` : texte sur ce fond. */
 export const MODULES: Record<ModuleKey, {
   label: string; short: string; color: string; soft: string; dark: string;
-  icon: string; subs: string[];
+  subs: string[];
 }> = {
   vehicle: {
     label: "Véhicules & Nautisme", short: "Véhicules",
-    color: "#1e6fd9", soft: "#e8f1fc", dark: "#154e99", icon: "🛵",
+    color: "#14607f", soft: "#e5eef2", dark: "#0f4c63",
     subs: [
       "Voitures", "Utilitaires", "Scooters & Motos", "Quads & Buggys",
       "Vélos & Trottinettes", "Bateaux à moteur", "Voiliers", "Jetskis",
@@ -28,7 +61,7 @@ export const MODULES: Record<ModuleKey, {
   },
   housing: {
     label: "Immobilier", short: "Immobilier",
-    color: "#c78f00", soft: "#fdf6e0", dark: "#8f6700", icon: "🏠",
+    color: "#96691d", soft: "#f6eeda", dark: "#6f4c10",
     subs: [
       "Location à l'année", "Location saisonnière", "Colocation",
       "Vente", "Bureaux & Locaux", "Terrains",
@@ -36,20 +69,26 @@ export const MODULES: Record<ModuleKey, {
   },
   job: {
     label: "Emploi & Services", short: "Emploi",
-    color: "#1f9d55", soft: "#e6f6ec", dark: "#15703c", icon: "💼",
+    color: "#2f6b4f", soft: "#e8f1eb", dark: "#1e4b37",
     subs: [
       "Offres d'emploi", "Candidats", "Services entre particuliers", "Cours & Formations",
     ],
   },
   goods: {
     label: "Achats & Ventes", short: "Achats",
-    color: "#e0532f", soft: "#fdece7", dark: "#a83a1e", icon: "📦",
+    color: "#a04e30", soft: "#f8ece6", dark: "#7a3a22",
+    /* Ordonné par thème : la maison d'abord (le plus demandé sur l'île),
+       puis l'électronique, la personne, les loisirs, le pro. */
     subs: [
-      "Meubles", "Électroménager", "Électronique & TV", "Informatique",
-      "Téléphonie", "Jeux vidéo & Consoles", "Vêtements & Chaussures",
-      "Maison & Déco", "Sport & Loisirs", "Plage & Plein air",
-      "Bricolage & Jardin", "Puériculture", "Animaux (accessoires)",
-      "Dons (gratuit)", "Autre",
+      "Meubles", "Maison & Déco", "Cuisine & Arts de la table", "Linge de maison",
+      "Électroménager", "Climatisation & Ventilation", "Énergie & Groupe électrogène",
+      "Mobilier de jardin & Extérieur", "Piscine & Spa",
+      "Bricolage & Jardin", "Outillage", "Matériaux & Chantier",
+      "Électronique & TV", "Informatique", "Téléphonie", "Jeux vidéo & Consoles",
+      "Vêtements & Chaussures", "Bagagerie & Voyage", "Beauté & Bien-être",
+      "Sport & Loisirs", "Plage & Plein air", "Instruments de musique",
+      "Livres, Musique & Films", "Puériculture", "Animaux (accessoires)",
+      "Matériel pro & Restauration", "Dons (gratuit)", "Autre",
     ],
   },
 };
@@ -142,13 +181,21 @@ export function fieldsFor(module: ModuleKey, sub: string): FieldDef[] {
       { k: "Langues", t: "text", ph: "ex : français, anglais", adv: true },
       { k: "Nourri", t: "select", o: ["Oui", "Non"], adv: true },
     ];
-    case "goods": return [
-      ETAT,
-      { k: "Marque", t: "text", ph: "optionnel", adv: true },
-      { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
-      { k: "Sous garantie", t: "select", o: ["Oui", "Non"], adv: true },
-      { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
-    ];
+    case "goods": {
+      if (sub === "Matériaux & Chantier") return [
+        ETAT,
+        { k: "Quantité", t: "text", ph: "ex : 12 sacs, 30 m²" },
+        { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
+        { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
+      ];
+      return [
+        ETAT,
+        { k: "Marque", t: "text", ph: "optionnel", adv: true },
+        { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
+        { k: "Sous garantie", t: "select", o: ["Oui", "Non"], adv: true },
+        { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
+      ];
+    }
   }
 }
 

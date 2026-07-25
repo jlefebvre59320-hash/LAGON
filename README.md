@@ -1,22 +1,74 @@
-# LAGON — Petites annonces Saint-Barthélemy
+# Ti Kanal — Échanges & petites annonces · St Barth
 
 4 univers : Véhicules & Nautisme, Immobilier, Emploi & Services, Achats & Ventes.
 Next.js 15 (App Router) + Supabase (Postgres, Auth par lien magique, Storage photos).
+
+## Charte graphique
+
+Reprise du logo Ti Kanal (cadre filet or, feuille de lagon, sérif haute densité).
+Tokens dans `src/app/globals.css`, marque vectorielle dans `src/components/Brand.tsx`.
+
+| Rôle | Valeur | Usage |
+| --- | --- | --- |
+| Vert lagon | `#05282c` (`--green`) | bandeaux, pied de page, boutons principaux |
+| Or sable | `#c9a86a` (`--gold`) | filets, sur-titres, CTA sur fond vert |
+| Or profond | `#8a6a2a` (`--gold-deep`) | seul or lisible sur fond clair (≥ 4.5:1) |
+| Crème | `#f6f2e9` (`--cream`) | fond de page |
+| Encre | `#16292b` (`--text`) | texte courant |
+
+Typographie : **Playfair Display** (marque, titres, prix) + **Inter** (interface).
+Capitales très espacées (`.overline`, `letter-spacing: .32em`) pour les sur-titres.
+
+Couleurs d'univers (`src/lib/taxonomy.ts`) : déclinaisons de la charte — lagon
+`#12626d`, bronze `#96691d`, palme `#2f6b4f`, terre cuite `#a04e30`. Chacune passe
+4.5:1 sur blanc, avec une variante `dark` pour le texte sur fond `soft`.
+
+Le logo fourni sert d'icône et d'image de partage : `src/app/icon.png`,
+`apple-icon.png`, `opengraph-image.jpg`, et `public/logo-ti-kanal.jpg`.
+
+## Mobile
+
+Le site est construit mobile-first (le trafic d'une petite annonce locale est
+presque entièrement téléphone) :
+
+- `viewport` avec `viewport-fit=cover` + `themeColor` vert, zoom utilisateur conservé ;
+- champs à `font-size: 16px` — en dessous, Safari iOS zoome automatiquement à la saisie ;
+- cibles tactiles ≥ 44 px (`.btn`, `.tab`, `.chip`) ;
+- grille 2 colonnes sous 560 px, `auto-fill` au-delà ;
+- onglets et filtres en défilement horizontal avec accroche (`scroll-snap`), barre masquée ;
+- bouton flottant « + Déposer » sur mobile (masqué ≥ 720 px, où le bouton du bandeau prend le relais) ;
+- barre de contact WhatsApp collée en bas de la fiche annonce, à portée de pouce ;
+- respect de `env(safe-area-inset-*)` (encoche et barre gestuelle iOS).
 
 ## Installation
 
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
-- Dans **SQL Editor**, coller et exécuter le contenu de `supabase/migrations/0001_init.sql`.
-  Ce script crée les tables (profiles, listings, listing_photos, reports), les index,
+- Dans **SQL Editor**, exécuter dans l'ordre `supabase/migrations/0001_init.sql`,
+  `0002_auth_password.sql` puis `0003_intent.sql`.
+  Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
+  Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
 
 ### 2. Configurer l'authentification
-- Dans **Authentication → Providers**, vérifier que Email est activé (lien magique, pas de mot de passe).
-- Dans **Authentication → URL Configuration**, ajouter l'URL du site
-  (en dev : `http://localhost:3000`) dans *Site URL* et *Redirect URLs*.
+
+Les comptes se créent avec **email + mot de passe** (8 caractères minimum),
+avec mot de passe oublié, et un lien magique par email en secours.
+
+- **Authentication → Providers → Email** : activé, avec *Confirm email* — un
+  compte n'est utilisable qu'après clic sur le lien de confirmation. C'est ce
+  qui empêche l'inscription avec l'adresse de quelqu'un d'autre. Si vous le
+  désactivez, la connexion est immédiate après inscription (le code gère les
+  deux cas), mais n'importe quelle adresse inventée devient utilisable.
+- **Authentication → URL Configuration** : renseigner *Site URL* et ajouter
+  dans *Redirect URLs* l'URL de production **et** `http://localhost:3000`.
+  Les emails de confirmation et de réinitialisation pointent vers ces URLs ;
+  sans elles, les liens ramènent sur `localhost` et ne fonctionnent pour personne.
+- **Authentication → Providers → Email → Minimum password length** : mettre 8,
+  pour coller à ce que le formulaire annonce à l'utilisateur.
 - En production, configurer un SMTP dédié (Resend, Brevo…) : le SMTP par défaut
-  de Supabase est limité à quelques emails/heure, insuffisant dès les premiers utilisateurs.
+  de Supabase est limité à quelques emails/heure — largement insuffisant dès que
+  chaque inscription et chaque oubli de mot de passe déclenchent un envoi.
 
 ### 3. Variables d'environnement
 ```
@@ -33,17 +85,73 @@ npm run dev
 ```
 → http://localhost:3000
 
+## Mise en ligne
+
+Le site est une application Next.js 15 : il lui faut un hébergeur qui exécute
+Node (Vercel, Netlify, Cloudflare Workers…), pas un simple hébergement de
+fichiers statiques. La fiche annonce `/annonce/[id]` est une route dynamique,
+elle ne peut pas être pré-générée en export statique.
+
+### Vercel (le plus direct, éditeur de Next.js)
+
+1. https://vercel.com → **Add New… → Project** → importer le dépôt GitHub.
+2. Rien à configurer : framework détecté, `npm run build` par défaut.
+3. **Settings → Environment Variables**, pour *Production* et *Preview* :
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   Ces deux valeurs sont publiques par nature (préfixe `NEXT_PUBLIC_`, envoyées
+   au navigateur) ; c'est le RLS Supabase qui protège les données, jamais le
+   secret de la clé. Ne jamais mettre la `service_role` ici.
+4. **Deploy**. Chaque push sur la branche par défaut redéploie ; les autres
+   branches donnent une URL de préversion.
+
+### Après le premier déploiement (obligatoire, sinon la connexion échoue)
+
+Dans Supabase → **Authentication → URL Configuration** :
+- *Site URL* : l'URL de production (ex. `https://ti-kanal.vercel.app`) ;
+- *Redirect URLs* : ajouter cette même URL **et** `http://localhost:3000`.
+
+Le lien magique pointe sinon vers `localhost` et ne fonctionne pas pour les
+utilisateurs. Prévoir aussi un SMTP dédié (Resend, Brevo) : le SMTP par défaut
+de Supabase est limité à quelques emails par heure.
+
+### Nom de domaine
+
+Vercel → **Settings → Domains** → ajouter le domaine, puis créer chez le
+registrar l'enregistrement affiché (`A` sur la racine, `CNAME` sur `www`).
+Le certificat HTTPS est émis automatiquement. Penser à remettre à jour l'URL
+du site dans Supabase après le changement de domaine.
+
 ## Structure
 
 ```
 supabase/migrations/0001_init.sql   Schéma complet + RLS + storage
-src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques (source unique)
+supabase/migrations/0002_auth_password.sql  Nom affiché repris à l'inscription
+supabase/migrations/0003_intent.sql Sens de l'annonce : proposition ou recherche
+src/lib/taxonomy.ts                 Modules, sous-catégories, champs dynamiques + couleurs
 src/lib/supabase.ts                 Client Supabase (navigateur)
+src/app/globals.css                 Charte graphique (tokens, composants, breakpoints)
+src/components/Brand.tsx            Marque : logo SVG, verrouillage typo, bandeau partagé
 src/app/page.tsx                    Accueil : onglets modules, chips, recherche, filtre prix
 src/app/annonce/[id]/page.tsx       Fiche annonce : photos, détails, WhatsApp, signalement
 src/app/deposer/page.tsx            Dépôt en 3 étapes, champs par catégorie, upload photos
-src/app/connexion/page.tsx          Connexion par lien magique email
+src/app/connexion/page.tsx          Compte : inscription, connexion, mot de passe oublié
 ```
+
+## Proposition ou recherche
+
+Chaque annonce porte un sens (`listings.intent`) : `offer` (je vends / je propose)
+ou `wanted` (je recherche). Il vaut pour les quatre univers — on cherche un
+logement comme on cherche une perceuse — et se choisit en premier au dépôt.
+
+- Vocabulaire par univers dans `INTENT_LABEL` (`src/lib/taxonomy.ts`) : on ne
+  « vend » pas une location saisonnière ni un poste, d'où « Je propose ».
+- Sur les cartes et la fiche, seule une recherche porte une pastille : une
+  proposition est le cas courant, l'étiqueter n'apprendrait rien.
+- Le prix d'une recherche s'affiche comme un **budget**.
+- Filtre *Afficher : Tout · Propositions · Recherches* sur l'accueil et dans
+  chaque univers.
+- Les annonces créées avant la migration `0003` sont des propositions (défaut SQL).
 
 ## Ajouter un critère à une catégorie
 
