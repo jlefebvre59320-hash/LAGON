@@ -70,6 +70,43 @@ npm run dev
 ```
 → http://localhost:3000
 
+## Mise en ligne
+
+Le site est une application Next.js 15 : il lui faut un hébergeur qui exécute
+Node (Vercel, Netlify, Cloudflare Workers…), pas un simple hébergement de
+fichiers statiques. La fiche annonce `/annonce/[id]` est une route dynamique,
+elle ne peut pas être pré-générée en export statique.
+
+### Vercel (le plus direct, éditeur de Next.js)
+
+1. https://vercel.com → **Add New… → Project** → importer le dépôt GitHub.
+2. Rien à configurer : framework détecté, `npm run build` par défaut.
+3. **Settings → Environment Variables**, pour *Production* et *Preview* :
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   Ces deux valeurs sont publiques par nature (préfixe `NEXT_PUBLIC_`, envoyées
+   au navigateur) ; c'est le RLS Supabase qui protège les données, jamais le
+   secret de la clé. Ne jamais mettre la `service_role` ici.
+4. **Deploy**. Chaque push sur la branche par défaut redéploie ; les autres
+   branches donnent une URL de préversion.
+
+### Après le premier déploiement (obligatoire, sinon la connexion échoue)
+
+Dans Supabase → **Authentication → URL Configuration** :
+- *Site URL* : l'URL de production (ex. `https://ti-kanal.vercel.app`) ;
+- *Redirect URLs* : ajouter cette même URL **et** `http://localhost:3000`.
+
+Le lien magique pointe sinon vers `localhost` et ne fonctionne pas pour les
+utilisateurs. Prévoir aussi un SMTP dédié (Resend, Brevo) : le SMTP par défaut
+de Supabase est limité à quelques emails par heure.
+
+### Nom de domaine
+
+Vercel → **Settings → Domains** → ajouter le domaine, puis créer chez le
+registrar l'enregistrement affiché (`A` sur la racine, `CNAME` sur `www`).
+Le certificat HTTPS est émis automatiquement. Penser à remettre à jour l'URL
+du site dans Supabase après le changement de domaine.
+
 ## Structure
 
 ```
