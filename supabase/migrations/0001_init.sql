@@ -1,5 +1,5 @@
 -- ============================================================
--- LAGON — Petites annonces Saint-Barthélemy
+-- Ti Kanal — Échanges & petites annonces · Saint-Barthélemy
 -- Migration initiale : schéma, index, RLS, stockage photos
 -- À exécuter dans le SQL Editor Supabase (ou supabase db push)
 -- ============================================================
