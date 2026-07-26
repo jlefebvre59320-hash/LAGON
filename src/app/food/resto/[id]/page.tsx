@@ -9,8 +9,11 @@ import {
 } from "@/lib/food";
 import { StarInput, StarRow } from "@/components/food/Stars";
 import { SiteHeader, Mark } from "@/components/Brand";
+import CuisineIcon from "@/components/food/CuisineIcon";
 import { recordView } from "@/lib/analytics";
 import { useSession } from "@/lib/session";
+import { FavoritesProvider } from "@/lib/favorites";
+import FavoriteButton from "@/components/FavoriteButton";
 
 type ClaimKind = "claim" | "correction" | "removal";
 
@@ -21,6 +24,14 @@ const CLAIM_LABEL: Record<ClaimKind, string> = {
 };
 
 export default function RestoPage() {
+  return (
+    <FavoritesProvider kind="restaurant">
+      <Resto />
+    </FavoritesProvider>
+  );
+}
+
+function Resto() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { userId } = useSession();
@@ -46,7 +57,7 @@ export default function RestoPage() {
         .from("restaurants").select("*").eq("id", id).single();
       if (data) {
         setR(data as Restaurant);
-        recordView(`/resto/${id}`);
+        recordView(`/food/resto/${id}`);
         loadRatings();
         return;
       }
@@ -109,7 +120,7 @@ export default function RestoPage() {
       <SiteHeader />
       <div className="container" style={{ padding: "60px 16px", textAlign: "center" }}>
         <p style={{ fontWeight: 700 }}>Cette adresse n&apos;est plus référencée.</p>
-        <Link href="/">← Tous les restaurants</Link>
+        <Link href="/food">← Tous les restaurants</Link>
       </div>
     </>
   );
@@ -119,7 +130,7 @@ export default function RestoPage() {
       <div className="container" style={{ padding: "60px 16px", textAlign: "center", maxWidth: 480 }}>
         <p style={{ fontWeight: 700, color: "var(--danger)" }}>Impossible d&apos;afficher cette fiche.</p>
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{loadError}</p>
-        <Link href="/">← Tous les restaurants</Link>
+        <Link href="/food">← Tous les restaurants</Link>
       </div>
     </>
   );
@@ -143,9 +154,10 @@ export default function RestoPage() {
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 110, maxWidth: 740, flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-          <Link href="/" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Tous les restaurants</Link>
+          <Link href="/food" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Tous les restaurants</Link>
+          <span style={{ marginLeft: "auto" }}><FavoriteButton targetId={r.id} variant="plain" label /></span>
           {userId && r.owner_id === userId && (
-            <Link href={`/resto/${r.id}/modifier`} className="btn btn-outline-gold"
+            <Link href={`/food/resto/${r.id}/modifier`} className="btn btn-outline-gold"
               style={{ color: "var(--gold-deep)", borderColor: "var(--border-input)", fontSize: 12.5, padding: "8px 14px", minHeight: 36 }}>
               Modifier ma fiche
             </Link>
@@ -155,7 +167,7 @@ export default function RestoPage() {
         <div className="panel gold-frame" style={{ marginTop: 12, padding: "22px 18px", textAlign: "center",
           background: "linear-gradient(150deg, var(--surface), var(--cream))" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-            <Mark size={72} color="var(--gold-deep)" />
+            <CuisineIcon cuisine={r.cuisine} size={84} />
           </div>
           <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>{r.name}</h1>
           <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
@@ -234,12 +246,17 @@ export default function RestoPage() {
           </div>
         </section>
 
-        {(r.instagram || r.website) && (
+        {(r.instagram || r.facebook || r.website) && (
           <div style={{ display: "flex", gap: 14, marginTop: 14, flexWrap: "wrap", fontSize: 13 }}>
             {r.instagram && (
               <a href={`https://instagram.com/${r.instagram.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
                 style={{ color: "var(--gold-deep)", fontWeight: 600 }}>
                 Instagram ↗
+              </a>
+            )}
+            {r.facebook && (
+              <a href={r.facebook} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold-deep)", fontWeight: 600 }}>
+                Facebook ↗
               </a>
             )}
             {r.website && (

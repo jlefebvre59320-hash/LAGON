@@ -1,11 +1,14 @@
 "use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CURRENT_SITE_KEY, SITES, SITE_ORDER } from "@/lib/sites";
+import { SITES, SITE_ORDER, siteFromPath } from "@/lib/sites";
 
-/* Bascule entre les sites de la famille St Barth. Un site pas encore en ligne
-   (url null) s'affiche « bientôt » et n'est pas cliquable : mieux vaut une
-   promesse assumée qu'un lien mort. */
+/* Bascule entre les sections de la famille St Barth — navigation interne :
+   tout vit dans la même application, sous la même adresse. */
 export default function SiteSwitcher() {
+  const pathname = usePathname();
+  const currentKey = siteFromPath(pathname ?? "/");
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -74,7 +77,7 @@ export default function SiteSwitcher() {
           {SITE_ORDER.map((k) => (
             <span key={k} style={{
               width: 6, height: 6, borderRadius: 999, background: SITES[k].dot,
-              opacity: k === CURRENT_SITE_KEY ? 1 : 0.45,
+              opacity: k === currentKey ? 1 : 0.45,
             }} />
           ))}
         </span>
@@ -103,11 +106,21 @@ export default function SiteSwitcher() {
 
           {SITE_ORDER.map((k) => {
             const s = SITES[k];
-            const current = k === CURRENT_SITE_KEY;
-            const soon = !s.url && !current;
+            const current = k === currentKey;
 
-            const row = (
-              <>
+            return (
+              <Link
+                key={k}
+                href={s.path}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                style={{
+                  display: "flex", gap: 10, alignItems: "flex-start",
+                  padding: "12px 14px", textDecoration: "none",
+                  borderTop: k === SITE_ORDER[0] ? "none" : "1px solid var(--border)",
+                  background: current ? "var(--cream)" : "transparent",
+                }}
+              >
                 <span style={{ width: 9, height: 9, borderRadius: 999, background: s.dot, flex: "0 0 auto", marginTop: 5 }} />
                 <span style={{ minWidth: 0, flex: 1 }}>
                   <span style={{
@@ -119,28 +132,13 @@ export default function SiteSwitcher() {
                   <span style={{ display: "block", fontSize: 12, color: "var(--text-muted)" }}>{s.baseline}</span>
                 </span>
                 {current && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--gold-deep)", marginTop: 4 }}>Vous êtes ici</span>}
-                {soon && <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>bientôt</span>}
-              </>
-            );
-
-            const base: React.CSSProperties = {
-              display: "flex", gap: 10, alignItems: "flex-start",
-              padding: "12px 14px", textDecoration: "none",
-              borderTop: k === SITE_ORDER[0] ? "none" : "1px solid var(--border)",
-              background: current ? "var(--cream)" : "transparent",
-            };
-
-            return s.url && !current ? (
-              <a key={k} href={s.url} role="menuitem" style={base}>{row}</a>
-            ) : (
-              <div key={k} role="menuitem" aria-disabled={soon} style={{ ...base, opacity: soon ? 0.62 : 1 }}>
-                {row}
-              </div>
+                {!s.ready && !current && <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>bientôt</span>}
+              </Link>
             );
           })}
 
           <div style={{ padding: "10px 14px", fontSize: 11.5, color: "var(--text-muted)", background: "var(--cream)" }}>
-            Un compte unique, valable sur les trois sites.
+            Une seule adresse, un seul compte — trois univers.
           </div>
         </div>
       )}
@@ -151,24 +149,23 @@ export default function SiteSwitcher() {
 /* Rappel discret en pied de page : le sélecteur du bandeau ne se voit que si on
    le cherche. */
 export function SiteFamilyFooter() {
+  const pathname = usePathname();
+  const currentKey = siteFromPath(pathname ?? "/");
   return (
     <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", fontSize: 12 }}>
       {SITE_ORDER.map((k) => {
         const s = SITES[k];
-        const current = k === CURRENT_SITE_KEY;
-        const content = (
-          <>
+        const current = k === currentKey;
+        return current ? (
+          <span key={k} style={{ color: "var(--gold)", fontWeight: 700 }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: s.dot, display: "inline-block", marginRight: 6 }} />
             {s.name}
-            {!s.url && !current ? " (bientôt)" : ""}
-          </>
-        );
-        return s.url && !current ? (
-          <a key={k} href={s.url} style={{ color: "rgba(246,242,233,.8)" }}>{content}</a>
-        ) : (
-          <span key={k} style={{ color: current ? "var(--gold)" : "rgba(246,242,233,.5)", fontWeight: current ? 700 : 400 }}>
-            {content}
           </span>
+        ) : (
+          <Link key={k} href={s.path} style={{ color: "rgba(246,242,233,.8)" }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: s.dot, display: "inline-block", marginRight: 6 }} />
+            {s.name}{!s.ready ? " (bientôt)" : ""}
+          </Link>
         );
       })}
     </div>

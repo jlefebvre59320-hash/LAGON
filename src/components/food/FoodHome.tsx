@@ -7,9 +7,20 @@ import { AccountButton, Brand, Mark } from "@/components/Brand";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import RestaurantCard from "@/components/food/RestaurantCard";
 import { recordView } from "@/lib/analytics";
-import { SITE } from "@/lib/sites";
+import { SITES } from "@/lib/sites";
+import { FavoritesProvider } from "@/lib/favorites";
+
+const SITE = SITES.food;
 
 export default function FoodHome() {
+  return (
+    <FavoritesProvider kind="restaurant">
+      <FoodHomeInner />
+    </FavoritesProvider>
+  );
+}
+
+function FoodHomeInner() {
   const [query, setQuery] = useState("");
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [quartier, setQuartier] = useState<string | null>(null);
@@ -20,7 +31,7 @@ export default function FoodHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { recordView("/"); }, []);
+  useEffect(() => { recordView("/food"); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +76,7 @@ export default function FoodHome() {
       <header className="site-header">
         <div className="container" style={{ paddingTop: 16 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-            <Brand />
+            <Brand site="food" />
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
               <SiteSwitcher />
               <AccountButton />
@@ -83,29 +94,32 @@ export default function FoodHome() {
             />
           </div>
 
-          <nav className="tabs" aria-label="Cuisines">
-            <button
-              className={`tab${!cuisine ? " tab-active" : ""}`}
-              onClick={() => setCuisine(null)}
-            >
-              Toutes
-            </button>
-            {CUISINES.map((c) => (
-              <button
-                key={c}
-                className={`tab${cuisine === c ? " tab-active" : ""}`}
-                onClick={() => setCuisine(cuisine === c ? null : c)}
-              >
-                {c}
-              </button>
-            ))}
-          </nav>
         </div>
         <div className="header-accent" />
       </header>
 
       <div className="container">
         <div className="filter-row">
+          <select
+            className="input"
+            value={cuisine ?? ""}
+            onChange={(e) => setCuisine(e.target.value || null)}
+            aria-label="Type de cuisine"
+            style={{ width: "auto", minHeight: 40, padding: "8px 34px 8px 14px", borderRadius: 999, fontSize: 14, flex: "0 0 auto", fontWeight: 600 }}
+          >
+            <option value="">Toutes les cuisines</option>
+            {CUISINES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select
+            className="input"
+            value={quartier ?? ""}
+            onChange={(e) => setQuartier(e.target.value || null)}
+            aria-label="Quartier"
+            style={{ width: "auto", minHeight: 40, padding: "8px 34px 8px 14px", borderRadius: 999, fontSize: 14, flex: "0 0 auto", fontWeight: 600 }}
+          >
+            <option value="">Tous les quartiers</option>
+            {QUARTIERS.map((q) => <option key={q} value={q}>{q}</option>)}
+          </select>
           <button
             className="chip"
             onClick={() => setOpenOnly(!openOnly)}
@@ -122,17 +136,6 @@ export default function FoodHome() {
           >
             À emporter
           </button>
-          <span style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 4px", flex: "0 0 auto" }} />
-          {QUARTIERS.map((q) => (
-            <button
-              key={q}
-              className="chip"
-              onClick={() => setQuartier(quartier === q ? null : q)}
-              style={quartier === q ? { background: "var(--green)", borderColor: "var(--green)", color: "#fff" } : undefined}
-            >
-              {q}
-            </button>
-          ))}
         </div>
       </div>
 

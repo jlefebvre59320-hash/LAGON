@@ -171,7 +171,7 @@ function Annonce() {
             {l.profile?.display_name ? ` · par ${l.profile.display_name}` : ""}
           </span>
           <span style={{ marginLeft: "auto" }}>
-            <FavoriteButton listingId={l.id} variant="plain" label />
+            <FavoriteButton targetId={l.id} variant="plain" label />
           </span>
         </div>
 
