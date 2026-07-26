@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
-  DAY_LABEL, DAY_ORDER, formatDay, hasHours, isOpenNow, islandNow,
-  mapsUrl, priceLabel, type Restaurant,
+  DAY_LABEL, DAY_ORDER, MIN_RATINGS, formatDay, hasHours, isOpenNow, islandNow,
+  mapsUrl, priceLabel, type RatingSummary, type Restaurant,
 } from "@/lib/food";
+import { StarInput, StarRow } from "@/components/food/Stars";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { recordView } from "@/lib/analytics";
 import { useSession } from "@/lib/session";
@@ -21,10 +22,15 @@ const CLAIM_LABEL: Record<ClaimKind, string> = {
 
 export default function RestoPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { userId } = useSession();
   const [r, setR] = useState<Restaurant | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [summary, setSummary] = useState<RatingSummary | null>(null);
+  const [myRating, setMyRating] = useState<number | null>(null);
+  const [rateBusy, setRateBusy] = useState(false);
 
   const [claimOpen, setClaimOpen] = useState(false);
   const [kind, setKind] = useState<ClaimKind>("claim");
@@ -41,12 +47,45 @@ export default function RestoPage() {
       if (data) {
         setR(data as Restaurant);
         recordView(`/resto/${id}`);
+        loadRatings();
         return;
       }
       if (error && error.code !== "PGRST116") setLoadError(error.message);
       else setNotFound(true);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  async function loadRatings() {
+    const sb = supabase();
+    const [{ data: sums }, { data: mine }] = await Promise.all([
+      sb.rpc("ratings_summary"),
+      // RLS : cette lecture ne rend que la note de l'appelant, ou rien.
+      sb.from("restaurant_ratings").select("rating").eq("restaurant_id", id).maybeSingle(),
+    ]);
+    const row = ((sums as ({ restaurant_id: string } & RatingSummary)[]) ?? [])
+      .find((s) => s.restaurant_id === id);
+    setSummary(row ? { avg_rating: Number(row.avg_rating), votes: Number(row.votes) } : null);
+    setMyRating((mine as { rating: number } | null)?.rating ?? null);
+  }
+
+  async function rate(n: number) {
+    if (rateBusy) return;
+    const { data: session } = await supabase().auth.getSession();
+    if (!session.session) { router.push("/connexion"); return; }
+    setRateBusy(true);
+    const prev = myRating;
+    setMyRating(n);
+    const { error } = await supabase().from("restaurant_ratings").upsert({
+      restaurant_id: id,
+      user_id: session.session.user.id,
+      rating: n,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) setMyRating(prev);
+    else loadRatings();
+    setRateBusy(false);
+  }
 
   async function sendClaim() {
     if (message.trim().length < 3 || contact.trim().length < 3 || sending) return;
@@ -125,6 +164,13 @@ export default function RestoPage() {
             <Badge>{priceLabel(r.price_range)}</Badge>
             {r.takeaway && <Badge>À emporter</Badge>}
           </div>
+          {summary && summary.votes >= MIN_RATINGS && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 10 }}>
+              <StarRow value={summary.avg_rating} size={17} />
+              <span style={{ fontSize: 13.5, fontWeight: 700 }}>{summary.avg_rating.toLocaleString("fr-FR")}</span>
+              <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>({summary.votes} avis)</span>
+            </div>
+          )}
           {known && (
             <div style={{ marginTop: 10, fontSize: 13.5, fontWeight: 700, color: open ? "#1f7a4d" : "var(--text-muted)" }}>
               {open ? "Ouvert en ce moment" : "Fermé en ce moment"}
@@ -133,6 +179,23 @@ export default function RestoPage() {
               </span>
             </div>
           )}
+        </div>
+
+        {/* Noter : un geste, modifiable, réservé aux comptes connectés. */}
+        <div className="panel" style={{ marginTop: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 13.5, fontWeight: 700 }}>
+              {myRating ? "Votre note" : "Notez cet établissement"}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
+              {userId
+                ? myRating ? "Appuyez pour la modifier." : "Une note par compte, modifiable à tout moment."
+                : "Connectez-vous pour noter."}
+              {summary && summary.votes > 0 && summary.votes < MIN_RATINGS &&
+                ` La moyenne s'affichera à partir de ${MIN_RATINGS} avis.`}
+            </div>
+          </div>
+          <StarInput value={myRating} onRate={rate} disabled={rateBusy} />
         </div>
 
         {r.description && (
