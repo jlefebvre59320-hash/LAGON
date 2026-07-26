@@ -56,6 +56,7 @@ export default function SiteSwitcher() {
       <button
         ref={trigger}
         type="button"
+        className="sw-btn"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -78,7 +79,7 @@ export default function SiteSwitcher() {
           ))}
         </span>
         <span className="only-desktop" style={{ whiteSpace: "nowrap" }}>Nos sites</span>
-        <span aria-hidden="true" style={{ fontSize: 9, opacity: 0.75 }}>{open ? "▲" : "▼"}</span>
+        <span className="sw-caret" aria-hidden="true" style={{ fontSize: 9, opacity: 0.75 }}>{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (

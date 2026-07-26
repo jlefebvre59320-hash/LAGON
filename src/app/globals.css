@@ -146,17 +146,26 @@ h1, h2, h3 {
   color: var(--cream);
   text-decoration: none;
   display: block;
-  /* Un nom de marque ne se coupe pas en deux */
+  /* Un nom de marque ne se coupe pas en deux : il s'abrège d'une ellipse
+     quand la place manque, plutôt que de filer sous les boutons. */
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 @media (min-width: 720px) { .wordmark { font-size: 30px; } }
 
 /* Petits téléphones : le bandeau porte aussi le sélecteur de site et l'accès au
    compte. La marque passe en version resserrée pour que tout tienne sur une ligne. */
 @media (max-width: 479px) {
-  .brand-lockup { gap: 9px; }
-  .brand-lockup svg { width: 52px; height: 28px; }
-  .wordmark { font-size: 20.5px; }
+  .brand-lockup { gap: 8px; }
+  .brand-lockup svg { width: 46px; height: 25px; }
+  .wordmark { font-size: 19px; }
+  /* Sélecteur en pastilles seules et boutons resserrés : « St Barth Food »,
+     le plus long nom de la famille, doit tenir sans ellipse à 390 px. */
+  .sw-caret { display: none; }
+  .sw-btn { padding: 9px 9px !important; }
+  .acct-btn { padding: 10px 12px !important; font-size: 12.5px !important; }
 }
 
 .overline {
@@ -175,7 +184,9 @@ h1, h2, h3 {
   gap: 12px;
   text-decoration: none;
   min-width: 0;
+  flex: 1 1 auto;
 }
+.brand-lockup > span { min-width: 0; }
 
 /* Baseline du logo : masquée sur les écrans étroits, où le bouton de compte
    la ferait passer à la ligne et casserait le verrouillage typographique. */

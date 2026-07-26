@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useSession } from "@/lib/session";
-import { SITE } from "@/lib/sites";
+import { CURRENT_SITE_KEY, SITE } from "@/lib/sites";
 import SiteSwitcher from "@/components/SiteSwitcher";
 
 /* Contour de Saint-Barthélemy, tracé vectoriel du logo.
@@ -87,10 +87,10 @@ export function AccountButton() {
   return (
     <Link
       href={userId ? "/mon-espace" : "/connexion"}
-      className="btn btn-outline-gold"
+      className="btn btn-outline-gold acct-btn"
       style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
     >
-      {userId ? "Mon espace" : "Se connecter"}
+      {userId ? "Mon espace" : "Connexion"}
     </Link>
   );
 }
@@ -105,9 +105,12 @@ export function SiteHeader({ accent = "var(--gold)" }: { accent?: string }) {
       >
         <Brand compact />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link href="/deposer" className="btn btn-gold only-desktop" style={{ fontSize: 13.5 }}>
-            + Déposer une annonce
-          </Link>
+          {/* Le dépôt d'annonce n'a pas de sens sur l'annuaire des restaurants */}
+          {CURRENT_SITE_KEY !== "food" && (
+            <Link href="/deposer" className="btn btn-gold only-desktop" style={{ fontSize: 13.5 }}>
+              + Déposer une annonce
+            </Link>
+          )}
           <SiteSwitcher />
           <AccountButton />
         </div>

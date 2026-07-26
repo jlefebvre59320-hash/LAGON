@@ -1,7 +1,32 @@
-# Ti Kanal — Échanges & petites annonces · St Barth
+# La famille St Barth — Ti Kanal · St Barth Event · St Barth Food
+
+Un seul code, une charte commune, trois sites : les annonces (Ti Kanal),
+l'agenda (St Barth Event, à venir) et les restaurants (St Barth Food).
+Next.js 15 (App Router) + Supabase (Postgres, Auth, Storage) — base commune,
+compte unique valable sur les trois sites.
+
+Le site servi par un déploiement est choisi par la variable `NEXT_PUBLIC_SITE`
+(`tikanal` par défaut, `event`, `food`) : un projet Vercel par domaine, tous
+branchés sur ce dépôt. Ajouter un site = une entrée dans `src/lib/sites.ts` +
+un bloc `:root[data-site="…"]` dans `globals.css`.
+
+## Ti Kanal — petites annonces
 
 4 univers : Véhicules & Nautisme, Immobilier, Emploi & Services, Achats & Ventes.
-Next.js 15 (App Router) + Supabase (Postgres, Auth par lien magique, Storage photos).
+
+## St Barth Food — annuaire des restaurants
+
+Présentation et mise en relation, sans livraison ni paiement : cartes avec badge
+ouvert/fermé calculé sur l'heure de l'île, filtres cuisine / quartier / ouvert
+maintenant / à emporter, fiche avec horaires, itinéraire et boutons Appeler /
+WhatsApp. Pas de photos en v1 — on ne publie que des faits (nom, adresse,
+horaires…), jamais les visuels d'un établissement sans son accord.
+
+Chaque fiche porte un lien « C'est votre établissement ? » : revendication,
+correction ou demande de retrait, sans compte requis (`restaurant_claims`,
+lisible par l'administration). Les fiches sont pré-remplies par l'administration
+(`restaurants.owner_id` vide), puis remises au restaurateur quand il les
+revendique.
 
 ## Charte graphique
 
@@ -46,8 +71,8 @@ presque entièrement téléphone) :
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
 - Dans **SQL Editor**, exécuter dans l'ordre `supabase/migrations/0001_init.sql`,
-  `0002_auth_password.sql`, `0003_intent.sql`, `0004_favoris_stats.sql` puis
-  `0005_profiles_colonnes.sql`.
+  `0002_auth_password.sql`, `0003_intent.sql`, `0004_favoris_stats.sql`,
+  `0005_profiles_colonnes.sql` puis `0006_restaurants.sql`.
   Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
   Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
@@ -132,6 +157,12 @@ supabase/migrations/0002_auth_password.sql  Nom affiché repris à l'inscription
 supabase/migrations/0003_intent.sql Sens de l'annonce : proposition ou recherche
 supabase/migrations/0004_favoris_stats.sql  Favoris, fréquentation, droits admin
 supabase/migrations/0005_profiles_colonnes.sql  Lecture de profiles colonne par colonne
+supabase/migrations/0006_restaurants.sql    Restaurants + demandes des établissements
+src/lib/sites.ts                    La famille de sites (marque, couleurs, URLs)
+src/lib/food.ts                     Cuisines, quartiers, horaires (heure de l'île)
+src/components/SiteSwitcher.tsx     Bascule entre les sites de la famille
+src/components/food/                Accueil et cartes St Barth Food
+src/app/resto/[id]/page.tsx         Fiche restaurant + revendication
 src/lib/session.ts                  Session courante (hook useSession)
 src/lib/favorites.tsx               Favoris chargés une fois pour toute la page
 src/lib/analytics.ts                Enregistrement des pages vues
