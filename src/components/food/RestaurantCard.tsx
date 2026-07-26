@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { Mark } from "@/components/Brand";
-import { isOpenNow, hasHours, priceLabel, type Restaurant } from "@/lib/food";
+import { MIN_RATINGS, isOpenNow, hasHours, priceLabel, type Restaurant, type RatingSummary } from "@/lib/food";
+import { StarRow } from "@/components/food/Stars";
 
 /* Pas de photos en v1 — choix juridique assumé : on n'affiche que des faits,
    jamais les visuels des établissements sans leur accord. Le fond varie
@@ -18,9 +19,10 @@ const tintFor = (id: string) => {
   return TINTS[h % TINTS.length];
 };
 
-export default function RestaurantCard({ r }: { r: Restaurant }) {
+export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: RatingSummary }) {
   const known = hasHours(r.hours);
   const open = known && isOpenNow(r.hours);
+  const rated = rating && rating.votes >= MIN_RATINGS;
 
   return (
     <Link href={`/resto/${r.id}`} className="card">
@@ -64,6 +66,14 @@ export default function RestaurantCard({ r }: { r: Restaurant }) {
           {r.quartier} · <span style={{ fontWeight: 700, color: "var(--gold-deep)" }}>{priceLabel(r.price_range)}</span>
           {r.takeaway ? " · À emporter" : ""}
         </span>
+        {rated && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <StarRow value={rating.avg_rating} size={13} />
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              {rating.avg_rating.toLocaleString("fr-FR")} ({rating.votes})
+            </span>
+          </span>
+        )}
       </div>
     </Link>
   );

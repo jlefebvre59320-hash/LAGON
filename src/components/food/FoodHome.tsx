@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { CUISINES, QUARTIERS, isOpenNow, hasHours, type Restaurant } from "@/lib/food";
+import { CUISINES, QUARTIERS, isOpenNow, hasHours, type Restaurant, type RatingSummary } from "@/lib/food";
 import { AccountButton, Brand, Mark } from "@/components/Brand";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import RestaurantCard from "@/components/food/RestaurantCard";
@@ -16,6 +16,7 @@ export default function FoodHome() {
   const [openOnly, setOpenOnly] = useState(false);
   const [takeaway, setTakeaway] = useState(false);
   const [all, setAll] = useState<Restaurant[]>([]);
+  const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +34,15 @@ export default function FoodHome() {
       if (error) setError("Impossible de charger les restaurants. Réessayez.");
       else setAll((data as Restaurant[]) ?? []);
       setLoading(false);
+
+      // Les moyennes arrivent après la liste : elles habillent, elles ne bloquent pas.
+      const { data: sums } = await supabase().rpc("ratings_summary");
+      if (cancelled || !sums) return;
+      const map: Record<string, RatingSummary> = {};
+      for (const s of sums as ({ restaurant_id: string } & RatingSummary)[]) {
+        map[s.restaurant_id] = { avg_rating: Number(s.avg_rating), votes: Number(s.votes) };
+      }
+      setRatings(map);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -160,7 +170,7 @@ export default function FoodHome() {
           </div>
         ) : (
           <div className="grid">
-            {shown.map((r) => <RestaurantCard key={r.id} r={r} />)}
+            {shown.map((r) => <RestaurantCard key={r.id} r={r} rating={ratings[r.id]} />)}
           </div>
         )}
 
@@ -182,6 +192,15 @@ export default function FoodHome() {
           <div style={{ marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(201,168,106,.25)", width: "100%", maxWidth: 460 }}>
             <SiteFamilyFooter />
           </div>
+          {/* Attribution requise par la licence ODbL : une partie des fiches
+              est initialement issue d'OpenStreetMap. */}
+          <p style={{ fontSize: 10.5, margin: "6px 0 0", color: "rgba(246,242,233,.5)" }}>
+            Données initiales partiellement issues d&apos;
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer"
+              style={{ color: "inherit" }}>
+              © les contributeurs OpenStreetMap
+            </a>{" "}(ODbL)
+          </p>
         </div>
       </footer>
     </div>

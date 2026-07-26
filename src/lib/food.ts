@@ -53,6 +53,14 @@ export const QUARTIERS = [
 
 export const priceLabel = (n: 1 | 2 | 3) => "€".repeat(n);
 
+/* ---------- Notes ---------- */
+
+export type RatingSummary = { avg_rating: number; votes: number };
+
+/* En dessous de ce nombre de votes, la moyenne ne s'affiche pas : une seule
+   note à 1 étoile ne doit pas pouvoir exécuter un restaurant. */
+export const MIN_RATINGS = 3;
+
 /* ---------- Horaires ---------- */
 
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
