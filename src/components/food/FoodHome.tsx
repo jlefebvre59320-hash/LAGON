@@ -182,6 +182,15 @@ export default function FoodHome() {
           <div style={{ marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(201,168,106,.25)", width: "100%", maxWidth: 460 }}>
             <SiteFamilyFooter />
           </div>
+          {/* Attribution requise par la licence ODbL : une partie des fiches
+              est initialement issue d'OpenStreetMap. */}
+          <p style={{ fontSize: 10.5, margin: "6px 0 0", color: "rgba(246,242,233,.5)" }}>
+            Données initiales partiellement issues d&apos;
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer"
+              style={{ color: "inherit" }}>
+              © les contributeurs OpenStreetMap
+            </a>{" "}(ODbL)
+          </p>
         </div>
       </footer>
     </div>

@@ -1,0 +1,66 @@
+-- ============================================================
+-- St Barth Food — fiches pré-remplies depuis OpenStreetMap
+-- Données © les contributeurs OpenStreetMap, licence ODbL
+-- (export overpass-turbo du 2026-07-26).
+-- À RELIRE avant exécution : établissements fermés possibles,
+-- cuisines « À classer » à corriger, quartiers déduits de la
+-- position. Exécuter UNE SEULE fois (pas de garde-fou doublon).
+-- ============================================================
+
+insert into public.restaurants
+  (name, cuisine, quartier, address, phone, instagram, website, price_range, takeaway, hours)
+values
+  ('Chez Yvon', 'À classer', 'Anse des Cayes', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Lavazza', 'Café & Brunch', 'Anse des Cayes', '', null, null, null, 1, true, '{}'::jsonb),
+  ('Ristorante Fellini', 'Italien', 'Anse des Cayes', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Les Bananiers', 'Français', 'Colombier', 'D210', null, null, null, 2, false, '{}'::jsonb),
+  ('JPizza (La Saintoise)', 'Pizza', 'Corossol', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Nyama', 'Sushi & Asiatique', 'Corossol', '183 Route de Corossol', null, null, null, 2, false, '{}'::jsonb),
+  ('La Langouste', 'À classer', 'Flamands', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Wishing Well', 'Créole & Caribéen', 'Flamands', 'D210', null, null, null, 2, false, '{}'::jsonb),
+  ('Bagatelle', 'Français', 'Gustavia', 'Rue Samuel Fahlberg', null, null, null, 2, false, '{}'::jsonb),
+  ('Bart''s Food Lounge', 'À classer', 'Gustavia', 'Rue du Général de Gaulle', null, null, null, 2, false, '{}'::jsonb),
+  ('Baz Bar (Le Bête à Z''Ailes)', 'Sushi & Asiatique', 'Gustavia', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Black Ginger', 'Sushi & Asiatique', 'Gustavia', '', '+590590292103', null, null, 2, false, '{}'::jsonb),
+  ('Bonito', 'À classer', 'Gustavia', '4 Rue Lubin Brin', null, null, null, 2, false, '{}'::jsonb),
+  ('Burger Palace', 'Burgers & Snack', 'Gustavia', '', null, null, null, 1, false, '{}'::jsonb),
+  ('Eddy''s', 'Français', 'Gustavia', '12 Rue Samuel Fahlberg', null, null, null, 2, false, '{}'::jsonb),
+  ('FishCorner', 'Poissons & Fruits de mer', 'Gustavia', 'Rue de la République', '+590590513633', 'fishcornerstbarth', null, 2, false, '{"mon": [["08:00", "18:00"]], "tue": [["08:00", "18:00"]], "wed": [["08:00", "18:00"]], "thu": [["08:00", "18:00"]], "fri": [["08:00", "18:00"]], "sat": [["08:00", "18:00"]]}'::jsonb),
+  ('L''Isoletta', 'À classer', 'Gustavia', 'Rue du Roi Oscar II', '+590590520202', null, null, 2, false, '{}'::jsonb),
+  ('La Cantina', 'Tapas & Cocktails', 'Gustavia', 'Rue du Bord de Mer', null, null, null, 2, false, '{}'::jsonb),
+  ('La Crêperie', 'Français', 'Gustavia', '', null, null, 'https://creperiestbarth.com', 2, false, '{}'::jsonb),
+  ('La Guérite', 'Français', 'Gustavia', '1 Rue de Pitéa', '+590590277183', null, 'https://www.restaurantlaguerite.com/saint-barth-gustavia/', 2, false, '{}'::jsonb),
+  ('La Petite Plage', 'À classer', 'Gustavia', '', null, null, null, 2, false, '{}'::jsonb),
+  ('La Quintessence', 'Pizza', 'Gustavia', '', null, null, null, 1, false, '{}'::jsonb),
+  ('Laventura', 'Français', 'Gustavia', '13 Rue Samuel Fahlberg', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Bar de L''Oubli', 'À classer', 'Gustavia', 'Rue de la République', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Café', 'Café & Brunch', 'Gustavia', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Carré', 'Tapas & Cocktails', 'Gustavia', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Petit Deauville', 'À classer', 'Gustavia', 'Rue de la République', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Repaire', 'À classer', 'Gustavia', 'Rue de la République', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Sélect', 'Tapas & Cocktails', 'Gustavia', 'Rue du Général de Gaulle', null, null, null, 2, false, '{}'::jsonb),
+  ('Megumi Sushi', 'Sushi & Asiatique', 'Gustavia', '27 Rue Jeanne d''Arc', '+590590291313', null, 'https://www.megumi.fr/', 2, false, '{"mon": [["18:00", "23:00"]], "tue": [["18:00", "23:00"]], "wed": [["18:00", "23:00"]], "thu": [["18:00", "23:00"]], "fri": [["18:00", "23:00"]], "sat": [["18:00", "23:00"]], "sun": [["18:00", "23:00"]]}'::jsonb),
+  ('Natural Delights', 'Glaces & Desserts', 'Gustavia', '20 Rue du Roi Oscar II', null, null, null, 2, false, '{}'::jsonb),
+  ('Restaurant Victoria', 'À classer', 'Gustavia', 'Chemin Communal N. dit de Lurin', null, null, null, 2, false, '{}'::jsonb),
+  ('Ristorante L''Isola', 'Italien', 'Gustavia', '33 Rue du Roi Oscar II', '+590590510005', null, 'https://www.lisolastbarth.com', 2, false, '{}'::jsonb),
+  ('Sayolita Bar', 'Tapas & Cocktails', 'Gustavia', 'D209', '+590590271330', null, null, 2, false, '{}'::jsonb),
+  ('Shellona', 'À classer', 'Gustavia', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Spam To Go', 'Burgers & Snack', 'Gustavia', '19 Rue Victor Schoelcher', null, null, null, 1, true, '{}'::jsonb),
+  ('Victoire', 'À classer', 'Gustavia', 'Rue du Général de Gaulle', null, null, null, 2, false, '{}'::jsonb),
+  ('Jojo Burger', 'Burgers & Snack', 'Lorient', '', null, null, null, 2, true, '{"mon": [["10:00", "22:30"]], "tue": [["10:00", "22:30"]], "wed": [["10:00", "22:30"]], "thu": [["10:00", "22:30"]], "fri": [["10:00", "22:30"]], "sat": [["10:00", "22:30"]], "sun": [["10:00", "22:30"]]}'::jsonb),
+  ('Le bouchon', 'À classer', 'Lorient', '', '+590590277939', null, null, 2, false, '{}'::jsonb),
+  ('Les Artistes', 'À classer', 'Lorient', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Restaurant O''Corail', 'Créole & Caribéen', 'Marigot', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Ti St. Barth', 'À classer', 'Pointe Milou', '', null, null, 'http://www.letistbarth.com', 2, false, '{}'::jsonb),
+  ('Sella', 'Français', 'Public', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Grain de Sel', 'Créole & Caribéen', 'Saline', '', '+590590524605', null, null, 2, false, '{}'::jsonb),
+  ('Tamarin', 'À classer', 'Saline', 'Voie Communale N. dit de Saline', '+590590292774', null, 'http://www.tamarinstbarth.com/', 2, false, '{}'::jsonb),
+  ('Bio', 'Grillades & Viandes', 'St-Jean', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Lavazza', 'Café & Brunch', 'St-Jean', '', null, null, null, 1, true, '{}'::jsonb),
+  ('Le Glacier', 'Tapas & Cocktails', 'St-Jean', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Le Piment', 'À classer', 'St-Jean', '', null, null, null, 2, true, '{}'::jsonb),
+  ('Mayas to go', 'À classer', 'St-Jean', 'D209', null, null, null, 2, true, '{}'::jsonb),
+  ('Nikki Beach St-Barth', 'À classer', 'St-Jean', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Restaurant Le Diamant', 'Français', 'St-Jean', '', null, null, null, 2, false, '{}'::jsonb),
+  ('The Hideaway', 'À classer', 'St-Jean', '', null, null, null, 2, false, '{}'::jsonb),
+  ('Restaurant Le Gaïac', 'À classer', 'Toiny', '', null, null, null, 2, false, '{}'::jsonb);

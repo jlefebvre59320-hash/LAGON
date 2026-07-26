@@ -28,6 +28,12 @@ lisible par l'administration). Les fiches sont pré-remplies par l'administratio
 (`restaurants.owner_id` vide), puis remises au restaurateur quand il les
 revendique.
 
+Amorçage : `supabase/seed_restaurants_osm.sql` contient ~54 fiches extraites
+d'OpenStreetMap (licence ODbL — l'attribution obligatoire est dans le pied de
+page du site food). **À relire avant exécution** (établissements fermés
+possibles, cuisines « À classer », quartiers déduits de la position), et à
+exécuter une seule fois : le script n'a pas de garde-fou anti-doublon.
+
 ## Charte graphique
 
 Reprise du logo Ti Kanal : contour de Saint-Barthélemy en filet or, sérif haute
