@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
 import { SiteHeader, Mark } from "@/components/Brand";
+import { compressImage } from "@/lib/images";
 
 const MAX_PHOTOS = 5;
 
@@ -100,9 +101,11 @@ export default function Deposer() {
         .single();
       if (insErr || !listing) throw insErr ?? new Error("insert failed");
 
-      // 3. Uploader les photos dans le dossier de l'utilisateur
+      // 3. Compresser puis uploader les photos dans le dossier de l'utilisateur.
+      // Sans compression, une photo de téléphone dépasse souvent la limite du
+      // bucket (5 Mo) et le dépôt perd ses images sans explication.
       for (let i = 0; i < files.length; i++) {
-        const f = files[i];
+        const f = await compressImage(files[i]);
         const ext = f.name.split(".").pop()?.toLowerCase() || "jpg";
         const key = `${userId}/${listing.id}/${i}.${ext}`;
         const { error: upErr } = await supabase().storage.from("photos").upload(key, f, { upsert: true });

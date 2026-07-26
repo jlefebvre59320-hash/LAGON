@@ -124,6 +124,42 @@ function Home() {
         <div className="header-accent" style={{ background: accent }} />
       </header>
 
+      {/* Les deux autres univers de la famille : les trois points du bandeau
+          sont discrets, ces tuiles font découvrir. Chacune porte data-site
+          pour peindre ses propres couleurs. Masquées dès qu'on quitte
+          l'accueil : place au parcours d'annonces. */}
+      {tab === "home" && (
+        <div className="container" style={{ paddingTop: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
+            {([SITES.food, SITES.event] as const).map((s) => (
+              <Link
+                key={s.key}
+                href={s.path}
+                data-site={s.key}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  background: "linear-gradient(120deg, var(--green-700), var(--green))",
+                  border: "1px solid color-mix(in srgb, var(--gold) 40%, transparent)",
+                  borderRadius: 14, padding: "12px 16px", textDecoration: "none",
+                  color: "var(--cream)",
+                }}
+              >
+                <Mark size={44} color="var(--gold)" />
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ display: "block", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 16.5 }}>
+                    {s.name}
+                  </span>
+                  <span style={{ display: "block", fontSize: 12, color: "var(--gold-light)" }}>
+                    {s.baseline}{!s.ready ? " · bientôt" : ""}
+                  </span>
+                </span>
+                <span aria-hidden="true" style={{ color: "var(--gold)", fontSize: 18 }}>→</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="container">
         {m && (
           <div className="filter-row">
