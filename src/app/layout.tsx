@@ -1,19 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { CURRENT_SITE_KEY, SITE } from "@/lib/sites";
 import "./globals.css";
 
+const TITLE = `${SITE.name} · ${SITE.baseline} — ${SITE.overline}`;
+
 export const metadata: Metadata = {
-  title: "Ti Kanal · Échanges & petites annonces — St Barth",
-  description:
-    "Ti Kanal, les échanges et petites annonces de Saint-Barthélemy : véhicules et nautisme, immobilier, emploi saisonnier, achats et ventes entre particuliers.",
-  applicationName: "Ti Kanal",
+  title: TITLE,
+  description: SITE.description,
+  applicationName: SITE.name,
   openGraph: {
-    title: "Ti Kanal · Échanges & petites annonces — St Barth",
-    description:
-      "Les échanges et petites annonces de Saint-Barthélemy : véhicules et nautisme, immobilier, emploi, achats et ventes.",
+    title: TITLE,
+    description: SITE.description,
     locale: "fr_FR",
     type: "website",
   },
-  appleWebApp: { capable: true, title: "Ti Kanal", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: SITE.name, statusBarStyle: "black-translucent" },
 };
 
 /* Mobile : largeur réelle de l'appareil, zoom utilisateur conservé
@@ -23,12 +24,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#05282c",
+  themeColor: SITE.themeColor,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    /* data-site sélectionne le jeu de couleurs du site (globals.css). */
+    <html lang="fr" data-site={CURRENT_SITE_KEY}>
       <body>{children}</body>
     </html>
   );
