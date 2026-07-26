@@ -9,6 +9,7 @@ import {
 } from "@/lib/food";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { recordView } from "@/lib/analytics";
+import { useSession } from "@/lib/session";
 
 type ClaimKind = "claim" | "correction" | "removal";
 
@@ -20,6 +21,7 @@ const CLAIM_LABEL: Record<ClaimKind, string> = {
 
 export default function RestoPage() {
   const { id } = useParams<{ id: string }>();
+  const { userId } = useSession();
   const [r, setR] = useState<Restaurant | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -101,7 +103,15 @@ export default function RestoPage() {
       <SiteHeader />
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 110, maxWidth: 740, flex: 1 }}>
-        <Link href="/" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Tous les restaurants</Link>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+          <Link href="/" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Tous les restaurants</Link>
+          {userId && r.owner_id === userId && (
+            <Link href={`/resto/${r.id}/modifier`} className="btn btn-outline-gold"
+              style={{ color: "var(--gold-deep)", borderColor: "var(--border-input)", fontSize: 12.5, padding: "8px 14px", minHeight: 36 }}>
+              Modifier ma fiche
+            </Link>
+          )}
+        </div>
 
         <div className="panel gold-frame" style={{ marginTop: 12, padding: "22px 18px", textAlign: "center",
           background: "linear-gradient(150deg, var(--surface), var(--cream))" }}>

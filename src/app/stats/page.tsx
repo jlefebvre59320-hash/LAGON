@@ -9,6 +9,23 @@ import { SiteHeader } from "@/components/Brand";
 type Daily = { day: string; visits: number };
 type Top = { id: string; title: string; module: ModuleKey; views: number };
 
+type Claim = {
+  id: string;
+  restaurant_id: string;
+  kind: "claim" | "correction" | "removal";
+  message: string;
+  contact: string;
+  user_id: string | null;
+  created_at: string;
+  restaurant: { name: string } | null;
+};
+
+const CLAIM_KIND: Record<Claim["kind"], string> = {
+  claim: "Revendication",
+  correction: "Correction",
+  removal: "Demande de retrait",
+};
+
 type SiteStats = {
   listings_total: number; listings_active: number; listings_30d: number; listings_7d: number;
   users_total: number; users_30d: number;
@@ -28,16 +45,45 @@ export default function Stats() {
   const router = useRouter();
   const [s, setS] = useState<SiteStats | null>(null);
   const [denied, setDenied] = useState(false);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [busyClaim, setBusyClaim] = useState<string | null>(null);
+
+  const loadClaims = async () => {
+    const { data } = await supabase()
+      .from("restaurant_claims")
+      .select("*, restaurant:restaurants(name)")
+      .eq("handled", false)
+      .order("created_at", { ascending: true });
+    setClaims((data as Claim[]) ?? []);
+  };
 
   useEffect(() => {
     (async () => {
       const { data: session } = await supabase().auth.getSession();
       if (!session.session) { router.replace("/connexion"); return; }
       const { data, error } = await supabase().rpc("site_stats");
-      if (error || !data) setDenied(true);
-      else setS(data as SiteStats);
+      if (error || !data) { setDenied(true); return; }
+      setS(data as SiteStats);
+      loadClaims();
     })();
   }, [router]);
+
+  /* Traitement d'une demande. Donner la main = un vrai transfert de droits :
+     à ne faire qu'après avoir vérifié le contact, jamais sur la seule foi du
+     formulaire. */
+  async function resolveClaim(c: Claim, action: "grant" | "hide" | "done") {
+    setBusyClaim(c.id);
+    const sb = supabase();
+    if (action === "grant" && c.user_id) {
+      await sb.from("restaurants").update({ owner_id: c.user_id }).eq("id", c.restaurant_id);
+    }
+    if (action === "hide") {
+      await sb.from("restaurants").update({ status: "hidden" }).eq("id", c.restaurant_id);
+    }
+    await sb.from("restaurant_claims").update({ handled: true }).eq("id", c.id);
+    setBusyClaim(null);
+    loadClaims();
+  }
 
   if (denied) return (
     <>
@@ -73,6 +119,58 @@ export default function Stats() {
         <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px" }}>
           Fréquentation mesurée sur le site lui-même, visiteurs non connectés compris.
         </p>
+
+        {claims.length > 0 && (
+          <Section titre={`Demandes des établissements (${claims.length})`}
+            sousTitre="Revendications, corrections et retraits envoyés depuis les fiches St Barth Food">
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {claims.map((c) => (
+                <div key={c.id} className="panel" style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
+                    <span style={{
+                      fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+                      color: c.kind === "removal" ? "#fff" : "var(--gold-deep)",
+                      background: c.kind === "removal" ? "var(--danger)" : "var(--cream-dark)",
+                      padding: "4px 10px", borderRadius: 99,
+                    }}>
+                      {CLAIM_KIND[c.kind]}
+                    </span>
+                    <Link href={`/resto/${c.restaurant_id}`} style={{ fontWeight: 700, fontSize: 14.5 }}>
+                      {c.restaurant?.name ?? "Fiche supprimée"}
+                    </Link>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      {new Date(c.created_at).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13.5, margin: "8px 0 4px", whiteSpace: "pre-wrap" }}>{c.message}</p>
+                  <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
+                    Contact : <strong style={{ color: "var(--text)" }}>{c.contact}</strong>
+                    {c.kind === "claim" && !c.user_id && " · envoyé sans compte — la main ne peut pas être donnée automatiquement"}
+                  </p>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                    {c.kind === "claim" && c.user_id && (
+                      <button className="btn" disabled={busyClaim === c.id}
+                        onClick={() => { if (confirm("Donner la gestion de cette fiche à ce compte ? À faire après avoir vérifié le contact.")) resolveClaim(c, "grant"); }}
+                        style={{ fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
+                        Donner la main à ce compte
+                      </button>
+                    )}
+                    {c.kind === "removal" && (
+                      <button className="btn" disabled={busyClaim === c.id}
+                        onClick={() => { if (confirm("Masquer cette fiche du site ?")) resolveClaim(c, "hide"); }}
+                        style={{ background: "var(--danger)", fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
+                        Masquer la fiche
+                      </button>
+                    )}
+                    <button className="link-quiet" disabled={busyClaim === c.id} onClick={() => resolveClaim(c, "done")}>
+                      Marquer traité sans action
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
 
         <Section titre="Vue d'ensemble">
           <Tiles items={[

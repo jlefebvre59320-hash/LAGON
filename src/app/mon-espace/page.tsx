@@ -8,8 +8,9 @@ import type { Listing } from "@/lib/types";
 import ListingCard, { photoUrl } from "@/components/ListingCard";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { FavoritesProvider, useFavorites } from "@/lib/favorites";
+import type { Restaurant } from "@/lib/food";
 
-type Tab = "listings" | "favorites";
+type Tab = "listings" | "favorites" | "restaurants";
 
 type Stats = { listing_id: string; views: number; unique_viewers: number; favorites: number };
 
@@ -41,6 +42,7 @@ function MonEspace() {
   const [mine, setMine] = useState<Listing[]>([]);
   const [stats, setStats] = useState<Record<string, Stats>>({});
   const [favorites, setFavorites] = useState<Listing[]>([]);
+  const [restos, setRestos] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -54,6 +56,11 @@ function MonEspace() {
       // administrateurs du site en interrogeant la table des profils.
       const { data: admin } = await supabase().rpc("is_admin");
       setIsAdmin(admin === true);
+      // Fiches revendiquées sur St Barth Food : le compte est unique, l'espace
+      // les montre quel que soit le site où on se connecte.
+      const { data: owned } = await supabase()
+        .from("restaurants").select("*").eq("owner_id", data.session.user.id).order("name");
+      setRestos((owned as Restaurant[]) ?? []);
       setChecked(true);
     })();
   }, [router]);
@@ -164,7 +171,11 @@ function MonEspace() {
         </div>
 
         <div role="tablist" style={{ display: "flex", gap: 4, background: "var(--cream-dark)", borderRadius: 999, padding: 4, marginBottom: 18 }}>
-          {([["listings", `Mes annonces (${mine.length})`], ["favorites", `Mes favoris (${favIds.size})`]] as const).map(([k, label]) => (
+          {([
+            ["listings", `Mes annonces (${mine.length})`],
+            ["favorites", `Mes favoris (${favIds.size})`],
+            ...(restos.length > 0 ? [["restaurants", `Mes établissements (${restos.length})`]] as const : []),
+          ] as [Tab, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
               style={{
                 flex: 1, minHeight: 42, borderRadius: 999, border: "none", cursor: "pointer",
@@ -253,6 +264,29 @@ function MonEspace() {
               })}
             </div>
           )
+        )}
+
+        {tab === "restaurants" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {restos.map((res) => (
+              <div key={res.id} className="panel" style={{ padding: "12px 14px", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 16, color: "var(--green)" }}>
+                    {res.name}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+                    {res.cuisine} · {res.quartier} · {res.status === "active" ? "En ligne" : "Masquée"}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Link href={`/resto/${res.id}`} className="link-quiet" style={{ textDecoration: "underline" }}>Voir</Link>
+                  <Link href={`/resto/${res.id}/modifier`} className="btn" style={{ fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
+                    Modifier
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {tab === "favorites" && (
