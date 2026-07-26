@@ -8,10 +8,16 @@ import ListingCard from "@/components/ListingCard";
 import { AccountButton, Brand, Mark } from "@/components/Brand";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
+import { CURRENT_SITE_KEY, SITE } from "@/lib/sites";
+import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
+import FoodHome from "@/components/food/FoodHome";
 
 type Tab = "home" | ModuleKey;
 
+/* Le même code sert toute la famille : l'accueil dépend du site déployé.
+   NEXT_PUBLIC_SITE est figé au build, la branche morte disparaît du bundle. */
 export default function HomePage() {
+  if (CURRENT_SITE_KEY === "food") return <FoodHome />;
   return (
     <FavoritesProvider>
       <Home />
@@ -80,6 +86,7 @@ function Home() {
               <Link href="/deposer" className="btn btn-gold only-desktop">
                 + Déposer une annonce
               </Link>
+              <SiteSwitcher />
               <AccountButton />
             </div>
           </div>
@@ -238,13 +245,14 @@ function Home() {
       <footer style={{ background: "var(--green)", color: "rgba(246,242,233,.72)", padding: "26px 0 30px", marginTop: "auto" }}>
         <div className="container" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
           <Mark size={72} />
-          <span className="overline">Ti Kanal · St Barth</span>
-          <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>
-            Les échanges et petites annonces de Saint-Barthélemy, entre particuliers.
-          </p>
+          <span className="overline">{SITE.name} · {SITE.overline}</span>
+          <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>{SITE.description}</p>
           <Link href="/connexion" style={{ fontSize: 12.5, color: "var(--gold)", marginTop: 4 }}>
             Connexion
           </Link>
+          <div style={{ marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(201,168,106,.25)", width: "100%", maxWidth: 460 }}>
+            <SiteFamilyFooter />
+          </div>
         </div>
       </footer>
     </div>

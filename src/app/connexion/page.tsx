@@ -19,7 +19,16 @@ function humanError(message: string): string {
   if (m.includes("user already registered") || m.includes("already been registered")) return "Un compte existe déjà avec cet email. Connectez-vous, ou utilisez « Mot de passe oublié ».";
   if (m.includes("password should be")) return `Mot de passe trop court : ${MIN_PASSWORD} caractères minimum.`;
   if (m.includes("unable to validate email") || m.includes("invalid email")) return "Cette adresse email n'est pas valide.";
-  if (m.includes("for security purposes") || m.includes("rate limit") || m.includes("too many")) return "Trop de tentatives. Patientez une minute avant de réessayer.";
+  /* Deux refus très différents, que Supabase renvoie tous les deux comme un
+     « rate limit » : le délai anti-rebond de 60 s, et le quota d'emails du
+     projet pour l'heure en cours. Dire « patientez une minute » dans le second
+     cas est faux — il faut attendre une heure, ou faire valider l'adresse à la
+     main côté administration. */
+  if (m.includes("email rate limit") || m.includes("over_email_send_rate_limit")) {
+    return "Le site a atteint son quota d'emails pour cette heure. Réessayez dans une heure, ou demandez à l'administrateur de valider votre adresse.";
+  }
+  if (m.includes("for security purposes") || m.includes("only request this after")) return "Patientez une minute avant de redemander un email.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Trop de tentatives. Patientez avant de réessayer.";
   if (m.includes("weak password")) return "Mot de passe trop simple : ajoutez des lettres, chiffres ou symboles.";
   return "Une erreur est survenue. Réessayez dans un instant.";
 }
@@ -89,7 +98,7 @@ export default function Connexion() {
           router.replace("/deposer");
           return;
         }
-        setNotice(`Compte créé. Un email de confirmation vient d'être envoyé à ${email.trim()} : ouvrez-le pour activer votre compte.`);
+        setNotice(`Compte créé. Un email de confirmation part vers ${email.trim()} : ouvrez-le pour activer votre compte. Rien au bout de quelques minutes ? Regardez vos spams, puis utilisez « Renvoyer l'email de confirmation ».`);
         setPassword("");
         setMode("login");
         return;
@@ -113,6 +122,24 @@ export default function Connexion() {
       setError(humanError(e instanceof Error ? e.message : ""));
       setLoading(false);
     }
+  }
+
+  /* Recours quand l'email de confirmation n'est jamais arrivé : sans ça, une
+     personne dont l'email s'est perdu en route n'a aucun moyen de s'en sortir. */
+  async function resendConfirmation() {
+    if (!emailOk || loading) return;
+    setLoading(true);
+    setError(null);
+    setNotice(null);
+    const origin = typeof window !== "undefined" ? window.location.origin : undefined;
+    const { error } = await supabase().auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: origin ? `${origin}/connexion?confirme=1` : undefined },
+    });
+    setLoading(false);
+    if (error) setError(humanError(error.message));
+    else setNotice(`Si cette adresse attend une confirmation, un nouvel email vient de partir vers ${email.trim()}.`);
   }
 
   async function magicLink() {
@@ -238,6 +265,10 @@ export default function Connexion() {
               <button className="link-quiet" onClick={magicLink} disabled={!emailOk || loading}
                 style={{ textDecoration: emailOk ? "underline" : "none", opacity: emailOk ? 1 : 0.55 }}>
                 Recevoir plutôt un lien de connexion par email
+              </button>
+              <button className="link-quiet" onClick={resendConfirmation} disabled={!emailOk || loading}
+                style={{ textDecoration: emailOk ? "underline" : "none", opacity: emailOk ? 1 : 0.55 }}>
+                Renvoyer l&apos;email de confirmation
               </button>
             </div>
           )}

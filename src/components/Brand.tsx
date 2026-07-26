@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useSession } from "@/lib/session";
+import { CURRENT_SITE_KEY, SITE } from "@/lib/sites";
+import SiteSwitcher from "@/components/SiteSwitcher";
 
 /* Contour de Saint-Barthélemy, tracé vectoriel du logo.
    Deux niveaux de détail : le tracé complet pour le logo, une version
@@ -52,21 +54,21 @@ export function Brand({ compact = false, href = "/", onClick }: {
   onClick?: () => void;
 }) {
   return (
-    <Link href={href} onClick={onClick} className="brand-lockup" aria-label="Ti Kanal — accueil">
+    <Link href={href} onClick={onClick} className="brand-lockup" aria-label={`${SITE.name} — accueil`}>
       <Mark size={compact ? 54 : 70} />
       <span style={{ minWidth: 0 }}>
         <span className="overline" style={{ display: "block", marginBottom: 2 }}>
-          St Barth
+          {SITE.overline}
         </span>
         <span className="wordmark" style={compact ? { fontSize: 21 } : undefined}>
-          Ti Kanal
+          {SITE.name}
         </span>
         {!compact && (
           <span
             className="overline brand-baseline"
             style={{ marginTop: 4, fontSize: 8.5, letterSpacing: "0.24em" }}
           >
-            Échanges &amp; petites annonces
+            {SITE.baseline}
           </span>
         )}
       </span>
@@ -85,10 +87,10 @@ export function AccountButton() {
   return (
     <Link
       href={userId ? "/mon-espace" : "/connexion"}
-      className="btn btn-outline-gold"
+      className="btn btn-outline-gold acct-btn"
       style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
     >
-      {userId ? "Mon espace" : "Se connecter"}
+      {userId ? "Mon espace" : "Connexion"}
     </Link>
   );
 }
@@ -103,9 +105,13 @@ export function SiteHeader({ accent = "var(--gold)" }: { accent?: string }) {
       >
         <Brand compact />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link href="/deposer" className="btn btn-gold only-desktop" style={{ fontSize: 13.5 }}>
-            + Déposer une annonce
-          </Link>
+          {/* Le dépôt d'annonce n'a pas de sens sur l'annuaire des restaurants */}
+          {CURRENT_SITE_KEY !== "food" && (
+            <Link href="/deposer" className="btn btn-gold only-desktop" style={{ fontSize: 13.5 }}>
+              + Déposer une annonce
+            </Link>
+          )}
+          <SiteSwitcher />
           <AccountButton />
         </div>
       </div>
