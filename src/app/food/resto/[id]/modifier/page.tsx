@@ -68,6 +68,7 @@ export default function ModifierResto() {
         website: r.website?.trim() || null,
         description: r.description.trim(),
         price_range: r.price_range,
+        avg_price_eur: r.avg_price_eur ?? null,
         takeaway: r.takeaway,
         status: r.status,
         hours,
@@ -177,6 +178,11 @@ export default function ModifierResto() {
                   </button>
                 ))}
               </div>
+            </Field>
+            <Field label="Prix moyen / personne (€)">
+              <input className="input" value={rr.avg_price_eur ?? ""} inputMode="numeric"
+                onChange={(e) => set("avg_price_eur", e.target.value ? parseInt(e.target.value.replace(/\D/g, ""), 10) || null : null)}
+                placeholder="ex : 35" style={{ width: 120 }} />
             </Field>
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer", marginTop: 14 }}>
               <input type="checkbox" checked={rr.takeaway} onChange={(e) => set("takeaway", e.target.checked)} />

@@ -133,6 +133,79 @@ const PATHS: Record<string, React.ReactNode> = {
   ),
 };
 
+/* Une teinte gourmande par cuisine : plus vive que la charte, mais dans son
+   registre chaud. `deep` porte le trait, `wash` la nappe de fond. */
+export const CUISINE_HUES: Record<string, { deep: string; wash: string }> = {
+  "Français":                 { deep: "#3f6478", wash: "#dfeaf0" },
+  "Créole & Caribéen":        { deep: "#b04a20", wash: "#fbe4d6" },
+  "Italien":                  { deep: "#5f7a34", wash: "#e9f0d9" },
+  "Poissons & Fruits de mer": { deep: "#1f6f7e", wash: "#d9edf0" },
+  "Grillades & Viandes":      { deep: "#8a3f24", wash: "#f6e0d4" },
+  "Sushi & Asiatique":        { deep: "#356354", wash: "#dcece6" },
+  "Pizza":                    { deep: "#b03a2a", wash: "#fbe0da" },
+  "Burgers & Snack":          { deep: "#a06a1c", wash: "#f8ead2" },
+  "Salades & Healthy":        { deep: "#4c7a2e", wash: "#e4f0da" },
+  "Café & Brunch":            { deep: "#6a4a30", wash: "#efe3d8" },
+  "Glaces & Desserts":        { deep: "#a94f74", wash: "#f8e2ea" },
+  "Food truck":               { deep: "#48628a", wash: "#e2e8f2" },
+  "Traiteur":                 { deep: "#8a6a2a", wash: "#f2e8d2" },
+  "Tapas & Cocktails":        { deep: "#74467c", wash: "#eee1f0" },
+};
+
+const slugify = (c: string) =>
+  c.toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/&/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/* Visuel de vignette : une vraie photo si /cuisines/<slug>.jpg existe dans
+   /public (déposer le fichier suffit, aucun code à changer), sinon une scène
+   illustrée aux couleurs de la cuisine. Les photos doivent être libres de
+   droits ou à vous — jamais celles d'un établissement sans son accord. */
+export function CuisineVisual({ cuisine }: { cuisine: string }) {
+  const hue = CUISINE_HUES[cuisine];
+  const scene = (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute", inset: 0,
+        background: hue
+          ? `radial-gradient(90% 120% at 20% 0%, ${hue.wash} 0%, transparent 60%),
+             radial-gradient(120% 140% at 85% 110%, ${hue.deep}33 0%, transparent 55%),
+             linear-gradient(140deg, ${hue.wash}, ${hue.deep}22)`
+          : "linear-gradient(140deg, var(--green-100), var(--cream-dark))",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}
+    >
+      {/* Assiette : un disque clair sous le picto, comme un plat servi */}
+      <span style={{
+        width: 96, height: 96, borderRadius: 999,
+        background: "rgba(255,253,248,.75)",
+        border: `1.5px solid ${hue ? hue.deep + "44" : "var(--border)"}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 6px 18px rgba(0,0,0,.08)",
+      }}>
+        <CuisineIcon cuisine={cuisine} size={54} color={hue?.deep ?? "var(--gold-deep)"} />
+      </span>
+    </div>
+  );
+
+  return (
+    <>
+      {scene}
+      {/* La photo recouvre la scène si le fichier existe ; sinon son échec de
+          chargement la retire et la scène reste. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/cuisines/${slugify(cuisine)}.jpg`}
+        alt=""
+        loading="lazy"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+      />
+    </>
+  );
+}
+
 export default function CuisineIcon({ cuisine, size = 60, color = "var(--gold-deep)" }: {
   cuisine: string;
   size?: number;

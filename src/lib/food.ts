@@ -23,6 +23,8 @@ export type Restaurant = {
   website: string | null;
   description: string;
   price_range: 1 | 2 | 3;
+  /* Prix moyen par personne en euros, renseigné par l'établissement */
+  avg_price_eur: number | null;
   takeaway: boolean;
   hours: HoursMap;
   status: RestaurantStatus;
