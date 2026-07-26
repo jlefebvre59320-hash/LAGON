@@ -135,7 +135,7 @@ export default function Stats() {
                     }}>
                       {CLAIM_KIND[c.kind]}
                     </span>
-                    <Link href={`/resto/${c.restaurant_id}`} style={{ fontWeight: 700, fontSize: 14.5 }}>
+                    <Link href={`/food/resto/${c.restaurant_id}`} style={{ fontWeight: 700, fontSize: 14.5 }}>
                       {c.restaurant?.name ?? "Fiche supprimée"}
                     </Link>
                     <span style={{ fontSize: 12, color: "var(--text-muted)" }}>

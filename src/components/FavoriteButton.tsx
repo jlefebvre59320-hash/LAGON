@@ -15,17 +15,17 @@ function Heart({ filled, size }: { filled: boolean; size: number }) {
 /* `variant="overlay"` : posé sur la photo d'une carte, donc dans un lien —
    d'où le preventDefault, sinon un appui sur le cœur ouvre l'annonce. */
 export default function FavoriteButton({
-  listingId,
+  targetId,
   variant = "overlay",
   label = false,
 }: {
-  listingId: string;
+  targetId: string;
   variant?: "overlay" | "plain";
   label?: boolean;
 }) {
   const router = useRouter();
   const { ids, userId, toggle } = useFavorites();
-  const on = ids.has(listingId);
+  const on = ids.has(targetId);
 
   const overlay = variant === "overlay";
 
@@ -39,7 +39,7 @@ export default function FavoriteButton({
         e.preventDefault();
         e.stopPropagation();
         if (!userId) { router.push("/connexion"); return; }
-        toggle(listingId);
+        toggle(targetId);
       }}
       style={{
         display: "inline-flex", alignItems: "center", gap: 8,

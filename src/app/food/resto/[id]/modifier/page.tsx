@@ -64,6 +64,7 @@ export default function ModifierResto() {
         phone: r.phone?.trim() || null,
         whatsapp: r.whatsapp?.trim() || null,
         instagram: r.instagram?.trim().replace(/^@/, "") || null,
+        facebook: r.facebook?.trim() || null,
         website: r.website?.trim() || null,
         description: r.description.trim(),
         price_range: r.price_range,
@@ -95,7 +96,7 @@ export default function ModifierResto() {
             Seul le propriétaire de l&apos;établissement peut modifier cette fiche.
             Si c&apos;est le vôtre, utilisez « C&apos;est votre établissement ? » en bas de la fiche.
           </p>
-          <Link href={`/resto/${id}`} className="btn" style={{ marginTop: 8 }}>Voir la fiche</Link>
+          <Link href={`/food/resto/${id}`} className="btn" style={{ marginTop: 8 }}>Voir la fiche</Link>
         </div>
       </main>
     </>
@@ -110,7 +111,7 @@ export default function ModifierResto() {
       <main className="container" style={{ maxWidth: 640, paddingTop: 24, paddingBottom: 56, flex: 1 }}>
         <h1 style={{ fontSize: 24, margin: "0 0 2px" }}>Modifier la fiche</h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 18px" }}>
-          <Link href={`/resto/${rr.id}`} style={{ color: "inherit" }}>← Voir la fiche publique</Link>
+          <Link href={`/food/resto/${rr.id}`} style={{ color: "inherit" }}>← Voir la fiche publique</Link>
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -149,6 +150,10 @@ export default function ModifierResto() {
             <Field label="Instagram (sans @)">
               <input className="input" value={rr.instagram ?? ""}
                 onChange={(e) => set("instagram", e.target.value)} placeholder="votrecompte" />
+            </Field>
+            <Field label="Facebook (adresse de la page)">
+              <input className="input" value={rr.facebook ?? ""} inputMode="url"
+                onChange={(e) => set("facebook", e.target.value)} placeholder="https://facebook.com/…" />
             </Field>
             <Field label="Site web">
               <input className="input" value={rr.website ?? ""} inputMode="url"
@@ -194,7 +199,7 @@ export default function ModifierResto() {
           {error && <p style={{ color: "var(--danger)", fontSize: 13, fontWeight: 600, margin: 0 }}>{error}</p>}
           {saved && (
             <p style={{ color: "var(--green)", fontSize: 13, margin: 0, background: "var(--green-100)", padding: "10px 12px", borderRadius: 10 }}>
-              ✓ Fiche enregistrée. <Link href={`/resto/${rr.id}`}>Voir le résultat</Link>
+              ✓ Fiche enregistrée. <Link href={`/food/resto/${rr.id}`}>Voir le résultat</Link>
             </p>
           )}
 

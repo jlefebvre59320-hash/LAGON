@@ -9,8 +9,9 @@ import ListingCard, { photoUrl } from "@/components/ListingCard";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { FavoritesProvider, useFavorites } from "@/lib/favorites";
 import type { Restaurant } from "@/lib/food";
+import RestaurantCard from "@/components/food/RestaurantCard";
 
-type Tab = "listings" | "favorites" | "restaurants";
+type Tab = "listings" | "favorites" | "resto_favs" | "restaurants";
 
 type Stats = { listing_id: string; views: number; unique_viewers: number; favorites: number };
 
@@ -43,6 +44,7 @@ function MonEspace() {
   const [stats, setStats] = useState<Record<string, Stats>>({});
   const [favorites, setFavorites] = useState<Listing[]>([]);
   const [restos, setRestos] = useState<Restaurant[]>([]);
+  const [restoFavs, setRestoFavs] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -61,6 +63,15 @@ function MonEspace() {
       const { data: owned } = await supabase()
         .from("restaurants").select("*").eq("owner_id", data.session.user.id).order("name");
       setRestos((owned as Restaurant[]) ?? []);
+      // Favoris restaurants : liste séparée des favoris d'annonces.
+      const { data: rf } = await supabase()
+        .from("restaurant_favorites").select("restaurant_id").eq("user_id", data.session.user.id);
+      const rfIds = ((rf ?? []) as { restaurant_id: string }[]).map((x) => x.restaurant_id);
+      if (rfIds.length > 0) {
+        const { data: rfRestos } = await supabase()
+          .from("restaurants").select("*").in("id", rfIds).order("name");
+        setRestoFavs((rfRestos as Restaurant[]) ?? []);
+      }
       setChecked(true);
     })();
   }, [router]);
@@ -170,15 +181,16 @@ function MonEspace() {
           ))}
         </div>
 
-        <div role="tablist" style={{ display: "flex", gap: 4, background: "var(--cream-dark)", borderRadius: 999, padding: 4, marginBottom: 18 }}>
+        <div role="tablist" style={{ display: "flex", flexWrap: "wrap", gap: 4, background: "var(--cream-dark)", borderRadius: 20, padding: 4, marginBottom: 18 }}>
           {([
             ["listings", `Mes annonces (${mine.length})`],
-            ["favorites", `Mes favoris (${favIds.size})`],
+            ["favorites", `Favoris · annonces (${favIds.size})`],
+            ["resto_favs", `Favoris · restos (${restoFavs.length})`],
             ...(restos.length > 0 ? [["restaurants", `Mes établissements (${restos.length})`]] as const : []),
           ] as [Tab, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
               style={{
-                flex: 1, minHeight: 42, borderRadius: 999, border: "none", cursor: "pointer",
+                flex: "1 1 45%", minHeight: 42, borderRadius: 999, border: "none", cursor: "pointer",
                 fontFamily: "inherit", fontSize: 13.5, fontWeight: 700,
                 background: tab === k ? "var(--green)" : "transparent",
                 color: tab === k ? "var(--cream)" : "var(--text-muted)",
@@ -266,6 +278,25 @@ function MonEspace() {
           )
         )}
 
+        {tab === "resto_favs" && (
+          restoFavs.length === 0 ? (
+            <Empty
+              titre="Aucun restaurant en favori."
+              texte="Appuyez sur le cœur d'une fiche St Barth Food pour la retrouver ici."
+              lien="/food"
+              bouton="Parcourir les restaurants"
+            />
+          ) : (
+            /* Provider restaurant imbriqué : les cœurs de ces cartes doivent
+               écrire dans les favoris de restaurants, pas d'annonces. */
+            <FavoritesProvider kind="restaurant">
+              <div className="grid" data-site="food">
+                {restoFavs.map((res) => <RestaurantCard key={res.id} r={res} />)}
+              </div>
+            </FavoritesProvider>
+          )
+        )}
+
         {tab === "restaurants" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {restos.map((res) => (
@@ -279,8 +310,8 @@ function MonEspace() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <Link href={`/resto/${res.id}`} className="link-quiet" style={{ textDecoration: "underline" }}>Voir</Link>
-                  <Link href={`/resto/${res.id}/modifier`} className="btn" style={{ fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
+                  <Link href={`/food/resto/${res.id}`} className="link-quiet" style={{ textDecoration: "underline" }}>Voir</Link>
+                  <Link href={`/food/resto/${res.id}/modifier`} className="btn" style={{ fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
                     Modifier
                   </Link>
                 </div>

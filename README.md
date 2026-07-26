@@ -5,10 +5,12 @@ l'agenda (St Barth Event, à venir) et les restaurants (St Barth Food).
 Next.js 15 (App Router) + Supabase (Postgres, Auth, Storage) — base commune,
 compte unique valable sur les trois sites.
 
-Le site servi par un déploiement est choisi par la variable `NEXT_PUBLIC_SITE`
-(`tikanal` par défaut, `event`, `food`) : un projet Vercel par domaine, tous
-branchés sur ce dépôt. Ajouter un site = une entrée dans `src/lib/sites.ts` +
-un bloc `:root[data-site="…"]` dans `globals.css`.
+Une seule application, une seule adresse : Ti Kanal est le site, St Barth Food
+vit sous `/food` et St Barth Event sous `/event` (page d'attente). Chaque
+section a sa marque et ses couleurs — un bloc `[data-site="…"]` dans
+`globals.css`, posé par le layout de la section. Le sélecteur « Nos sites » du
+bandeau navigue entre les sections. Un seul projet Vercel suffit ; la variable
+`NEXT_PUBLIC_SITE` n'existe plus.
 
 ## Ti Kanal — petites annonces
 
@@ -76,9 +78,8 @@ presque entièrement téléphone) :
 
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
-- Dans **SQL Editor**, exécuter dans l'ordre `supabase/migrations/0001_init.sql`,
-  `0002_auth_password.sql`, `0003_intent.sql`, `0004_favoris_stats.sql`,
-  `0005_profiles_colonnes.sql` puis `0006_restaurants.sql`.
+- Dans **SQL Editor**, exécuter dans l'ordre les migrations de
+  `supabase/migrations/` (0001 → 0008).
   Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
   Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
@@ -261,6 +262,15 @@ Aucune migration nécessaire : les valeurs vont dans la colonne JSONB `attrs`.
 - Les utilisateurs bannis (`profiles.is_banned`) ne peuvent plus publier.
 
 ## Reste à faire avant lancement public (par ordre de priorité)
+
+0. **SMTP dédié** (Resend/Brevo + SPF/DKIM/DMARC) : sans lui, les emails de
+   confirmation ne partent pas de façon fiable — bloquant pour toute inscription.
+0bis. **Notifications** (à brancher plus tard, demandé) : prévenir un vendeur
+   d'un favori ou d'un message, un restaurateur d'une note — email d'abord,
+   push ensuite. Rien n'existe encore.
+0ter. **St Barth Event** : construire la section (page d'attente en place).
+   Pas de base ouverte d'évènements : sources = partenariats (comité du
+   tourisme, associations, organisateurs) et saisie directe.
 
 1. **Expiration automatique** : activer pg_cron (extension Supabase) et décommenter
    le `cron.schedule` en fin de migration, ou appeler la requête via un cron externe.

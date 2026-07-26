@@ -57,7 +57,7 @@ export default function ListingCard({ l }: { l: Listing }) {
           {l.subcategory}
         </span>
         <span style={{ position: "absolute", right: 8, bottom: 8 }}>
-          <FavoriteButton listingId={l.id} />
+          <FavoriteButton targetId={l.id} />
         </span>
         {badge && (
           <span

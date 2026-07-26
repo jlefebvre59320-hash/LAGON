@@ -8,16 +8,14 @@ import ListingCard from "@/components/ListingCard";
 import { AccountButton, Brand, Mark } from "@/components/Brand";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
-import { CURRENT_SITE_KEY, SITE } from "@/lib/sites";
+import { SITES } from "@/lib/sites";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
-import FoodHome from "@/components/food/FoodHome";
+
+const SITE = SITES.tikanal;
 
 type Tab = "home" | ModuleKey;
 
-/* Le même code sert toute la famille : l'accueil dépend du site déployé.
-   NEXT_PUBLIC_SITE est figé au build, la branche morte disparaît du bundle. */
 export default function HomePage() {
-  if (CURRENT_SITE_KEY === "food") return <FoodHome />;
   return (
     <FavoritesProvider>
       <Home />

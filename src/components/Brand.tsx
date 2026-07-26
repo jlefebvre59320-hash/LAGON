@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useSession } from "@/lib/session";
-import { CURRENT_SITE_KEY, SITE } from "@/lib/sites";
+import { usePathname } from "next/navigation";
+import { SITES, siteFromPath, type SiteKey } from "@/lib/sites";
 import SiteSwitcher from "@/components/SiteSwitcher";
 
 /* Contour de Saint-Barthélemy, tracé vectoriel du logo.
@@ -48,13 +49,15 @@ export function Mark({
 
 /* Verrouillage typographique du logo : sur-titre ST BARTH, marque en sérif,
    baseline. `compact` = version une ligne pour les bandeaux mobiles. */
-export function Brand({ compact = false, href = "/", onClick }: {
+export function Brand({ compact = false, href, onClick, site = "tikanal" }: {
   compact?: boolean;
   href?: string;
   onClick?: () => void;
+  site?: SiteKey;
 }) {
+  const SITE = SITES[site];
   return (
-    <Link href={href} onClick={onClick} className="brand-lockup" aria-label={`${SITE.name} — accueil`}>
+    <Link href={href ?? SITE.path} onClick={onClick} className="brand-lockup" aria-label={`${SITE.name} — accueil`}>
       <Mark size={compact ? 54 : 70} />
       <span style={{ minWidth: 0 }}>
         <span className="overline" style={{ display: "block", marginBottom: 2 }}>
@@ -96,17 +99,19 @@ export function AccountButton() {
 }
 
 /* Bandeau court des pages secondaires (fiche, dépôt, connexion). */
-export function SiteHeader({ accent = "var(--gold)" }: { accent?: string }) {
+export function SiteHeader({ accent = "var(--gold)", site }: { accent?: string; site?: SiteKey }) {
+  const pathname = usePathname();
+  const currentSite = site ?? siteFromPath(pathname ?? "/");
   return (
     <header className="site-header">
       <div
         className="container"
         style={{ paddingTop: 12, paddingBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
       >
-        <Brand compact />
+        <Brand compact site={currentSite} />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Le dépôt d'annonce n'a pas de sens sur l'annuaire des restaurants */}
-          {CURRENT_SITE_KEY !== "food" && (
+          {/* Le dépôt d'annonce n'a de sens que côté annonces */}
+          {currentSite === "tikanal" && (
             <Link href="/deposer" className="btn btn-gold only-desktop" style={{ fontSize: 13.5 }}>
               + Déposer une annonce
             </Link>

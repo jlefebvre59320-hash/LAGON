@@ -1,11 +1,8 @@
-/* Famille de sites St Barth.
-   Un seul code, une charte commune, une couleur et un contenu par site.
-   Le site courant est choisi par NEXT_PUBLIC_SITE au déploiement : la même base
-   de code sert donc plusieurs domaines, sans copier-coller de projet.
-
-   Ajouter un site = une entrée ici + un bloc de couleurs dans globals.css
-   (`:root[data-site="…"]`). Rien d'autre à toucher : tous les composants lisent
-   les variables de la charte. */
+/* Famille St Barth — une seule application, une seule adresse.
+   Ti Kanal est le site ; St Barth Food et St Barth Event en sont des
+   sections (/food, /event), chacune avec sa marque et ses couleurs.
+   Les couleurs d'une section viennent d'un bloc [data-site="…"] dans
+   globals.css, posé par le layout de la section. */
 
 export type SiteKey = "tikanal" | "event" | "food";
 
@@ -21,11 +18,12 @@ export type SiteDef = {
   description: string;
   /* Point de couleur dans le sélecteur */
   dot: string;
-  /* Teinte de la barre système du téléphone : le fond de bandeau du site */
+  /* Teinte de la barre système du téléphone sur cette section */
   themeColor: string;
-  /* Adresse publique. null = pas encore en ligne : le sélecteur l'affiche
-     « bientôt » plutôt que de proposer un lien mort. */
-  url: string | null;
+  /* Chemin de la section dans l'application */
+  path: string;
+  /* false = la section existe en page d'attente ; le sélecteur l'annonce « bientôt » */
+  ready: boolean;
 };
 
 export const SITES: Record<SiteKey, SiteDef> = {
@@ -38,7 +36,8 @@ export const SITES: Record<SiteKey, SiteDef> = {
       "Les échanges et petites annonces de Saint-Barthélemy : véhicules et nautisme, immobilier, emploi, achats et ventes.",
     dot: "#c9a86a",
     themeColor: "#05282c",
-    url: "https://lagon-orcin.vercel.app",
+    path: "/",
+    ready: true,
   },
   event: {
     key: "event",
@@ -49,7 +48,8 @@ export const SITES: Record<SiteKey, SiteDef> = {
       "L'agenda de Saint-Barthélemy : soirées, concerts, régates, marchés et évènements de l'île.",
     dot: "#e0855f",
     themeColor: "#101f3c",
-    url: null,
+    path: "/event",
+    ready: false,
   },
   food: {
     key: "food",
@@ -60,16 +60,16 @@ export const SITES: Record<SiteKey, SiteDef> = {
       "Où manger à Saint-Barthélemy : restaurants, tables de plage, food trucks, traiteurs et bonnes adresses de l'île.",
     dot: "#d9a05b",
     themeColor: "#33201c",
-    url: "https://st-barth-food.vercel.app",
+    path: "/food",
+    ready: true,
   },
 };
 
 export const SITE_ORDER: SiteKey[] = ["tikanal", "event", "food"];
 
-function readSiteKey(): SiteKey {
-  const raw = process.env.NEXT_PUBLIC_SITE;
-  return raw && raw in SITES ? (raw as SiteKey) : "tikanal";
+/* Section correspondant à un chemin — pour marquer « Vous êtes ici ». */
+export function siteFromPath(pathname: string): SiteKey {
+  if (pathname === "/food" || pathname.startsWith("/food/")) return "food";
+  if (pathname === "/event" || pathname.startsWith("/event/")) return "event";
+  return "tikanal";
 }
-
-export const CURRENT_SITE_KEY = readSiteKey();
-export const SITE = SITES[CURRENT_SITE_KEY];

@@ -19,6 +19,7 @@ export type Restaurant = {
   phone: string | null;
   whatsapp: string | null;
   instagram: string | null;
+  facebook: string | null;
   website: string | null;
   description: string;
   price_range: 1 | 2 | 3;

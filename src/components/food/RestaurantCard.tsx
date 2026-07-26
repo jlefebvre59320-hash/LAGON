@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
-import { Mark } from "@/components/Brand";
 import { MIN_RATINGS, isOpenNow, hasHours, priceLabel, type Restaurant, type RatingSummary } from "@/lib/food";
+import CuisineIcon from "@/components/food/CuisineIcon";
+import FavoriteButton from "@/components/FavoriteButton";
 import { StarRow } from "@/components/food/Stars";
 
 /* Pas de photos en v1 — choix juridique assumé : on n'affiche que des faits,
@@ -25,10 +26,10 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
   const rated = rating && rating.votes >= MIN_RATINGS;
 
   return (
-    <Link href={`/resto/${r.id}`} className="card">
+    <Link href={`/food/resto/${r.id}`} className="card">
       <div style={{ position: "relative", aspectRatio: "4 / 3", background: tintFor(r.id) }}>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.8 }}>
-          <Mark size={56} color="var(--gold-deep)" />
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.85 }}>
+          <CuisineIcon cuisine={r.cuisine} size={62} />
         </div>
         <span
           style={{
@@ -40,6 +41,9 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
           }}
         >
           {r.cuisine}
+        </span>
+        <span style={{ position: "absolute", right: 8, bottom: 8 }}>
+          <FavoriteButton targetId={r.id} />
         </span>
         {known && (
           <span
