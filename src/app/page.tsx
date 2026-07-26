@@ -124,14 +124,14 @@ function Home() {
         <div className="header-accent" style={{ background: accent }} />
       </header>
 
-      {/* Les deux autres univers de la famille : les trois points du bandeau
-          sont discrets, ces tuiles font découvrir. Chacune porte data-site
-          pour peindre ses propres couleurs. Masquées dès qu'on quitte
-          l'accueil : place au parcours d'annonces. */}
+      {/* La tuile St Barth Food : les trois points du bandeau sont discrets,
+          elle fait découvrir. data-site peint ses couleurs. Event n'a pas de
+          tuile — il n'existe que dans le sélecteur, « bientôt » : cap sur les
+          ventes et le food. Masquée hors accueil : place au parcours. */}
       {tab === "home" && (
         <div className="container" style={{ paddingTop: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
-            {([SITES.food, SITES.event] as const).map((s) => (
+            {([SITES.food] as const).map((s) => (
               <Link
                 key={s.key}
                 href={s.path}
