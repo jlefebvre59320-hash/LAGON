@@ -24,24 +24,52 @@ function Annonce() {
   const router = useRouter();
   const [l, setL] = useState<Listing | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [reporting, setReporting] = useState(false);
   const [reported, setReported] = useState(false);
 
   useEffect(() => {
     (async () => {
+      /* profiles est nommé par sa clé étrangère : depuis que la table favorites
+         relie listings et profiles, il existe deux chemins entre les deux
+         (le lien direct et le passage par les favoris) et PostgREST refuse de
+         choisir. Sans !listings_user_id_fkey, la requête échoue. */
       const { data, error } = await supabase()
         .from("listings")
-        .select("*, photos:listing_photos(storage_key, position), profile:profiles(display_name, phone_wa)")
+        .select(
+          "*, photos:listing_photos(storage_key, position), profile:profiles!listings_user_id_fkey(display_name, phone_wa)"
+        )
         .eq("id", id)
         .single();
-      if (error || !data) setNotFound(true);
-      else {
+
+      if (data) {
         setL(data as Listing);
         recordView(`/annonce/${id}`, id);
+        return;
+      }
+      // PGRST116 = aucune ligne : l'annonce n'existe vraiment plus. Toute autre
+      // erreur est un problème technique et doit se dire comme tel, pas se
+      // déguiser en annonce supprimée.
+      if (error && error.code !== "PGRST116") {
+        console.error("Chargement de l'annonce :", error);
+        setLoadError(error.message);
+      } else {
+        setNotFound(true);
       }
     })();
   }, [id]);
+
+  if (loadError) return (
+    <>
+      <SiteHeader />
+      <div className="container" style={{ padding: "60px 16px", textAlign: "center", maxWidth: 480 }}>
+        <p style={{ fontWeight: 700, color: "var(--danger)" }}>Impossible d&apos;afficher cette annonce.</p>
+        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{loadError}</p>
+        <Link href="/">← Retour aux annonces</Link>
+      </div>
+    </>
+  );
 
   if (notFound) return (
     <>

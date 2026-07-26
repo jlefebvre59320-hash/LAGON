@@ -46,7 +46,8 @@ presque entièrement téléphone) :
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
 - Dans **SQL Editor**, exécuter dans l'ordre `supabase/migrations/0001_init.sql`,
-  `0002_auth_password.sql`, `0003_intent.sql` puis `0004_favoris_stats.sql`.
+  `0002_auth_password.sql`, `0003_intent.sql`, `0004_favoris_stats.sql` puis
+  `0005_profiles_colonnes.sql`.
   Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
   Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
@@ -130,6 +131,7 @@ supabase/migrations/0001_init.sql   Schéma complet + RLS + storage
 supabase/migrations/0002_auth_password.sql  Nom affiché repris à l'inscription
 supabase/migrations/0003_intent.sql Sens de l'annonce : proposition ou recherche
 supabase/migrations/0004_favoris_stats.sql  Favoris, fréquentation, droits admin
+supabase/migrations/0005_profiles_colonnes.sql  Lecture de profiles colonne par colonne
 src/lib/session.ts                  Session courante (hook useSession)
 src/lib/favorites.tsx               Favoris chargés une fois pour toute la page
 src/lib/analytics.ts                Enregistrement des pages vues
@@ -186,8 +188,9 @@ update public.profiles set is_admin = true
 
 Tout est verrouillé côté base, pas seulement côté écran : `site_stats()` refuse de
 répondre à un non-administrateur, la table `page_views` n'est lisible que par un
-administrateur, et la colonne `is_admin` est retirée du `select` public pour que
-personne ne puisse lister les administrateurs du site.
+administrateur, et la colonne `is_admin` est retirée de la lecture publique
+(migration `0005`) pour que personne ne puisse lister les administrateurs du site.
+Le contrôle passe par `is_admin()`, qui ne répond que pour l'appelant.
 
 ## Proposition ou recherche
 
