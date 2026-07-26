@@ -85,11 +85,15 @@ export function Brand({ compact = false, href, onClick, site = "tikanal" }: {
    libellé. */
 export function AccountButton() {
   const { userId, ready } = useSession();
+  const pathname = usePathname();
   if (!ready) return <span style={{ minWidth: 92, minHeight: 40 }} aria-hidden="true" />;
+
+  // Depuis Food, l'espace s'ouvre aux couleurs de Food, sur ses restaurants.
+  const espace = siteFromPath(pathname ?? "/") === "food" ? "/food/mon-espace" : "/mon-espace";
 
   return (
     <Link
-      href={userId ? "/mon-espace" : "/connexion"}
+      href={userId ? espace : "/connexion"}
       className="btn btn-outline-gold acct-btn"
       style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
     >

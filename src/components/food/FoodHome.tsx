@@ -25,6 +25,7 @@ function FoodHomeInner() {
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [quartier, setQuartier] = useState<string | null>(null);
   const [openOnly, setOpenOnly] = useState(false);
+  const [sort, setSort] = useState<"name" | "rating" | "open">("name");
   const [takeaway, setTakeaway] = useState(false);
   const [all, setAll] = useState<Restaurant[]>([]);
   const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
@@ -62,14 +63,28 @@ function FoodHomeInner() {
      pas avec les données — inutile de refaire une requête. */
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return all.filter((r) =>
+    const list = all.filter((r) =>
       (!cuisine || r.cuisine === cuisine) &&
       (!quartier || r.quartier === quartier) &&
       (!takeaway || r.takeaway) &&
       (!openOnly || (hasHours(r.hours) && isOpenNow(r.hours))) &&
       (!q || `${r.name} ${r.cuisine} ${r.quartier}`.toLowerCase().includes(q))
     );
-  }, [all, query, cuisine, quartier, openOnly, takeaway]);
+    if (sort === "rating") {
+      // Les notés d'abord (meilleure moyenne, puis nombre d'avis) ; les autres
+      // suivent par nom — sans note, impossible de les départager autrement.
+      list.sort((a, b) => {
+        const ra = ratings[a.id], rb = ratings[b.id];
+        if (!!ra !== !!rb) return ra ? -1 : 1;
+        if (ra && rb) return (rb.avg_rating - ra.avg_rating) || (rb.votes - ra.votes) || a.name.localeCompare(b.name, "fr");
+        return a.name.localeCompare(b.name, "fr");
+      });
+    } else if (sort === "open") {
+      const isOpen = (r: Restaurant) => hasHours(r.hours) && isOpenNow(r.hours);
+      list.sort((a, b) => (Number(isOpen(b)) - Number(isOpen(a))) || a.name.localeCompare(b.name, "fr"));
+    }
+    return list;
+  }, [all, query, cuisine, quartier, openOnly, takeaway, sort, ratings]);
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
@@ -119,6 +134,17 @@ function FoodHomeInner() {
           >
             <option value="">Tous les quartiers</option>
             {QUARTIERS.map((q) => <option key={q} value={q}>{q}</option>)}
+          </select>
+          <select
+            className="input"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as "name" | "rating" | "open")}
+            aria-label="Trier"
+            style={{ width: "auto", minHeight: 40, padding: "8px 34px 8px 14px", borderRadius: 999, fontSize: 14, flex: "0 0 auto", fontWeight: 600 }}
+          >
+            <option value="name">Tri : nom</option>
+            <option value="rating">Tri : mieux notés</option>
+            <option value="open">Tri : ouverts d&apos;abord</option>
           </select>
           <button
             className="chip"
