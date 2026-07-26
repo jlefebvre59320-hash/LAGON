@@ -38,7 +38,7 @@ export const SITES: Record<SiteKey, SiteDef> = {
       "Les échanges et petites annonces de Saint-Barthélemy : véhicules et nautisme, immobilier, emploi, achats et ventes.",
     dot: "#c9a86a",
     themeColor: "#05282c",
-    url: null,
+    url: "https://lagon-orcin.vercel.app",
   },
   event: {
     key: "event",
@@ -60,7 +60,7 @@ export const SITES: Record<SiteKey, SiteDef> = {
       "Où manger à Saint-Barthélemy : restaurants, tables de plage, food trucks, traiteurs et bonnes adresses de l'île.",
     dot: "#d9a05b",
     themeColor: "#33201c",
-    url: null,
+    url: "https://st-barth-food.vercel.app",
   },
 };
 
