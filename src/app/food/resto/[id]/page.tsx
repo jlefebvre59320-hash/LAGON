@@ -173,7 +173,7 @@ function Resto() {
           <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
             <Badge>{r.cuisine}</Badge>
             <Badge>{r.quartier}</Badge>
-            <Badge>{priceLabel(r.price_range)}</Badge>
+            <Badge>{priceLabel(r.price_range)}{r.avg_price_eur ? ` · ~${r.avg_price_eur}\u00A0€/pers.` : ""}</Badge>
             {r.takeaway && <Badge>À emporter</Badge>}
           </div>
           {summary && summary.votes >= MIN_RATINGS && (

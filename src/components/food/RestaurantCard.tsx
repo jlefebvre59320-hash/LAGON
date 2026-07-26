@@ -1,24 +1,41 @@
 "use client";
 import Link from "next/link";
 import { MIN_RATINGS, isOpenNow, hasHours, priceLabel, type Restaurant, type RatingSummary } from "@/lib/food";
-import CuisineIcon from "@/components/food/CuisineIcon";
+import { CuisineVisual } from "@/components/food/CuisineIcon";
 import FavoriteButton from "@/components/FavoriteButton";
 import { StarRow } from "@/components/food/Stars";
 
-/* Pas de photos en v1 — choix juridique assumé : on n'affiche que des faits,
-   jamais les visuels des établissements sans leur accord. Le fond varie
-   doucement d'une carte à l'autre pour que la grille respire quand même. */
-const TINTS = [
-  "linear-gradient(140deg, var(--green-100), var(--cream-dark))",
-  "linear-gradient(140deg, var(--cream-dark), var(--gold-light))",
-  "linear-gradient(140deg, var(--green-100), var(--gold-light))",
-];
+/* Petit lien externe posé sur une carte : la carte entière est déjà un lien,
+   un <a> imbriqué est interdit — on ouvre donc à la main, sans suivre la carte. */
+function MiniLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+  return (
+    <span
+      role="link"
+      tabIndex={0}
+      aria-label={label}
+      title={label}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(href, "_blank", "noopener,noreferrer"); }}
+      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); window.open(href, "_blank", "noopener,noreferrer"); } }}
+      style={{
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        width: 30, height: 30, borderRadius: 999, cursor: "pointer",
+        background: "var(--cream-dark)", color: "var(--gold-deep)",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
 
-const tintFor = (id: string) => {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 997;
-  return TINTS[h % TINTS.length];
-};
+const Glyph = ({ d }: { d: string }) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={d} />
+  </svg>
+);
+const G_SITE = "M12 2 a10 10 0 1 0 0 20 a10 10 0 0 0 0 -20 M2 12 h20 M12 2 c-3 3 -3 17 0 20 c3 -3 3 -17 0 -20";
+const G_INSTA = "M7 3 h10 a4 4 0 0 1 4 4 v10 a4 4 0 0 1 -4 4 h-10 a4 4 0 0 1 -4 -4 v-10 a4 4 0 0 1 4 -4 M12 8.5 a3.5 3.5 0 1 0 0 7 a3.5 3.5 0 0 0 0 -7 M17.2 6.8 v0.01";
+const G_FB = "M15 3 h-2 a4 4 0 0 0 -4 4 v3 h-3 v4 h3 v7 h4 v-7 h3 l1 -4 h-4 v-2.5 a1 1 0 0 1 1 -1 h3 z";
 
 export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: RatingSummary }) {
   const known = hasHours(r.hours);
@@ -27,10 +44,8 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
 
   return (
     <Link href={`/food/resto/${r.id}`} className="card">
-      <div style={{ position: "relative", aspectRatio: "4 / 3", background: tintFor(r.id) }}>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.85 }}>
-          <CuisineIcon cuisine={r.cuisine} size={62} />
-        </div>
+      <div style={{ position: "relative", aspectRatio: "4 / 3" }}>
+        <CuisineVisual cuisine={r.cuisine} />
         <span
           style={{
             position: "absolute", left: 8, top: 8, maxWidth: "calc(100% - 16px)",
@@ -68,6 +83,7 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
         </span>
         <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
           {r.quartier} · <span style={{ fontWeight: 700, color: "var(--gold-deep)" }}>{priceLabel(r.price_range)}</span>
+          {r.avg_price_eur ? ` · ~${r.avg_price_eur}\u00A0€/pers.` : ""}
           {r.takeaway ? " · À emporter" : ""}
         </span>
         {rated && (
@@ -76,6 +92,13 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
               {rating.avg_rating.toLocaleString("fr-FR")} ({rating.votes})
             </span>
+          </span>
+        )}
+        {(r.website || r.instagram || r.facebook) && (
+          <span style={{ display: "inline-flex", gap: 6, marginTop: 6 }}>
+            {r.website && <MiniLink href={r.website} label="Site web"><Glyph d={G_SITE} /></MiniLink>}
+            {r.instagram && <MiniLink href={`https://instagram.com/${r.instagram.replace(/^@/, "")}`} label="Instagram"><Glyph d={G_INSTA} /></MiniLink>}
+            {r.facebook && <MiniLink href={r.facebook} label="Facebook"><Glyph d={G_FB} /></MiniLink>}
           </span>
         )}
       </div>

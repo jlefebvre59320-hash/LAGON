@@ -30,6 +30,15 @@ lisible par l'administration). Les fiches sont pré-remplies par l'administratio
 (`restaurants.owner_id` vide), puis remises au restaurateur quand il les
 revendique.
 
+Vignettes : chaque cuisine a une scène illustrée à ses couleurs. Pour la
+remplacer par une vraie photo, déposer un JPG **libre de droits** dans
+`public/cuisines/<slug>.jpg` — slugs : `francais`, `creole-caribeen`,
+`italien`, `poissons-fruits-de-mer`, `grillades-viandes`, `sushi-asiatique`,
+`pizza`, `burgers-snack`, `salades-healthy`, `cafe-brunch`,
+`glaces-desserts`, `food-truck`, `traiteur`, `tapas-cocktails`. La photo
+prend le dessus automatiquement, aucun code à changer. Jamais la photo d'un
+établissement sans son accord écrit.
+
 Amorçage : `supabase/seed_restaurants_osm.sql` contient ~54 fiches extraites
 d'OpenStreetMap (licence ODbL — l'attribution obligatoire est dans le pied de
 page du site food). **À relire avant exécution** (établissements fermés
