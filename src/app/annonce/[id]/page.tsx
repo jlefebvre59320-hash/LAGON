@@ -171,7 +171,7 @@ function Annonce() {
           )}
         </div>
         <h1 style={{ margin: "2px 0 8px", fontSize: 24, lineHeight: 1.2 }}>{l.title}</h1>
-        <div className="price" style={{ fontSize: 27, color: m.color }}>
+        <div className="price price-hero" style={{ color: m.color }}>
           {price == null
             ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
             : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}

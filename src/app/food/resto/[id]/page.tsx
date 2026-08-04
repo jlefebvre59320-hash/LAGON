@@ -186,7 +186,7 @@ function Resto() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
             <CuisineIcon cuisine={r.cuisine} size={84} />
           </div>
-          <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>{r.name}</h1>
+          <h1 style={{ fontSize: "clamp(28px, 6vw, 36px)", margin: "0 0 6px" }}>{r.name}</h1>
           <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
             <Badge>{r.cuisine}</Badge>
             <Badge>{r.quartier}</Badge>

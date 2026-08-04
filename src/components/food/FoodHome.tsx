@@ -99,7 +99,8 @@ function FoodHomeInner() {
             </div>
           </div>
 
-          <div style={{ position: "relative", margin: "16px 0 12px" }}>
+          <p className="hero-tagline">Bien manger, <em>toute l&apos;île</em>.</p>
+          <div style={{ position: "relative", margin: "12px 0 12px" }}>
             <input
               className="input search-input"
               value={query}
@@ -168,7 +169,7 @@ function FoodHomeInner() {
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 60, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-          <h1 style={{ fontSize: 19, margin: 0 }}>
+          <h1 className="section-title">
             {cuisine ?? "Où manger sur l'île"}
           </h1>
           {!loading && shown.length > 0 && (
@@ -198,11 +199,31 @@ function FoodHomeInner() {
               Élargissez la recherche ou retirez un filtre.
             </p>
           </div>
-        ) : (
-          <div className="grid">
-            {shown.map((r) => <RestaurantCard key={r.id} r={r} rating={ratings[r.id]} />)}
-          </div>
-        )}
+        ) : (() => {
+          const noFilter = !query && !cuisine && !quartier && !openOnly && !takeaway && sort === "name";
+          const top = noFilter
+            ? shown.filter((r) => ratings[r.id] && ratings[r.id].votes >= 3)
+                .sort((a, b) => ratings[b.id].avg_rating - ratings[a.id].avg_rating).slice(0, 4)
+            : [];
+          const topIds = new Set(top.map((r) => r.id));
+          return (
+            <>
+              {top.length >= 2 && (
+                <>
+                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--gold-deep)", margin: "0 0 8px" }}>
+                    Les tables préférées de l&apos;île
+                  </p>
+                  <div className="featured-row">
+                    {top.map((r) => <RestaurantCard key={r.id} r={r} rating={ratings[r.id]} />)}
+                  </div>
+                </>
+              )}
+              <div className="grid">
+                {shown.filter((r) => !topIds.has(r.id)).map((r) => <RestaurantCard key={r.id} r={r} rating={ratings[r.id]} />)}
+              </div>
+            </>
+          );
+        })()}
 
         <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 26, lineHeight: 1.5 }}>
           Informations rassemblées par {SITE.name}, à vérifier auprès de l&apos;établissement.
