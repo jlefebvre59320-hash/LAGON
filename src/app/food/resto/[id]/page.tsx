@@ -148,8 +148,25 @@ function Resto() {
     ? `https://wa.me/${r.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour, je vous contacte via St Barth Food.`)}`
     : null;
 
+  /* Données structurées : Google comprend la fiche (nom, cuisine, téléphone,
+     note) et peut l'afficher enrichie dans ses résultats. */
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    name: r.name,
+    servesCuisine: r.cuisine,
+    priceRange: "€".repeat(r.price_range),
+    telephone: r.phone ?? undefined,
+    url: `https://lagon-orcin.vercel.app/food/resto/${r.id}`,
+    address: { "@type": "PostalAddress", streetAddress: r.address || r.quartier, addressLocality: "Saint-Barthélemy", postalCode: "97133", addressCountry: "FR" },
+    ...(summary && summary.votes >= MIN_RATINGS
+      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: summary.avg_rating, ratingCount: summary.votes, bestRating: 5, worstRating: 1 } }
+      : {}),
+  };
+
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <SiteHeader />
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 110, maxWidth: 740, flex: 1 }}>

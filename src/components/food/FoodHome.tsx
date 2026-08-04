@@ -215,9 +215,11 @@ function FoodHomeInner() {
           <Mark size={72} />
           <span className="overline">{SITE.name} · {SITE.overline}</span>
           <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>{SITE.description}</p>
-          <Link href="/connexion" style={{ fontSize: 12.5, color: "var(--gold)", marginTop: 4 }}>
-            Connexion
-          </Link>
+          <span style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 12.5 }}>
+            <Link href="/connexion" style={{ color: "var(--gold)" }}>Connexion</Link>
+            <Link href="/mentions-legales" style={{ color: "rgba(246,242,233,.6)" }}>Mentions légales</Link>
+            <Link href="/confidentialite" style={{ color: "rgba(246,242,233,.6)" }}>Confidentialité</Link>
+          </span>
           <div style={{ marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(201,168,106,.25)", width: "100%", maxWidth: 460 }}>
             <SiteFamilyFooter />
           </div>
