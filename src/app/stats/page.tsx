@@ -20,6 +20,18 @@ type Claim = {
   restaurant: { name: string } | null;
 };
 
+type Report = {
+  id: string; listing_id: string; reason: string; created_at: string;
+  listing: { title: string; status: string } | null;
+};
+type Feedback = {
+  id: string; kind: "idee" | "probleme" | "avis"; message: string;
+  contact: string | null; created_at: string;
+};
+const FEEDBACK_KIND: Record<Feedback["kind"], string> = {
+  idee: "Idée", probleme: "Problème", avis: "Avis",
+};
+
 const CLAIM_KIND: Record<Claim["kind"], string> = {
   claim: "Revendication",
   correction: "Correction",
@@ -46,6 +58,8 @@ export default function Stats() {
   const [s, setS] = useState<SiteStats | null>(null);
   const [denied, setDenied] = useState(false);
   const [claims, setClaims] = useState<Claim[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [busyClaim, setBusyClaim] = useState<string | null>(null);
 
   const loadClaims = async () => {
@@ -55,7 +69,36 @@ export default function Stats() {
       .eq("handled", false)
       .order("created_at", { ascending: true });
     setClaims((data as Claim[]) ?? []);
+    const { data: reps } = await supabase()
+      .from("reports")
+      .select("id, listing_id, reason, created_at, listing:listings(title, status)")
+      .eq("handled", false).order("created_at", { ascending: true });
+    setReports((reps as unknown as Report[]) ?? []);
+    const { data: fb } = await supabase()
+      .from("feedback").select("*").eq("handled", false).order("created_at", { ascending: true });
+    setFeedback((fb as Feedback[]) ?? []);
   };
+
+  /* Signalement : retirer l'annonce (elle disparaît du site, l'auteur la voit
+     « retirée ») ou classer sans suite. Dans les deux cas le signalement est
+     traité et sort de la liste. */
+  async function resolveReport(rep: Report, action: "remove" | "dismiss") {
+    setBusyClaim(rep.id);
+    const sb = supabase();
+    if (action === "remove") {
+      await sb.from("listings").update({ status: "removed", removed_reason: rep.reason.slice(0, 200) }).eq("id", rep.listing_id);
+    }
+    await sb.from("reports").update({ handled: true }).eq("id", rep.id);
+    setBusyClaim(null);
+    loadClaims();
+  }
+
+  async function resolveFeedback(f: Feedback) {
+    setBusyClaim(f.id);
+    await supabase().from("feedback").update({ handled: true }).eq("id", f.id);
+    setBusyClaim(null);
+    loadClaims();
+  }
 
   useEffect(() => {
     (async () => {
@@ -166,6 +209,66 @@ export default function Stats() {
                       Marquer traité sans action
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {reports.length > 0 && (
+          <Section titre={`Signalements d'annonces (${reports.length})`}
+            sousTitre="Envoyés par les utilisateurs via « Signaler cette annonce »">
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {reports.map((rep) => (
+                <div key={rep.id} className="panel" style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
+                    <Link href={`/annonce/${rep.listing_id}`} style={{ fontWeight: 700, fontSize: 14.5 }}>
+                      {rep.listing?.title ?? "Annonce supprimée"}
+                    </Link>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      {new Date(rep.created_at).toLocaleDateString("fr-FR")}
+                      {rep.listing?.status === "removed" ? " · déjà retirée" : ""}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13.5, margin: "8px 0 10px", whiteSpace: "pre-wrap" }}>{rep.reason}</p>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                    <button className="btn" disabled={busyClaim === rep.id}
+                      onClick={() => { if (confirm("Retirer cette annonce du site ?")) resolveReport(rep, "remove"); }}
+                      style={{ background: "var(--danger)", fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
+                      Retirer l&apos;annonce
+                    </button>
+                    <button className="link-quiet" disabled={busyClaim === rep.id} onClick={() => resolveReport(rep, "dismiss")}>
+                      Classer sans suite
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {feedback.length > 0 && (
+          <Section titre={`Retours des utilisateurs (${feedback.length})`}
+            sousTitre="Idées, problèmes et avis envoyés depuis « Votre avis compte »">
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {feedback.map((f) => (
+                <div key={f.id} className="panel" style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
+                    <span style={{
+                      fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+                      color: "var(--gold-deep)", background: "var(--cream-dark)", padding: "4px 10px", borderRadius: 99,
+                    }}>
+                      {FEEDBACK_KIND[f.kind]}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      {new Date(f.created_at).toLocaleDateString("fr-FR")}
+                      {f.contact ? ` · contact : ${f.contact}` : " · sans contact"}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13.5, margin: "8px 0 10px", whiteSpace: "pre-wrap" }}>{f.message}</p>
+                  <button className="link-quiet" disabled={busyClaim === f.id} onClick={() => resolveFeedback(f)}>
+                    Marquer lu
+                  </button>
                 </div>
               ))}
             </div>
