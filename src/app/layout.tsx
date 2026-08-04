@@ -6,6 +6,7 @@ const S = SITES.tikanal;
 const TITLE = `${S.name} · ${S.baseline} — ${S.overline}`;
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://lagon-orcin.vercel.app"),
   title: TITLE,
   description: S.description,
   applicationName: S.name,

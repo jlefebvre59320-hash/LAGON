@@ -115,8 +115,19 @@ function Annonce() {
     if (!error) setReported(true);
   }
 
+  const jsonLd = l.price_cents != null && l.intent !== "wanted" ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: l.title,
+    description: l.description?.slice(0, 300) || undefined,
+    offers: { "@type": "Offer", price: (l.price_cents / 100).toFixed(2), priceCurrency: "EUR",
+      availability: "https://schema.org/InStock",
+      url: `https://lagon-orcin.vercel.app/annonce/${l.id}` },
+  } : null;
+
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       <SiteHeader accent={m.color} />
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 110, maxWidth: 740, flex: 1 }}>
