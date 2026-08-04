@@ -89,6 +89,7 @@ function FoodHomeInner() {
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       <header className="site-header">
+      <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
         <div className="container" style={{ paddingTop: 16 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand site="food" />
@@ -182,7 +183,7 @@ function FoodHomeInner() {
         {loading ? (
           <div className="grid" aria-hidden="true">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="panel" style={{ height: 210, opacity: 0.5 }} />
+              <div key={i} className="panel skeleton" style={{ height: 210, opacity: 0.6 }} />
             ))}
           </div>
         ) : shown.length === 0 ? (
