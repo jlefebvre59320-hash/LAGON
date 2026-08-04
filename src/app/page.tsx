@@ -90,7 +90,10 @@ function Home() {
             </div>
           </div>
 
-          <div style={{ position: "relative", margin: "16px 0 12px" }}>
+          {tab === "home" && (
+            <p className="hero-tagline">Le canal des <em>bonnes affaires</em> de l&apos;île.</p>
+          )}
+          <div style={{ position: "relative", margin: "12px 0 12px" }}>
             <input
               className="input search-input"
               value={query}
@@ -237,8 +240,8 @@ function Home() {
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 90, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-          <h1 style={{ fontSize: 19, margin: 0 }}>
-            {m ? m.label : "Dernières annonces sur l'île"}
+          <h1 className="section-title">
+            {m ? m.label : "Dernières annonces"}
           </h1>
           {!loading && listings.length > 0 && (
             <span style={{ fontSize: 12.5, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
@@ -268,6 +271,15 @@ function Home() {
             </p>
             <Link href="/deposer" className="btn">Déposer une annonce</Link>
           </div>
+        ) : tab === "home" && !query && !intent && listings.length > 3 ? (
+          <>
+            <div className="featured-row">
+              {listings.slice(0, 3).map((l) => <ListingCard key={l.id} l={l} />)}
+            </div>
+            <div className="grid">
+              {listings.slice(3).map((l) => <ListingCard key={l.id} l={l} />)}
+            </div>
+          </>
         ) : (
           <div className="grid">
             {listings.map((l) => <ListingCard key={l.id} l={l} />)}

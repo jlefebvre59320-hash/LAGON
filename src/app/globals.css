@@ -473,3 +473,57 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* --- Éditorial : accueils « magazine » et profondeur typographique -------- */
+
+/* Accroche sous la marque : la voix du site, en sérif, grande. */
+.hero-tagline {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  font-style: italic;
+  font-size: clamp(19px, 4.6vw, 27px);
+  line-height: 1.25;
+  color: var(--cream);
+  margin: 14px 0 2px;
+}
+.hero-tagline em { color: var(--gold); font-style: inherit; }
+
+/* Titres de section : vraiment grands, soulignés d'un filet or court. */
+.section-title {
+  font-size: clamp(24px, 5vw, 34px);
+  line-height: 1.15;
+  margin: 0;
+}
+.section-title::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 2px;
+  background: var(--gold);
+  margin-top: 8px;
+  border-radius: 2px;
+}
+
+/* « À la une » : rangée de grandes cartes, défilée au pouce, avec accroche. */
+.featured-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -14px 6px;
+  padding: 4px 14px 12px;
+}
+.featured-row::-webkit-scrollbar { display: none; }
+.featured-row > * {
+  flex: 0 0 min(78%, 360px);
+  scroll-snap-align: center;
+}
+@media (min-width: 720px) {
+  .featured-row { margin: 0 0 6px; padding: 4px 0 12px; }
+  .featured-row > * { flex: 0 0 320px; scroll-snap-align: start; }
+}
+.featured-row .card { box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+
+/* Prix des fiches : le chiffre est l'information, il se voit de loin. */
+.price-hero { font-size: clamp(30px, 6vw, 38px) !important; }
