@@ -28,6 +28,10 @@ type Feedback = {
   id: string; kind: "idee" | "probleme" | "avis"; message: string;
   contact: string | null; created_at: string;
 };
+type AdminUser = {
+  id: string; email: string; display_name: string; created_at: string;
+  last_sign_in: string | null; is_banned: boolean; listings: number;
+};
 const FEEDBACK_KIND: Record<Feedback["kind"], string> = {
   idee: "Idée", probleme: "Problème", avis: "Avis",
 };
@@ -61,6 +65,7 @@ export default function Stats() {
   const [reports, setReports] = useState<Report[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [busyClaim, setBusyClaim] = useState<string | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
 
   const loadClaims = async () => {
     const { data } = await supabase()
@@ -77,7 +82,17 @@ export default function Stats() {
     const { data: fb } = await supabase()
       .from("feedback").select("*").eq("handled", false).order("created_at", { ascending: true });
     setFeedback((fb as Feedback[]) ?? []);
+    const { data: us } = await supabase().rpc("admin_users");
+    setUsers((us as AdminUser[]) ?? []);
   };
+
+  async function toggleBan(u: AdminUser) {
+    if (!confirm(u.is_banned ? `Rétablir ${u.email} ?` : `Bannir ${u.email} ? Il ne pourra plus publier.`)) return;
+    setBusyClaim(u.id);
+    await supabase().from("profiles").update({ is_banned: !u.is_banned }).eq("id", u.id);
+    setBusyClaim(null);
+    loadClaims();
+  }
 
   /* Signalement : retirer l'annonce (elle disparaît du site, l'auteur la voit
      « retirée ») ou classer sans suite. Dans les deux cas le signalement est
@@ -360,6 +375,34 @@ export default function Stats() {
                 </span>
               ))}
             </div>
+          </div>
+        </Section>
+
+        <Section titre={`Comptes (${users.length})`} sousTitre="Email, inscription, dernière connexion — visibles de vous seul">
+          <div className="panel" style={{ padding: "6px 14px 10px", overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id} style={{ borderTop: "1px solid var(--border)" }}>
+                    <td style={{ padding: "8px 8px 8px 0" }}>
+                      <strong>{u.email}</strong>
+                      <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
+                        {u.display_name} · inscrit le {new Date(u.created_at).toLocaleDateString("fr-FR")}
+                        {u.last_sign_in ? ` · vu le ${new Date(u.last_sign_in).toLocaleDateString("fr-FR")}` : ""}
+                        {" · "}{u.listings} annonce{u.listings > 1 ? "s" : ""}
+                        {u.is_banned ? " · BANNI" : ""}
+                      </div>
+                    </td>
+                    <td style={{ padding: "8px 0", textAlign: "right", whiteSpace: "nowrap" }}>
+                      <button className="link-quiet" disabled={busyClaim === u.id} onClick={() => toggleBan(u)}
+                        style={u.is_banned ? undefined : { color: "var(--danger)" }}>
+                        {u.is_banned ? "Rétablir" : "Bannir"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Section>
 
