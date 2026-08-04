@@ -108,6 +108,7 @@ export function SiteHeader({ accent = "var(--gold)", site }: { accent?: string; 
   const currentSite = site ?? siteFromPath(pathname ?? "/");
   return (
     <header className="site-header">
+      <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
       <div
         className="container"
         style={{ paddingTop: 12, paddingBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}

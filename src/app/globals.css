@@ -201,7 +201,19 @@ h1, h2, h3 {
 
 /* --- Bandeau ------------------------------------------------------------ */
 
+/* Filigrane : le contour de l'île en très grand, à peine visible, comme un
+   gaufrage — la signature discrète des maisons sérieuses. */
+.header-island {
+  position: absolute;
+  right: -40px;
+  top: -20px;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
 .site-header {
+  position: relative;
+  overflow: hidden;
   background:
     radial-gradient(120% 140% at 15% 0%, var(--green-700) 0%, var(--green) 55%, var(--green-900) 100%),
     var(--green);
@@ -359,6 +371,38 @@ h1, h2, h3 {
 }
 
 /* --- Cartes ------------------------------------------------------------- */
+
+/* Entrée des cartes : un fondu monté très court, décalé carte par carte —
+   la grille se pose au lieu d'apparaître. Coupé si l'utilisateur préfère
+   moins d'animations (règle globale prefers-reduced-motion plus bas). */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.grid > * { animation: rise 0.35s ease both; }
+.grid > *:nth-child(2) { animation-delay: 0.04s; }
+.grid > *:nth-child(3) { animation-delay: 0.08s; }
+.grid > *:nth-child(4) { animation-delay: 0.12s; }
+.grid > *:nth-child(5) { animation-delay: 0.16s; }
+.grid > *:nth-child(6) { animation-delay: 0.2s; }
+.grid > *:nth-child(n+7) { animation-delay: 0.24s; }
+
+/* Chargement : un chatoiement lent sur les blocs d'attente, plutôt que des
+   pavés morts. */
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+.skeleton {
+  background-image: linear-gradient(100deg, transparent 30%,
+    color-mix(in srgb, var(--gold) 14%, transparent) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+.card img { animation: rise 0.3s ease both; }
+
+::selection { background: var(--gold); color: var(--green); }
 
 .card {
   text-align: left;

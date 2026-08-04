@@ -163,6 +163,10 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                 Statistiques du site
               </Link>
             )}
+            <Link href="/retours" className="btn btn-outline-gold"
+              style={{ fontSize: 13, padding: "10px 16px", color: "var(--gold-deep)", borderColor: "var(--border-input)" }}>
+              Donner un avis
+            </Link>
             <button
               className="btn btn-outline-gold"
               style={{ fontSize: 13, padding: "10px 16px", color: "var(--gold-deep)", borderColor: "var(--border-input)" }}

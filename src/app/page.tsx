@@ -77,6 +77,7 @@ function Home() {
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       <header className="site-header">
+      <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
         <div className="container" style={{ paddingTop: 16 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand onClick={() => { setTab("home"); setSub(null); }} />
@@ -251,7 +252,7 @@ function Home() {
         {loading ? (
           <div className="grid" aria-hidden="true">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="panel" style={{ height: 210, opacity: 0.5 }} />
+              <div key={i} className="panel skeleton" style={{ height: 210, opacity: 0.6 }} />
             ))}
           </div>
         ) : listings.length === 0 ? (
@@ -282,7 +283,7 @@ function Home() {
           <span className="overline">{SITE.name} · {SITE.overline}</span>
           <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>{SITE.description}</p>
           <span style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 12.5 }}>
-            <Link href="/connexion" style={{ color: "var(--gold)" }}>Connexion</Link>
+            <Link href="/retours" style={{ color: "var(--gold)" }}>Une idée ?</Link>
             <Link href="/mentions-legales" style={{ color: "rgba(246,242,233,.6)" }}>Mentions légales</Link>
             <Link href="/confidentialite" style={{ color: "rgba(246,242,233,.6)" }}>Confidentialité</Link>
           </span>
