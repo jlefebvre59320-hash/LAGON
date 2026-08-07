@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Flux — mon activité</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%232f6f6d'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Flux</span>
+      </div>
+
+      <div class="now" id="now">
+        <span class="now-label">En ce moment</span>
+        <span class="now-value" id="now-value">—</span>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="btn" id="timer-toggle">Démarrer un minuteur</button>
+        <button type="button" class="btn ghost" id="pause-toggle" aria-pressed="false">Pause</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab is-active" data-view="jour" role="tab">Jour</button>
+      <button type="button" class="tab" data-view="semaine" role="tab">Semaine</button>
+      <button type="button" class="tab" data-view="trier" role="tab">
+        À trier <span class="pill" id="tab-badge" hidden>0</span>
+      </button>
+      <button type="button" class="tab" data-view="projets" role="tab">Projets</button>
+      <button type="button" class="tab" data-view="reglages" role="tab">Réglages</button>
+    </nav>
+
+    <main id="main">
+      <!-- JOUR -->
+      <section class="view is-active" data-view="jour">
+        <div class="daybar">
+          <button type="button" class="btn ghost" id="day-prev" aria-label="Jour précédent">‹</button>
+          <input type="date" id="day-input" />
+          <button type="button" class="btn ghost" id="day-next" aria-label="Jour suivant">›</button>
+          <button type="button" class="btn ghost" id="day-today">Aujourd'hui</button>
+          <span class="grow"></span>
+          <strong class="total" id="day-total">0 h</strong>
+        </div>
+
+        <div class="grid">
+          <article class="card span-2">
+            <h2>Répartition par projet</h2>
+            <div id="day-projects" class="breakdown"></div>
+          </article>
+
+          <article class="card span-2">
+            <h2>Fil de la journée</h2>
+            <div id="day-timeline" class="timeline"></div>
+            <div class="timeline-scale" id="timeline-scale"></div>
+          </article>
+
+          <article class="card">
+            <h2>Sites les plus ouverts</h2>
+            <ol id="day-sites" class="ranking"></ol>
+          </article>
+
+          <article class="card">
+            <h2>Applications</h2>
+            <ol id="day-apps" class="ranking"></ol>
+          </article>
+
+          <article class="card span-2">
+            <h2>Sessions <span class="muted" id="day-count"></span></h2>
+            <div id="day-sessions" class="sessions"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- SEMAINE -->
+      <section class="view" data-view="semaine">
+        <div class="daybar">
+          <button type="button" class="btn ghost" id="week-prev">‹ Semaine précédente</button>
+          <span id="week-label" class="muted"></span>
+          <button type="button" class="btn ghost" id="week-next">Semaine suivante ›</button>
+          <span class="grow"></span>
+          <strong class="total" id="week-total">0 h</strong>
+        </div>
+        <div class="grid">
+          <article class="card span-2">
+            <h2>Jour par jour</h2>
+            <div id="week-days" class="weekchart"></div>
+          </article>
+          <article class="card span-2">
+            <h2>Répartition par projet</h2>
+            <div id="week-projects" class="breakdown"></div>
+          </article>
+          <article class="card span-2">
+            <h2>Exporter</h2>
+            <p class="muted">Feuille de temps ou détail complet, sur la période affichée.</p>
+            <div class="row">
+              <a class="btn" id="export-timesheet" href="#">Feuille de temps (CSV)</a>
+              <a class="btn ghost" id="export-detail" href="#">Détail des sessions (CSV)</a>
+              <a class="btn ghost" id="export-json" href="#">Sauvegarde JSON</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- À TRIER -->
+      <section class="view" data-view="trier">
+        <div class="daybar">
+          <span class="muted">Activités que le rangement automatique n'a pas su placer. Un clic les range — et lui apprend la règle.</span>
+          <span class="grow"></span>
+          <button type="button" class="btn ghost" id="sort-reclassify">Relancer le rangement</button>
+        </div>
+        <div id="sort-list" class="sortlist"></div>
+      </section>
+
+      <!-- PROJETS -->
+      <section class="view" data-view="projets">
+        <div class="daybar">
+          <span class="muted">Chaque projet attrape l'activité qui lui correspond : domaines, applis, codes ticket, mots-clés.</span>
+          <span class="grow"></span>
+          <button type="button" class="btn" id="project-new">Nouveau projet</button>
+        </div>
+        <div id="projects-list" class="projects"></div>
+      </section>
+
+      <!-- RÉGLAGES -->
+      <section class="view" data-view="reglages">
+        <div class="grid">
+          <article class="card span-2">
+            <h2>Ne jamais enregistrer</h2>
+            <p class="muted">
+              Un motif par ligne. Un domaine (<code>impots.gouv.fr</code>), un joker
+              (<code>*.bank</code>), ou un nom d'application (<code>Signal</code>). Tout ce qui
+              correspond est écarté avant écriture — rien n'est conservé.
+            </p>
+            <textarea id="cfg-ignore" rows="8" spellcheck="false"></textarea>
+          </article>
+
+          <article class="card">
+            <h2>Découpage</h2>
+            <label>Inactivité avant clôture (minutes)<input type="number" id="cfg-idle" min="1" max="60" /></label>
+            <label>Session minimale (secondes)<input type="number" id="cfg-min" min="1" max="300" /></label>
+            <label>Seuil de rangement automatique<input type="number" id="cfg-threshold" min="5" max="200" /></label>
+            <label>Début de journée (heure)<input type="number" id="cfg-daystart" min="0" max="12" /></label>
+          </article>
+
+          <article class="card">
+            <h2>Données</h2>
+            <p class="muted" id="cfg-home">Stockage local.</p>
+            <div class="row">
+              <button type="button" class="btn ghost" id="cfg-compact">Compacter le journal</button>
+            </div>
+            <p class="muted small">
+              Rien ne sort de ce poste : le serveur n'écoute que sur la boucle locale et
+              n'appelle aucun service distant.
+            </p>
+          </article>
+
+          <article class="card span-2">
+            <div class="row">
+              <button type="button" class="btn" id="cfg-save">Enregistrer les réglages</button>
+              <span class="muted" id="cfg-status"></span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- Minuteur manuel -->
+    <dialog id="timer-dialog">
+      <form method="dialog" id="timer-form">
+        <h2>Minuteur</h2>
+        <label>Ce que je fais<input type="text" id="timer-title" placeholder="Réunion client, appel, déplacement…" required /></label>
+        <label>Projet<select id="timer-project"></select></label>
+        <div class="row end">
+          <button type="submit" value="cancel" class="btn ghost">Annuler</button>
+          <button type="submit" value="start" class="btn">Démarrer</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Édition d'un projet -->
+    <dialog id="project-dialog">
+      <form method="dialog" id="project-form">
+        <h2 id="project-dialog-title">Projet</h2>
+        <div class="two">
+          <label>Nom<input type="text" id="pf-name" required /></label>
+          <label>Client<input type="text" id="pf-client" placeholder="facultatif" /></label>
+        </div>
+        <label>Couleur<input type="color" id="pf-color" /></label>
+        <div class="two">
+          <label>Domaines<textarea id="pf-domains" rows="4" placeholder="airtable.com&#10;github.com/mon-org"></textarea></label>
+          <label>Applications<textarea id="pf-apps" rows="4" placeholder="Visual Studio Code&#10;Outlook"></textarea></label>
+        </div>
+        <div class="two">
+          <label>Codes (ticket, SAM…)<textarea id="pf-codes" rows="3" placeholder="T15423&#10;EROCAM401"></textarea></label>
+          <label>Mots-clés<textarea id="pf-keywords" rows="3" placeholder="migration&#10;switch"></textarea></label>
+        </div>
+        <div class="two">
+          <label>Motifs d'URL<textarea id="pf-urlPatterns" rows="3" placeholder="airtable.com/appXY*"></textarea></label>
+          <label>Motifs de titre (regex)<textarea id="pf-titlePatterns" rows="3" placeholder="^LAGON"></textarea></label>
+        </div>
+        <div class="row end">
+          <button type="button" class="btn danger ghost" id="pf-delete">Supprimer</button>
+          <span class="grow"></span>
+          <button type="submit" value="cancel" class="btn ghost">Annuler</button>
+          <button type="submit" value="save" class="btn">Enregistrer</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" hidden></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

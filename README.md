@@ -292,3 +292,12 @@ Aucune migration nécessaire : les valeurs vont dans la colonne JSONB `attrs`.
 6. **SEO** : les pages sont en rendu client (choix v1 pour la simplicité) ; passer la
    fiche annonce en Server Component quand le trafic organique deviendra un enjeu.
 7. **Rate limiting** sur la création de comptes (protection Supabase Auth ou Cloudflare Turnstile).
+
+---
+
+## `flux/` — outil interne, sans rapport avec les trois sites
+
+Le dossier `flux/` héberge un projet autonome : un tableau de bord local qui
+centralise l'activité de travail (sites, pages, applications, réunions) et la
+range automatiquement par projet. Il ne partage ni code, ni base, ni build avec
+Ti Kanal — il ne fait que cohabiter dans ce dépôt. Voir `flux/README.md`.

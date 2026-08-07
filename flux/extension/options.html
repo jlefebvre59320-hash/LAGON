@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Flux — réglages de la capture</title>
+    <style>
+      body {
+        font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+        margin: 0;
+        padding: 1rem;
+        min-width: 300px;
+        color: #1b2224;
+        background: #fff;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { color: #e8eceb; background: #182022; }
+        input { color: inherit; background: #12181a; border-color: #2a3639; }
+      }
+      h1 { font-size: 1rem; margin: 0 0 0.8rem; }
+      label { display: block; margin-bottom: 0.8rem; font-size: 0.85rem; }
+      input[type="text"], input[type="number"] {
+        width: 100%; padding: 0.35rem 0.5rem; border: 1px solid #d6d2ca; border-radius: 6px; font: inherit;
+      }
+      .row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
+      button { font: inherit; padding: 0.35rem 0.8rem; border-radius: 6px; border: 0; background: #2f6f6d; color: #fff; cursor: pointer; }
+      .status { font-size: 0.82rem; opacity: 0.75; min-height: 1.2em; }
+      a { color: #2f6f6d; }
+    </style>
+  </head>
+  <body>
+    <h1>Flux — capture navigateur</h1>
+    <div class="row">
+      <input type="checkbox" id="enabled" />
+      <label for="enabled" style="margin: 0">Capture active</label>
+    </div>
+    <label>Serveur local<input type="text" id="endpoint" placeholder="http://127.0.0.1:7749" /></label>
+    <label>Inactivité considérée comme pause (secondes)<input type="number" id="idleSeconds" min="15" max="900" /></label>
+    <div class="row">
+      <button id="save">Enregistrer</button>
+      <button id="test" style="background: transparent; color: inherit; border: 1px solid #d6d2ca">Tester</button>
+    </div>
+    <p class="status" id="status"></p>
+    <p class="status" id="queue"></p>
+    <p><a id="open" href="#" target="_blank">Ouvrir le tableau de bord</a></p>
+    <script src="options.js"></script>
+  </body>
+</html>

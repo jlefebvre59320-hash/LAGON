@@ -1,0 +1,15 @@
+{
+  "name": "flux",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Centralisation locale de l'activité : navigateur, applications, saisie manuelle — rangée automatiquement par projet.",
+  "scripts": {
+    "start": "node server/index.mjs",
+    "agent": "node agent/flux-agent.mjs",
+    "test": "node --test tests/"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
