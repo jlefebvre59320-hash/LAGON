@@ -10,6 +10,7 @@ import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
 import { SITES } from "@/lib/sites";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
+import InstallBanner from "@/components/InstallBanner";
 
 const SITE = SITES.tikanal;
 
@@ -238,6 +239,7 @@ function Home() {
       </div>
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 90, flex: 1 }}>
+        {tab === "home" && <InstallBanner />}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <h1 className="section-title">
             {m ? m.label : "Dernières annonces"}
