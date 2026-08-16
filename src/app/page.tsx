@@ -138,7 +138,7 @@ function Home() {
       {tab === "home" && (
         <div className="container" style={{ paddingTop: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
-            {([SITES.food] as const).map((s) => (
+            {([SITES.food, SITES.guide] as const).map((s) => (
               <Link
                 key={s.key}
                 href={s.path}
