@@ -28,6 +28,11 @@ type Feedback = {
   id: string; kind: "idee" | "probleme" | "avis"; message: string;
   contact: string | null; created_at: string;
 };
+type PendingEvent = {
+  id: string; title: string; category: string; venue: string; quartier: string;
+  starts_at: string; price: string; description: string; link: string | null;
+  organizer: string; contact: string; created_at: string;
+};
 type AdminUser = {
   id: string; email: string; display_name: string; created_at: string;
   last_sign_in: string | null; is_banned: boolean; listings: number;
@@ -66,6 +71,7 @@ export default function Stats() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [busyClaim, setBusyClaim] = useState<string | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [pendingEvents, setPendingEvents] = useState<PendingEvent[]>([]);
 
   const loadClaims = async () => {
     const { data } = await supabase()
@@ -84,7 +90,19 @@ export default function Stats() {
     setFeedback((fb as Feedback[]) ?? []);
     const { data: us } = await supabase().rpc("admin_users");
     setUsers((us as AdminUser[]) ?? []);
+    /* La table events n'existe qu'après la migration 0018 : un échec ici ne
+       doit pas faire tomber le reste du tableau de bord. */
+    const { data: evs, error: evErr } = await supabase()
+      .from("events").select("*").eq("status", "pending").order("starts_at");
+    setPendingEvents(evErr ? [] : ((evs as PendingEvent[]) ?? []));
   };
+
+  async function resolveEvent(e: PendingEvent, status: "approved" | "rejected") {
+    setBusyClaim(e.id);
+    await supabase().from("events").update({ status }).eq("id", e.id);
+    setBusyClaim(null);
+    loadClaims();
+  }
 
   async function toggleBan(u: AdminUser) {
     if (!confirm(u.is_banned ? `Rétablir ${u.email} ?` : `Bannir ${u.email} ? Il ne pourra plus publier.`)) return;
@@ -177,6 +195,47 @@ export default function Stats() {
         <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px" }}>
           Fréquentation mesurée sur le site lui-même, visiteurs non connectés compris.
         </p>
+
+        {pendingEvents.length > 0 && (
+          <Section titre={`Événements à valider (${pendingEvents.length})`}
+            sousTitre="Proposés par leurs organisateurs — rien ne paraît sans votre accord">
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {pendingEvents.map((e) => (
+                <div key={e.id} className="panel" style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+                      color: "var(--gold-deep)", background: "var(--cream-dark)", padding: "4px 10px", borderRadius: 99 }}>
+                      {e.category}
+                    </span>
+                    <span style={{ fontWeight: 700, fontSize: 14.5 }}>{e.title}</span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      {new Date(e.starts_at).toLocaleString("fr-FR", { timeZone: "America/St_Barthelemy", dateStyle: "medium", timeStyle: "short" })}
+                      {e.venue ? ` · ${e.venue}` : ""}{e.quartier ? ` · ${e.quartier}` : ""}{e.price ? ` · ${e.price}` : ""}
+                    </span>
+                  </div>
+                  {e.description && <p style={{ fontSize: 13.5, margin: "8px 0 4px", whiteSpace: "pre-wrap" }}>{e.description}</p>}
+                  <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
+                    Par <strong style={{ color: "var(--text)" }}>{e.organizer}</strong> · contact :{" "}
+                    <strong style={{ color: "var(--text)" }}>{e.contact}</strong>
+                    {e.link && <> · <a href={e.link} target="_blank" rel="noopener noreferrer">lien ↗</a></>}
+                  </p>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                    <button className="btn" disabled={busyClaim === e.id}
+                      onClick={() => resolveEvent(e, "approved")}
+                      style={{ fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
+                      Publier dans l&apos;agenda
+                    </button>
+                    <button className="link-quiet" disabled={busyClaim === e.id}
+                      onClick={() => { if (confirm("Refuser cet événement ? Il ne paraîtra pas.")) resolveEvent(e, "rejected"); }}
+                      style={{ color: "var(--danger)" }}>
+                      Refuser
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
 
         {claims.length > 0 && (
           <Section titre={`Demandes des établissements (${claims.length})`}

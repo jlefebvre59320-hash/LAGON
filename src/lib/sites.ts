@@ -49,7 +49,7 @@ export const SITES: Record<SiteKey, SiteDef> = {
     dot: "#e0855f",
     themeColor: "#101f3c",
     path: "/event",
-    ready: false,
+    ready: true,
   },
   food: {
     key: "food",

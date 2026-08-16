@@ -34,6 +34,8 @@ function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [foodHits, setFoodHits] = useState<{ id: string; name: string; cuisine: string; quartier: string }[]>([]);
+  const [guideHits, setGuideHits] = useState<{ id: string; name: string; category: string; quartier: string }[]>([]);
 
   const activeModule = tab === "home" ? null : tab;
   const m = activeModule ? MODULES[activeModule] : null;
@@ -76,6 +78,29 @@ function Home() {
   }, [activeModule, sub, intent, query, minP, maxP]);
 
   const subs = useMemo(() => (m ? m.subs : []), [m]);
+
+  /* Recherche globale : depuis l'accueil, la même barre fouille aussi les
+     restaurants et le guide — trois univers, un seul champ. Les caractères
+     spéciaux de la syntaxe PostgREST sont neutralisés. */
+  useEffect(() => {
+    const q = query.trim().replace(/[,()%\\]/g, " ").trim();
+    if (tab !== "home" || q.length < 2) { setFoodHits([]); setGuideHits([]); return; }
+    let cancelled = false;
+    (async () => {
+      const like = `%${q}%`;
+      const [fr, gp] = await Promise.all([
+        supabase().from("restaurants").select("id, name, cuisine, quartier").eq("status", "active")
+          .or(`name.ilike.${like},cuisine.ilike.${like},quartier.ilike.${like}`).limit(5),
+        supabase().from("places").select("id, name, category, quartier").eq("status", "active")
+          .or(`name.ilike.${like},quartier.ilike.${like},description.ilike.${like}`).limit(5),
+      ]);
+      if (cancelled) return;
+      setFoodHits((fr.data as typeof foodHits) ?? []);
+      setGuideHits((gp.data as typeof guideHits) ?? []);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, tab]);
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
@@ -144,7 +169,7 @@ function Home() {
             <span className="dots-hint" aria-hidden="true"><i /><i /><i /></span> en haut.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
-            {([SITES.food, SITES.guide] as const).map((s) => (
+            {([SITES.food, SITES.guide, SITES.event] as const).map((s) => (
               <Link
                 key={s.key}
                 href={s.path}
@@ -258,6 +283,43 @@ function Home() {
         </div>
 
         {error && <p style={{ color: "var(--danger)", fontWeight: 600 }}>{error}</p>}
+
+        {(foodHits.length > 0 || guideHits.length > 0) && (
+          <div style={{ display: "grid", gap: 8, marginBottom: 18 }}>
+            {foodHits.length > 0 && (
+              <div className="panel" data-site="food" style={{ padding: "10px 14px", background: "var(--surface)" }}>
+                <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase",
+                  color: "var(--gold-deep)", margin: "0 0 6px" }}>
+                  Aussi dans St Barth Food
+                </p>
+                {foodHits.map((r) => (
+                  <Link key={r.id} href={`/food/resto/${r.id}`}
+                    style={{ display: "block", padding: "5px 0", fontSize: 13.5, textDecoration: "none", color: "var(--text)" }}>
+                    <strong>{r.name}</strong>
+                    <span style={{ color: "var(--text-muted)" }}> — {r.cuisine} · {r.quartier}</span>
+                    <span style={{ color: "var(--gold-deep)" }}> →</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+            {guideHits.length > 0 && (
+              <div className="panel" data-site="guide" style={{ padding: "10px 14px", background: "var(--surface)" }}>
+                <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase",
+                  color: "var(--gold-deep)", margin: "0 0 6px" }}>
+                  Aussi dans St Barth Guide
+                </p>
+                {guideHits.map((p) => (
+                  <Link key={p.id} href={`/guide/lieu/${p.id}`}
+                    style={{ display: "block", padding: "5px 0", fontSize: 13.5, textDecoration: "none", color: "var(--text)" }}>
+                    <strong>{p.name}</strong>
+                    <span style={{ color: "var(--text-muted)" }}> — {p.quartier}</span>
+                    <span style={{ color: "var(--gold-deep)" }}> →</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="grid" aria-hidden="true">
