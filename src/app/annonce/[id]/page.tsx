@@ -135,10 +135,15 @@ function Annonce() {
     if (!confirm(`Supprimer définitivement « ${l.title} » ?\nPhotos, favoris et signalements partent avec. Irréversible.`)) return;
     setDeleting(true);
     const keys = (l.photos ?? []).map((p) => p.storage_key);
-    const { error } = await supabase().from("listings").delete().eq("id", l.id);
-    if (error) {
+    /* .select("id") force PostgREST à renvoyer les lignes supprimées : sans
+       ça, une suppression refusée par la RLS (0 ligne touchée) passe pour
+       un succès et l'annonce « toujours là » devient inexplicable. */
+    const { data, error } = await supabase().from("listings").delete().eq("id", l.id).select("id");
+    if (error || !data || data.length === 0) {
       setDeleting(false);
-      alert(`Suppression impossible : ${error.message}`);
+      alert(error
+        ? `Suppression impossible : ${error.message}`
+        : "La base a refusé la suppression. Vérifiez que la migration 0013 (droits de suppression admin) a bien été exécutée dans le SQL Editor.");
       return;
     }
     // Les fichiers du bucket ne suivent pas la cascade SQL : on les retire

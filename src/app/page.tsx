@@ -168,30 +168,27 @@ function Home() {
 
       <div className="container">
         {m && (
-          <div className="filter-row">
-            <button
-              className="chip"
-              onClick={() => setSub(null)}
-              style={!sub ? { background: m.color, borderColor: m.color, color: "#fff" } : undefined}
+          <div className="filter-row wrap">
+            {/* Menu déroulant plutôt que chips défilantes : la totalité des
+                sous-catégories tient à l'écran, rien à aller chercher. */}
+            <select
+              className="input"
+              value={sub ?? ""}
+              onChange={(e) => setSub(e.target.value || null)}
+              aria-label="Sous-catégorie"
+              style={{ width: "auto", maxWidth: "100%", minHeight: 40, padding: "8px 34px 8px 14px",
+                borderRadius: 999, fontSize: 14, fontWeight: 600, flex: "0 0 auto",
+                borderColor: sub ? m.color : undefined, color: sub ? m.dark : undefined }}
             >
-              Tout
-            </button>
-            {subs.map((s) => (
-              <button
-                key={s}
-                className="chip"
-                onClick={() => setSub(sub === s ? null : s)}
-                style={sub === s ? { background: m.color, borderColor: m.color, color: "#fff" } : undefined}
-              >
-                {s}
-              </button>
-            ))}
+              <option value="">Toutes les sous-catégories</option>
+              {subs.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
           </div>
         )}
 
         {/* Sens de l'annonce : proposé ou recherché. Valable dans tous les
             univers, donc affiché aussi sur l'accueil. */}
-        <div className="filter-row" style={{ paddingTop: m ? 8 : 14 }}>
+        <div className="filter-row wrap" style={{ paddingTop: m ? 8 : 14 }}>
           <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
             Afficher
           </span>
