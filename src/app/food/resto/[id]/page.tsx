@@ -14,6 +14,7 @@ import { recordView } from "@/lib/analytics";
 import { useSession } from "@/lib/session";
 import { FavoritesProvider } from "@/lib/favorites";
 import FavoriteButton from "@/components/FavoriteButton";
+import { SITE_URL } from "@/lib/siteUrl";
 
 type ClaimKind = "claim" | "correction" | "removal";
 
@@ -157,7 +158,7 @@ function Resto() {
     servesCuisine: r.cuisine,
     priceRange: "€".repeat(r.price_range),
     telephone: r.phone ?? undefined,
-    url: `https://lagon-orcin.vercel.app/food/resto/${r.id}`,
+    url: `${SITE_URL}/food/resto/${r.id}`,
     address: { "@type": "PostalAddress", streetAddress: r.address || r.quartier, addressLocality: "Saint-Barthélemy", postalCode: "97133", addressCountry: "FR" },
     ...(summary && summary.votes >= MIN_RATINGS
       ? { aggregateRating: { "@type": "AggregateRating", ratingValue: summary.avg_rating, ratingCount: summary.votes, bestRating: 5, worstRating: 1 } }

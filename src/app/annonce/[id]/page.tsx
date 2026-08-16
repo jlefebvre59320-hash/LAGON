@@ -10,6 +10,7 @@ import { SiteHeader, Mark } from "@/components/Brand";
 import FavoriteButton from "@/components/FavoriteButton";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export default function AnnoncePage() {
   return (
@@ -122,7 +123,7 @@ function Annonce() {
     description: l.description?.slice(0, 300) || undefined,
     offers: { "@type": "Offer", price: (l.price_cents / 100).toFixed(2), priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
-      url: `https://lagon-orcin.vercel.app/annonce/${l.id}` },
+      url: `${SITE_URL}/annonce/${l.id}` },
   } : null;
 
   return (

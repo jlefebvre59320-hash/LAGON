@@ -1,0 +1,34 @@
+<!-- Supabase → Authentication → Email Templates → « Change Email Address ».
+     Objet conseillé : Confirmez votre nouvelle adresse email -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f2e9;padding:32px 12px;font-family:Georgia,'Times New Roman',serif;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:460px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4dccb;">
+      <tr><td style="background:#05282c;padding:26px 28px;text-align:center;">
+        <span style="color:#c9a86a;font-size:22px;letter-spacing:.12em;font-weight:bold;">TI KANAL</span><br>
+        <span style="color:#f6f2e9;font-size:11px;letter-spacing:.18em;">SAINT-BARTHÉLEMY</span>
+      </td></tr>
+      <tr><td style="padding:30px 28px 8px;color:#05282c;">
+        <p style="margin:0 0 14px;font-size:17px;font-weight:bold;">Changement d'adresse email</p>
+        <p style="margin:0 0 22px;font-size:14.5px;line-height:1.6;color:#33403f;">
+          Vous avez demandé à utiliser cette adresse pour votre compte Ti Kanal.
+          Confirmez-la pour terminer le changement.
+        </p>
+        <p style="text-align:center;margin:0 0 24px;">
+          <a href="{{ .ConfirmationURL }}"
+             style="display:inline-block;background:#05282c;color:#c9a86a;text-decoration:none;font-size:15px;font-weight:bold;padding:13px 34px;border-radius:99px;">
+            Confirmer la nouvelle adresse
+          </a>
+        </p>
+        <p style="margin:0 0 26px;font-size:12px;line-height:1.6;color:#8a8371;">
+          Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+          <a href="{{ .ConfirmationURL }}" style="color:#7c6434;word-break:break-all;">{{ .ConfirmationURL }}</a>
+        </p>
+      </td></tr>
+      <tr><td style="border-top:1px solid #e4dccb;padding:16px 28px;text-align:center;">
+        <p style="margin:0;font-size:11.5px;color:#8a8371;">
+          Vous n'avez rien demandé ? Ignorez cet email et vérifiez la sécurité de votre compte.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
