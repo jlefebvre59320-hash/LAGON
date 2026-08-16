@@ -66,6 +66,9 @@ export default function ModifierResto() {
         instagram: r.instagram?.trim().replace(/^@/, "") || null,
         facebook: r.facebook?.trim() || null,
         website: r.website?.trim() || null,
+        snapchat: r.snapchat?.trim().replace(/^@/, "") || null,
+        tiktok: r.tiktok?.trim().replace(/^@/, "") || null,
+        email: r.email?.trim() || null,
         description: r.description.trim(),
         price_range: r.price_range,
         avg_price_eur: r.avg_price_eur ?? null,
@@ -159,6 +162,18 @@ export default function ModifierResto() {
             <Field label="Site web">
               <input className="input" value={rr.website ?? ""} inputMode="url"
                 onChange={(e) => set("website", e.target.value)} placeholder="https://…" />
+            </Field>
+            <Field label="Snapchat (sans @)">
+              <input className="input" value={rr.snapchat ?? ""}
+                onChange={(e) => set("snapchat", e.target.value)} placeholder="votrecompte" />
+            </Field>
+            <Field label="TikTok (sans @)">
+              <input className="input" value={rr.tiktok ?? ""}
+                onChange={(e) => set("tiktok", e.target.value)} placeholder="votrecompte" />
+            </Field>
+            <Field label="Email de contact">
+              <input className="input" value={rr.email ?? ""} inputMode="email"
+                onChange={(e) => set("email", e.target.value)} placeholder="contact@…" />
             </Field>
           </div>
 
