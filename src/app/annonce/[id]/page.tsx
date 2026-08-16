@@ -11,6 +11,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
 import { SITE_URL } from "@/lib/siteUrl";
+import ShareButton from "@/components/ShareButton";
 
 export default function AnnoncePage() {
   return (
@@ -103,6 +104,7 @@ function Annonce() {
   const m = MODULES[l.module];
   const photos = (l.photos ?? []).slice().sort((a, b) => a.position - b.position);
   const price = eur(l.price_cents);
+  const sold = l.status === "sold";
   const attrs = Object.entries(l.attrs ?? {}).filter(([, v]) => v !== "" && v != null);
   const wanted = l.intent === "wanted";
   const badge = INTENT_BADGE[l.intent ?? "offer"];
@@ -164,6 +166,17 @@ function Annonce() {
       <main className="container" style={{ paddingTop: 16, paddingBottom: 110, maxWidth: 740, flex: 1 }}>
         <Link href="/" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Toutes les annonces</Link>
 
+        {sold && (
+          <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 12, background: "var(--green)",
+            color: "var(--gold-light)", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase",
+              background: "var(--gold)", color: "var(--green)", padding: "3px 10px", borderRadius: 99 }}>
+              Vendu
+            </span>
+            Cette annonce a trouvé preneur.
+          </div>
+        )}
+
         <div style={{ marginTop: 12, borderRadius: 16, overflow: "hidden", background: m.soft, border: "1px solid var(--border)" }}>
           {photos.length > 0 ? (
             <>
@@ -212,7 +225,12 @@ function Annonce() {
             {l.location} · publié le {new Date(l.created_at).toLocaleDateString("fr-FR")}
             {l.profile?.display_name ? ` · par ${l.profile.display_name}` : ""}
           </span>
-          <span style={{ marginLeft: "auto" }}>
+          <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <ShareButton
+              title={l.title}
+              text={`${l.title}${price ? ` — ${price}` : ""} sur Ti Kanal`}
+              url={`${SITE_URL}/annonce/${l.id}`}
+            />
             <FavoriteButton targetId={l.id} variant="plain" label />
           </span>
         </div>
@@ -269,7 +287,11 @@ function Annonce() {
         }}
       >
         <div className="container" style={{ maxWidth: 740 }}>
-          {wa ? (
+          {sold ? (
+            <p style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-muted)", textAlign: "center", margin: 0 }}>
+              Vendu — le vendeur n&apos;attend plus de contact pour cette annonce.
+            </p>
+          ) : wa ? (
             <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-block"
               style={{ background: "var(--wa)", fontSize: 15.5, padding: "14px 0" }}>
               Contacter sur WhatsApp

@@ -59,7 +59,7 @@ export default function ListingCard({ l }: { l: Listing }) {
         <span style={{ position: "absolute", right: 8, bottom: 8 }}>
           <FavoriteButton targetId={l.id} />
         </span>
-        {badge && (
+        {badge && l.status !== "sold" && (
           <span
             style={{
               position: "absolute", left: 8, bottom: 8,
@@ -69,6 +69,18 @@ export default function ListingCard({ l }: { l: Listing }) {
             }}
           >
             {badge}
+          </span>
+        )}
+        {l.status === "sold" && (
+          <span
+            style={{
+              position: "absolute", left: 8, bottom: 8,
+              background: "var(--gold)", color: "var(--green)",
+              fontSize: 10.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase",
+              padding: "4px 11px", borderRadius: 999, boxShadow: "0 1px 4px rgba(5,40,44,.25)",
+            }}
+          >
+            Vendu
           </span>
         )}
       </div>
