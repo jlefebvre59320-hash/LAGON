@@ -583,3 +583,46 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .resto-popup strong { font-size: 14px; color: var(--green); }
 .resto-popup span { color: var(--text-muted); }
 .resto-popup a { color: var(--gold-deep); font-weight: 700; text-decoration: none; margin-top: 4px; }
+
+/* ---- Rappel de la famille de sites ---- */
+.famille-hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  animation: page-in 0.5s ease both;
+}
+.famille-hint em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--gold-deep);
+}
+/* Réplique miniature du bouton ••• du bandeau, avec des points qui
+   respirent l'un après l'autre : l'œil fait le lien tout seul. */
+.dots-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  padding: 3px 7px;
+  border-radius: 99px;
+  background: var(--green);
+  border: 1px solid var(--gold);
+  vertical-align: -3px;
+}
+.dots-hint i {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--gold);
+  animation: dot-breathe 1.6s ease-in-out infinite;
+}
+.dots-hint i:nth-child(2) { animation-delay: 0.2s; }
+.dots-hint i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.35); }
+}
+/* Trois pulsations dorées sur le vrai bouton ••• à l'arrivée, puis silence :
+   on attire l'œil une fois, on ne clignote pas toute la journée. */
+@keyframes sw-halo {
+  0% { box-shadow: 0 0 0 0 rgba(201, 168, 106, 0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(201, 168, 106, 0); }
+}
+.sw-btn { animation: sw-halo 1.6s ease-out 1s 3; }
