@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { SITES } from "@/lib/sites";
+import { SITE_URL } from "@/lib/siteUrl";
 import "./globals.css";
 
 const S = SITES.tikanal;
 const TITLE = `${S.name} · ${S.baseline} — ${S.overline}`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://lagon-orcin.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: TITLE,
   description: S.description,
   applicationName: S.name,

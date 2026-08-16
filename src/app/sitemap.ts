@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const BASE = "https://lagon-orcin.vercel.app";
+import { SITE_URL as BASE } from "@/lib/siteUrl";
 
 async function ids(table: string): Promise<string[]> {
   try {
