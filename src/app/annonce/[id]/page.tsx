@@ -29,6 +29,18 @@ function Annonce() {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [reporting, setReporting] = useState(false);
   const [reported, setReported] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data: s } = await supabase().auth.getSession();
+      if (!s.session) return;
+      // is_admin() ne répond que pour l'appelant : sans droits, false, point.
+      const { data } = await supabase().rpc("is_admin");
+      if (data === true) setIsAdmin(true);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -114,6 +126,24 @@ function Annonce() {
     });
     setReporting(false);
     if (!error) setReported(true);
+  }
+
+  async function adminDelete() {
+    if (!l) return;
+    if (!confirm(`Supprimer définitivement « ${l.title} » ?\nPhotos, favoris et signalements partent avec. Irréversible.`)) return;
+    setDeleting(true);
+    const keys = (l.photos ?? []).map((p) => p.storage_key);
+    const { error } = await supabase().from("listings").delete().eq("id", l.id);
+    if (error) {
+      setDeleting(false);
+      alert(`Suppression impossible : ${error.message}`);
+      return;
+    }
+    // Les fichiers du bucket ne suivent pas la cascade SQL : on les retire
+    // ici. Un échec laisse au pire des fichiers orphelins, jamais une
+    // annonce fantôme — l'inverse serait pire.
+    if (keys.length > 0) await supabase().storage.from("photos").remove(keys);
+    router.push("/");
   }
 
   const jsonLd = l.price_cents != null && l.intent !== "wanted" ? {
@@ -212,6 +242,21 @@ function Annonce() {
             </button>
           )}
         </div>
+
+        {isAdmin && (
+          <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 12,
+            border: "1px dashed var(--danger)", background: "rgba(176,58,46,.05)",
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--danger)" }}>
+              Modération
+            </span>
+            <button onClick={adminDelete} disabled={deleting}
+              style={{ background: "var(--danger)", color: "#fff", border: "none", borderRadius: 99,
+                padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: deleting ? 0.6 : 1 }}>
+              {deleting ? "Suppression…" : "Supprimer cette annonce"}
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Contact : barre collée en bas sur mobile, à portée de pouce */}
