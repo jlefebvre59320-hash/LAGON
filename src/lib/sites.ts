@@ -4,7 +4,7 @@
    Les couleurs d'une section viennent d'un bloc [data-site="…"] dans
    globals.css, posé par le layout de la section. */
 
-export type SiteKey = "tikanal" | "event" | "food";
+export type SiteKey = "tikanal" | "event" | "food" | "guide";
 
 export type SiteDef = {
   key: SiteKey;
@@ -63,13 +63,26 @@ export const SITES: Record<SiteKey, SiteDef> = {
     path: "/food",
     ready: true,
   },
+  guide: {
+    key: "guide",
+    name: "St Barth Guide",
+    overline: "St Barth",
+    baseline: "Plages, lieux & bons plans",
+    description:
+      "L'annuaire de Saint-Barthélemy : plages, points de vue, incontournables, lieux publics, associations et bons plans de l'île.",
+    dot: "#7ec8dd",
+    themeColor: "#0a3a4a",
+    path: "/guide",
+    ready: true,
+  },
 };
 
-export const SITE_ORDER: SiteKey[] = ["tikanal", "event", "food"];
+export const SITE_ORDER: SiteKey[] = ["tikanal", "event", "food", "guide"];
 
 /* Section correspondant à un chemin — pour marquer « Vous êtes ici ». */
 export function siteFromPath(pathname: string): SiteKey {
   if (pathname === "/food" || pathname.startsWith("/food/")) return "food";
   if (pathname === "/event" || pathname.startsWith("/event/")) return "event";
+  if (pathname === "/guide" || pathname.startsWith("/guide/")) return "guide";
   return "tikanal";
 }

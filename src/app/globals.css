@@ -66,6 +66,25 @@
 }
 
 /* St Barth Food — cacao et ambre : des tons chauds, qui donnent faim. */
+/* St Barth Guide — bleu clair : lagon, ciel d'alizé, écume. */
+[data-site="guide"] {
+  --green: #0a3a4a;
+  --green-900: #062833;
+  --green-700: #14515f;
+  --green-600: #23697b;
+  --green-100: #ddedf2;
+  --gold: #7ec8dd;
+  --gold-light: #b5e2ef;
+  --gold-deep: #1f7089;
+  --cream: #f1f7f8;
+  --cream-dark: #e0edf0;
+  --surface: #fbfeff;
+  --text: #12333c;
+  --text-muted: #4e6b72;
+  --border: #d8e7ea;
+  --border-input: #c3dbe1;
+}
+
 [data-site="food"] {
   --green: #33201c;
   --green-900: #22120f;
