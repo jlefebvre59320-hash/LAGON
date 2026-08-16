@@ -136,31 +136,37 @@ function Home() {
           tuile — il n'existe que dans le sélecteur, « bientôt » : cap sur les
           ventes et le food. Masquée hors accueil : place au parcours. */}
       {tab === "home" && (
-        <div className="container" style={{ paddingTop: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
+        <div className="container" style={{ paddingTop: 12 }}>
+          {/* Rappel animé : la famille de sites vit derrière les ••• du bandeau.
+              Les tuiles compactes font découvrir, le message fait retenir. */}
+          <p className="famille-hint">
+            Un seul site, <em>plusieurs univers</em> — basculez à tout moment avec les{" "}
+            <span className="dots-hint" aria-hidden="true"><i /><i /><i /></span> en haut.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
             {([SITES.food, SITES.guide] as const).map((s) => (
               <Link
                 key={s.key}
                 href={s.path}
                 data-site={s.key}
                 style={{
-                  display: "flex", alignItems: "center", gap: 12,
+                  display: "flex", alignItems: "center", gap: 9,
                   background: "linear-gradient(120deg, var(--green-700), var(--green))",
                   border: "1px solid color-mix(in srgb, var(--gold) 40%, transparent)",
-                  borderRadius: 14, padding: "12px 16px", textDecoration: "none",
-                  color: "var(--cream)",
+                  borderRadius: 12, padding: "8px 12px", textDecoration: "none",
+                  color: "var(--cream)", minWidth: 0,
                 }}
               >
-                <Mark size={44} color="var(--gold)" />
+                <Mark size={26} color="var(--gold)" />
                 <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: "block", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 16.5 }}>
+                  <span style={{ display: "block", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {s.name}
                   </span>
-                  <span style={{ display: "block", fontSize: 12, color: "var(--gold-light)" }}>
+                  <span style={{ display: "block", fontSize: 10.5, color: "var(--gold-light)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {s.baseline}{!s.ready ? " · bientôt" : ""}
                   </span>
                 </span>
-                <span aria-hidden="true" style={{ color: "var(--gold)", fontSize: 18 }}>→</span>
+                <span aria-hidden="true" style={{ color: "var(--gold)", fontSize: 15 }}>→</span>
               </Link>
             ))}
           </div>
@@ -305,6 +311,7 @@ function Home() {
           <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>{SITE.description}</p>
           <span style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 12.5 }}>
             <Link href="/retours" style={{ color: "var(--gold)" }}>Une idée ?</Link>
+            <Link href="/soutenir" style={{ color: "var(--gold)" }}>Soutenir ♥</Link>
             <Link href="/mentions-legales" style={{ color: "rgba(246,242,233,.6)" }}>Mentions légales</Link>
             <Link href="/confidentialite" style={{ color: "rgba(246,242,233,.6)" }}>Confidentialité</Link>
           </span>

@@ -26,6 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/food`, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE}/guide`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/event`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/soutenir`, changeFrequency: "yearly", priority: 0.2 },
     ...listings.map((id) => ({ url: `${BASE}/annonce/${id}`, changeFrequency: "daily" as const, priority: 0.7 })),
     ...restos.map((id) => ({ url: `${BASE}/food/resto/${id}`, changeFrequency: "weekly" as const, priority: 0.8 })),
     ...places.map((id) => ({ url: `${BASE}/guide/lieu/${id}`, changeFrequency: "monthly" as const, priority: 0.6 })),
