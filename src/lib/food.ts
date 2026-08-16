@@ -28,6 +28,9 @@ export type Restaurant = {
   takeaway: boolean;
   hours: HoursMap;
   status: RestaurantStatus;
+  /* Position OSM d'origine ; null pour les fiches créées à la main */
+  lat: number | null;
+  lng: number | null;
   created_at: string;
 };
 

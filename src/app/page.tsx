@@ -51,7 +51,9 @@ function Home() {
       let q = supabase()
         .from("listings")
         .select("*, photos:listing_photos(storage_key, position)")
-        .eq("status", "active")
+        /* Les vendues récentes restent visibles avec leur bandeau : la RLS
+           limite d'elle-même aux 7 jours suivant la vente. */
+        .in("status", ["active", "sold"])
         .order("created_at", { ascending: false })
         .limit(60);
 
@@ -272,14 +274,22 @@ function Home() {
             <Link href="/deposer" className="btn">Déposer une annonce</Link>
           </div>
         ) : tab === "home" && !query && !intent && listings.length > 3 ? (
-          <>
-            <div className="featured-row">
-              {listings.slice(0, 3).map((l) => <ListingCard key={l.id} l={l} />)}
-            </div>
-            <div className="grid">
-              {listings.slice(3).map((l) => <ListingCard key={l.id} l={l} />)}
-            </div>
-          </>
+          (() => {
+            /* « À la une » ne met en avant que du disponible : une annonce
+               vendue en vitrine, c'est une invitation à repartir. */
+            const featured = listings.filter((l) => l.status === "active").slice(0, 3);
+            const featIds = new Set(featured.map((l) => l.id));
+            return (
+              <>
+                <div className="featured-row">
+                  {featured.map((l) => <ListingCard key={l.id} l={l} />)}
+                </div>
+                <div className="grid">
+                  {listings.filter((l) => !featIds.has(l.id)).map((l) => <ListingCard key={l.id} l={l} />)}
+                </div>
+              </>
+            );
+          })()
         ) : (
           <div className="grid">
             {listings.map((l) => <ListingCard key={l.id} l={l} />)}

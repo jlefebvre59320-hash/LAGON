@@ -6,6 +6,14 @@ import { CUISINES, QUARTIERS, isOpenNow, hasHours, type Restaurant, type RatingS
 import { AccountButton, Brand, Mark } from "@/components/Brand";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import RestaurantCard from "@/components/food/RestaurantCard";
+import dynamic from "next/dynamic";
+
+/* La carte n'existe que dans le navigateur (Leaflet) et pèse son poids :
+   chargée seulement quand on l'ouvre. */
+const FoodMap = dynamic(() => import("@/components/food/FoodMap"), {
+  ssr: false,
+  loading: () => <div className="panel skeleton" style={{ height: 420 }} />,
+});
 import { recordView } from "@/lib/analytics";
 import { SITES } from "@/lib/sites";
 import { FavoritesProvider } from "@/lib/favorites";
@@ -27,6 +35,7 @@ function FoodHomeInner() {
   const [openOnly, setOpenOnly] = useState(false);
   const [sort, setSort] = useState<"name" | "rating" | "open">("name");
   const [takeaway, setTakeaway] = useState(false);
+  const [view, setView] = useState<"list" | "map">("list");
   const [all, setAll] = useState<Restaurant[]>([]);
   const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
   const [loading, setLoading] = useState(true);
@@ -164,6 +173,14 @@ function FoodHomeInner() {
           >
             À emporter
           </button>
+          <button
+            className="chip"
+            onClick={() => setView(view === "map" ? "list" : "map")}
+            aria-pressed={view === "map"}
+            style={view === "map" ? { background: "var(--green)", borderColor: "var(--green)", color: "#fff" } : undefined}
+          >
+            {view === "map" ? "◈ Liste" : "◈ Carte"}
+          </button>
         </div>
       </div>
 
@@ -199,6 +216,8 @@ function FoodHomeInner() {
               Élargissez la recherche ou retirez un filtre.
             </p>
           </div>
+        ) : view === "map" ? (
+          <FoodMap restos={shown} ratings={ratings} />
         ) : (() => {
           const noFilter = !query && !cuisine && !quartier && !openOnly && !takeaway && sort === "name";
           const top = noFilter

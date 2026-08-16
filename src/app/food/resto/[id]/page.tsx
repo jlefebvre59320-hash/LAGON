@@ -14,6 +14,7 @@ import { recordView } from "@/lib/analytics";
 import { useSession } from "@/lib/session";
 import { FavoritesProvider } from "@/lib/favorites";
 import FavoriteButton from "@/components/FavoriteButton";
+import ShareButton from "@/components/ShareButton";
 import { SITE_URL } from "@/lib/siteUrl";
 
 type ClaimKind = "claim" | "correction" | "removal";
@@ -173,7 +174,14 @@ function Resto() {
       <main className="container" style={{ paddingTop: 16, paddingBottom: 110, maxWidth: 740, flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
           <Link href="/food" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Tous les restaurants</Link>
-          <span style={{ marginLeft: "auto" }}><FavoriteButton targetId={r.id} variant="plain" label /></span>
+          <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <ShareButton
+              title={r.name}
+              text={`${r.name} — ${r.cuisine}, ${r.quartier} · sur St Barth Food`}
+              url={`${SITE_URL}/food/resto/${r.id}`}
+            />
+            <FavoriteButton targetId={r.id} variant="plain" label />
+          </span>
           {userId && r.owner_id === userId && (
             <Link href={`/food/resto/${r.id}/modifier`} className="btn btn-outline-gold"
               style={{ color: "var(--gold-deep)", borderColor: "var(--border-input)", fontSize: 12.5, padding: "8px 14px", minHeight: 36 }}>
