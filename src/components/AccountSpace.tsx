@@ -123,16 +123,26 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
 
   async function setStatus(l: Listing, status: Listing["status"]) {
     setBusy(l.id);
-    await supabase().from("listings").update({ status }).eq("id", l.id);
+    const { data, error } = await supabase().from("listings").update({ status }).eq("id", l.id).select("id");
     setBusy(null);
+    if (error || !data || data.length === 0) {
+      alert(error ? `Modification impossible : ${error.message}` : "La base a refusé la modification.");
+      return;
+    }
     loadMine();
   }
 
   async function remove(l: Listing) {
     if (!confirm(`Supprimer définitivement « ${l.title} » ? Cette action est irréversible.`)) return;
     setBusy(l.id);
-    await supabase().from("listings").delete().eq("id", l.id);
+    /* .select("id") : une suppression refusée par la RLS renvoie « succès,
+       0 ligne » — sans vérification, l'annonce resterait là sans explication. */
+    const { data, error } = await supabase().from("listings").delete().eq("id", l.id).select("id");
     setBusy(null);
+    if (error || !data || data.length === 0) {
+      alert(error ? `Suppression impossible : ${error.message}` : "La base a refusé la suppression de cette annonce.");
+      return;
+    }
     loadMine();
   }
 

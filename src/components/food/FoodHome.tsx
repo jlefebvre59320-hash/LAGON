@@ -125,7 +125,7 @@ function FoodHomeInner() {
       </header>
 
       <div className="container">
-        <div className="filter-row">
+        <div className="filter-row wrap">
           <select
             className="input"
             value={cuisine ?? ""}
