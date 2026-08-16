@@ -305,6 +305,7 @@ function Home() {
           <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>{SITE.description}</p>
           <span style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 12.5 }}>
             <Link href="/retours" style={{ color: "var(--gold)" }}>Une idée ?</Link>
+            <Link href="/soutenir" style={{ color: "var(--gold)" }}>Soutenir ♥</Link>
             <Link href="/mentions-legales" style={{ color: "rgba(246,242,233,.6)" }}>Mentions légales</Link>
             <Link href="/confidentialite" style={{ color: "rgba(246,242,233,.6)" }}>Confidentialité</Link>
           </span>
