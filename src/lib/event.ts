@@ -25,6 +25,7 @@ export const EVENT_CATEGORIES = [
   "Concert & Musique",
   "Régate & Nautisme",
   "Marché & Brocante",
+  "Gastronomie",
   "Sport",
   "Culture & Expo",
   "Famille",
