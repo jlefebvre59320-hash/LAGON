@@ -272,7 +272,7 @@ function Resto() {
           </div>
         </section>
 
-        {(r.instagram || r.facebook || r.website) && (
+        {(r.instagram || r.facebook || r.website || r.snapchat || r.tiktok || r.email) && (
           <div style={{ display: "flex", gap: 14, marginTop: 14, flexWrap: "wrap", fontSize: 13 }}>
             {r.instagram && (
               <a href={`https://instagram.com/${r.instagram.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
@@ -285,9 +285,26 @@ function Resto() {
                 Facebook ↗
               </a>
             )}
+            {r.snapchat && (
+              <a href={`https://www.snapchat.com/add/${r.snapchat.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
+                style={{ color: "var(--gold-deep)", fontWeight: 600 }}>
+                Snapchat ↗
+              </a>
+            )}
+            {r.tiktok && (
+              <a href={`https://www.tiktok.com/@${r.tiktok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
+                style={{ color: "var(--gold-deep)", fontWeight: 600 }}>
+                TikTok ↗
+              </a>
+            )}
             {r.website && (
               <a href={r.website} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold-deep)", fontWeight: 600 }}>
                 Site web ↗
+              </a>
+            )}
+            {r.email && (
+              <a href={`mailto:${r.email}`} style={{ color: "var(--gold-deep)", fontWeight: 600 }}>
+                Email ↗
               </a>
             )}
           </div>

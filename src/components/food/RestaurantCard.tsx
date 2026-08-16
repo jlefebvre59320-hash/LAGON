@@ -36,6 +36,9 @@ const Glyph = ({ d }: { d: string }) => (
 const G_SITE = "M12 2 a10 10 0 1 0 0 20 a10 10 0 0 0 0 -20 M2 12 h20 M12 2 c-3 3 -3 17 0 20 c3 -3 3 -17 0 -20";
 const G_INSTA = "M7 3 h10 a4 4 0 0 1 4 4 v10 a4 4 0 0 1 -4 4 h-10 a4 4 0 0 1 -4 -4 v-10 a4 4 0 0 1 4 -4 M12 8.5 a3.5 3.5 0 1 0 0 7 a3.5 3.5 0 0 0 0 -7 M17.2 6.8 v0.01";
 const G_FB = "M15 3 h-2 a4 4 0 0 0 -4 4 v3 h-3 v4 h3 v7 h4 v-7 h3 l1 -4 h-4 v-2.5 a1 1 0 0 1 1 -1 h3 z";
+const G_SNAP = "M12 3 a6 6 0 0 1 6 6 v2.5 l2.5 2.5 c-1 .9 -2.2 1.2 -3.5 1.2 c-.2 2 -2.3 3.3 -5 3.3 s-4.8 -1.3 -5 -3.3 c-1.3 0 -2.5 -.3 -3.5 -1.2 L6 11.5 V9 a6 6 0 0 1 6 -6";
+const G_TIKTOK = "M14 4 v11.5 a3.5 3.5 0 1 1 -3.5 -3.5 M14 4 c.5 2.5 2.5 4.5 5 5";
+const G_MAIL = "M3 5.5 h18 v13 h-18 z M3 6 l9 7.5 L21 6";
 
 export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: RatingSummary }) {
   const known = hasHours(r.hours);
@@ -94,11 +97,14 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
             </span>
           </span>
         )}
-        {(r.website || r.instagram || r.facebook) && (
+        {(r.website || r.instagram || r.facebook || r.snapchat || r.tiktok || r.email) && (
           <span style={{ display: "inline-flex", gap: 6, marginTop: 6 }}>
             {r.website && <MiniLink href={r.website} label="Site web"><Glyph d={G_SITE} /></MiniLink>}
             {r.instagram && <MiniLink href={`https://instagram.com/${r.instagram.replace(/^@/, "")}`} label="Instagram"><Glyph d={G_INSTA} /></MiniLink>}
             {r.facebook && <MiniLink href={r.facebook} label="Facebook"><Glyph d={G_FB} /></MiniLink>}
+            {r.snapchat && <MiniLink href={`https://www.snapchat.com/add/${r.snapchat.replace(/^@/, "")}`} label="Snapchat"><Glyph d={G_SNAP} /></MiniLink>}
+            {r.tiktok && <MiniLink href={`https://www.tiktok.com/@${r.tiktok.replace(/^@/, "")}`} label="TikTok"><Glyph d={G_TIKTOK} /></MiniLink>}
+            {r.email && <MiniLink href={`mailto:${r.email}`} label="Email"><Glyph d={G_MAIL} /></MiniLink>}
           </span>
         )}
       </div>

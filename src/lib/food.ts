@@ -21,6 +21,9 @@ export type Restaurant = {
   instagram: string | null;
   facebook: string | null;
   website: string | null;
+  snapchat: string | null;
+  tiktok: string | null;
+  email: string | null;
   description: string;
   price_range: 1 | 2 | 3;
   /* Prix moyen par personne en euros, renseigné par l'établissement */
