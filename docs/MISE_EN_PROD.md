@@ -20,6 +20,11 @@ vraie adresse pour le site.
 
 ## 2. SMTP dédié avec Resend (le point critique)
 
+> **Version détaillée : [`SMTP.md`](./SMTP.md)** — SPF/DKIM/DMARC pas à pas,
+> sous-domaine d'envoi, tests de délivrabilité et dépannage. Le résumé
+> ci-dessous suffit pour un premier branchement ; le document dédié est à
+> suivre pour un envoi vraiment solide.
+
 Sans cela, Supabase limite les emails à ~2 par heure : les confirmations
 d'inscription se perdent en silence dès le deuxième inscrit de l'heure.
 
