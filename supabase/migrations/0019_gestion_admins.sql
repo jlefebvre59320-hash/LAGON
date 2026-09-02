@@ -9,6 +9,12 @@
 
 -- La liste des comptes gagne la colonne is_admin (l'appel reste réservé
 -- aux administrateurs : la fonction refuse tout autre appelant).
+--
+-- Le DROP est indispensable : PostgreSQL refuse qu'un « create or replace »
+-- change le type de retour d'une fonction table (« cannot change return type
+-- of existing function »). On la supprime donc avant de la recréer.
+drop function if exists public.admin_users();
+
 create or replace function public.admin_users()
 returns table (id uuid, email text, display_name text, created_at timestamptz,
                last_sign_in timestamptz, is_banned boolean, is_admin boolean,
