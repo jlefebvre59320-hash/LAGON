@@ -1,7 +1,8 @@
-/* L'URL publique du site vit ici et nulle part ailleurs : le jour où un vrai
-   domaine remplace l'adresse Vercel, on renseigne NEXT_PUBLIC_SITE_URL dans
-   Vercel (Settings → Environment Variables), on redéploie, et tout suit —
-   metadata, sitemap, robots, JSON-LD. */
+/* L'URL publique du site vit ici et nulle part ailleurs — métadonnées,
+   sitemap, robots, JSON-LD et liens de partage la lisent tous.
+   NEXT_PUBLIC_SITE_URL (Vercel → Settings → Environment Variables) permet de
+   la surcharger, par exemple pour une préproduction ; sans elle, c'est le
+   domaine officiel qui s'applique. */
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://lagon-orcin.vercel.app"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://tikanal.com"
 ).replace(/\/+$/, "");
