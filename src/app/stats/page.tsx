@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import { SiteHeader } from "@/components/Brand";
-import { SITES, SITE_ORDER, type SiteKey } from "@/lib/sites";
+import { SITES, type SiteKey } from "@/lib/sites";
 import { connexionUrl, safeExternalUrl } from "@/lib/urls";
 
 type Daily = { day: string; visits: number };
@@ -425,7 +425,9 @@ export default function Stats() {
                 </tr>
               </thead>
               <tbody>
-                {SITE_ORDER.map((key) => {
+                {/* Tous les univers, y compris ceux fermés au public : leur
+                    fréquentation passée reste une donnée utile à l'admin. */}
+                {(Object.keys(SITES) as SiteKey[]).map((key) => {
                   const d = s.by_site?.[key];
                   const site = SITES[key];
                   return (

@@ -79,10 +79,11 @@ export const SITES: Record<SiteKey, SiteDef> = {
 
 /* Sections proposées dans le sélecteur et les tuiles, dans l'ordre.
    Retirer une clé d'ici la fait disparaître de toute la navigation sans
-   toucher à son code : c'est le cas d'Event, mis de côté pour l'instant.
+   toucher à son code : c'est le cas d'Event et de Food, mis de côté le
+   temps du lancement.
    Une section présente ici mais dont ready vaut false s'affiche « bientôt »
    et sert une page d'attente — voir ComingSoon. */
-export const SITE_ORDER: SiteKey[] = ["tikanal", "food", "guide"];
+export const SITE_ORDER: SiteKey[] = ["tikanal", "guide"];
 
 /* Section correspondant à un chemin — pour marquer « Vous êtes ici ». */
 export function siteFromPath(pathname: string): SiteKey {
