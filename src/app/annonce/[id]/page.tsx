@@ -12,6 +12,7 @@ import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
 import { SITE_URL } from "@/lib/siteUrl";
 import ShareButton from "@/components/ShareButton";
+import { thumbKey } from "@/lib/images";
 
 export default function AnnoncePage() {
   return (
@@ -191,9 +192,15 @@ function Annonce() {
               {photos.length > 1 && (
                 <div className="no-scrollbar" style={{ display: "flex", gap: 6, padding: 8, background: "var(--surface)", overflowX: "auto" }}>
                   {photos.map((p, i) => (
+                    // Bandeau de miniatures : la vignette suffit largement à 68 px.
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={p.storage_key} src={photoUrl(p.storage_key)} alt=""
+                    <img key={p.storage_key} src={photoUrl(thumbKey(p.storage_key))} alt=""
                       onClick={() => setPhotoIdx(i)}
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        const plein = photoUrl(p.storage_key);
+                        if (img.src !== plein) img.src = plein;
+                      }}
                       style={{ width: 68, height: 52, flex: "0 0 auto", objectFit: "cover", borderRadius: 8, cursor: "pointer",
                         outline: i === photoIdx ? `2px solid ${m.color}` : "none", outlineOffset: -2 }} />
                   ))}
