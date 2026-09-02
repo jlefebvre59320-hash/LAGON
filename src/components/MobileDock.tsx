@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { siteFromPath } from "@/lib/sites";
+import { SITES, siteFromPath, type SiteKey } from "@/lib/sites";
 
 type DockItem = {
   href: string;
   label: string;
   paths: string[];
   icon: React.ReactNode;
+  /* Section de la famille correspondante : l'entrée disparaît du dock tant
+     que cette section n'est pas ouverte. Absent = toujours visible. */
+  site?: SiteKey;
 };
 
 const Icon = ({ children }: { children: React.ReactNode }) => (
@@ -29,6 +32,7 @@ const ITEMS: DockItem[] = [
     href: "/food",
     label: "Manger",
     paths: ["/food"],
+    site: "food",
     icon: <Icon><path d="M7 3v7M4.5 3v5A2.5 2.5 0 0 0 7 10.5V21M9.5 3v5A2.5 2.5 0 0 1 7 10.5" /><path d="M15 3v18M15 3c3.2 1.5 4.5 4 4.5 7H15" /></Icon>,
   },
   {
@@ -41,6 +45,7 @@ const ITEMS: DockItem[] = [
     href: "/event",
     label: "Sortir",
     paths: ["/event"],
+    site: "event",
     icon: <Icon><path d="M5 4v3M19 4v3M4 9h16M5 6h14a1 1 0 0 1 1 1v13H4V7a1 1 0 0 1 1-1Z" /><path d="M8 13h3M13 13h3M8 17h3" /></Icon>,
   },
 ];
@@ -51,15 +56,20 @@ export default function MobileDock() {
   const pathname = usePathname() ?? "/";
   if (!TOP_LEVEL.has(pathname)) return null;
 
+  const visibles = ITEMS.filter((i) => !i.site || SITES[i.site].ready);
+  /* Le bouton Publier se place au milieu de ce qui reste : avec deux entrées
+     il sépare, avec quatre il reste centré. */
+  const coupe = Math.ceil(visibles.length / 2);
+
   return (
     <nav className="mobile-dock" data-site={siteFromPath(pathname)} aria-label="Navigation principale">
       <div className="mobile-dock-inner">
-        {ITEMS.slice(0, 2).map((item) => <DockLink key={item.href} item={item} pathname={pathname} />)}
+        {visibles.slice(0, coupe).map((item) => <DockLink key={item.href} item={item} pathname={pathname} />)}
         <Link href="/deposer" className="mobile-dock-publish" aria-label="Déposer une annonce">
           <span aria-hidden="true">+</span>
           <small>Publier</small>
         </Link>
-        {ITEMS.slice(2).map((item) => <DockLink key={item.href} item={item} pathname={pathname} />)}
+        {visibles.slice(coupe).map((item) => <DockLink key={item.href} item={item} pathname={pathname} />)}
       </div>
     </nav>
   );

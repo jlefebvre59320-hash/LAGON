@@ -11,6 +11,7 @@ import { SiteHeader, Mark } from "@/components/Brand";
 import { FavoritesProvider, useFavorites } from "@/lib/favorites";
 import type { Restaurant } from "@/lib/food";
 import RestaurantCard from "@/components/food/RestaurantCard";
+import { SITES } from "@/lib/sites";
 import { connexionUrl } from "@/lib/urls";
 
 type Tab = "listings" | "favorites" | "resto_favs" | "restaurants";
@@ -222,7 +223,10 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
           {([
             ["listings", `Mes annonces (${mine.length})`],
             ["favorites", `Favoris · annonces (${favIds.size})`],
-            ["resto_favs", `Favoris · restos (${restoFavs.length})`],
+            /* Les onglets liés aux restaurants ne s'affichent que si la
+               section Food est ouverte — sauf pour un restaurateur qui gère
+               déjà une fiche : lui doit garder l'accès à son établissement. */
+            ...(SITES.food.ready ? [["resto_favs", `Favoris · restos (${restoFavs.length})`]] as const : []),
             ...(restos.length > 0 ? [["restaurants", `Mes établissements (${restos.length})`]] as const : []),
           ] as [Tab, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}

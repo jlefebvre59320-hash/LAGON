@@ -54,13 +54,19 @@ function Home() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      /* Seules les sections ouvertes alimentent la découverte : proposer une
+         porte d'entrée vers une section fermée mène à une page d'attente. */
       const [food, guide, events] = await Promise.all([
-        supabase().from("restaurants").select("id,name,cuisine,quartier")
-          .eq("status", "active").order("name").limit(2),
+        SITES.food.ready
+          ? supabase().from("restaurants").select("id,name,cuisine,quartier")
+              .eq("status", "active").order("name").limit(2)
+          : Promise.resolve({ data: [] }),
         supabase().from("places").select("id,name,category,quartier")
-          .eq("status", "active").order("name").limit(2),
-        supabase().from("events").select("id,title,category,quartier,starts_at")
-          .eq("status", "approved").gte("starts_at", islandDayStartIso()).order("starts_at").limit(2),
+          .eq("status", "active").order("name").limit(3),
+        SITES.event.ready
+          ? supabase().from("events").select("id,title,category,quartier,starts_at")
+              .eq("status", "approved").gte("starts_at", islandDayStartIso()).order("starts_at").limit(2)
+          : Promise.resolve({ data: [] }),
       ]);
       if (cancelled) return;
       const items: Discovery[] = [
@@ -402,9 +408,9 @@ function Home() {
                   </Link>
                 ))}
                 {discoveries.length === 0 && (
-                  <Link href="/food" className="discovery-link">
-                    <span className="discovery-dot" style={{ background: SITES.food.dot }} />
-                    <span><strong>Où manger aujourd&apos;hui ?</strong><small>Restaurants, quartiers et cuisines</small></span>
+                  <Link href="/guide" className="discovery-link">
+                    <span className="discovery-dot" style={{ background: SITES.guide.dot }} />
+                    <span><strong>Que faire sur l&apos;île ?</strong><small>Plages, points de vue et bons plans</small></span>
                     <span aria-hidden="true">→</span>
                   </Link>
                 )}

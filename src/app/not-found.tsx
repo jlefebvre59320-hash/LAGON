@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mark } from "@/components/Brand";
+import { SITES, SITE_ORDER } from "@/lib/sites";
 
 export default function NotFound() {
   return (
@@ -12,11 +13,16 @@ export default function NotFound() {
         <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.6, margin: "0 0 20px" }}>
           Le lien est peut-être ancien, ou l&apos;adresse a changé.
         </p>
+        {/* On ne propose que des sections réellement ouvertes : renvoyer un
+            visiteur perdu vers une page « bientôt en ligne » l'égare deux fois. */}
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/" className="btn">Les annonces</Link>
-          <Link href="/food" className="btn btn-outline-gold" style={{ color: "var(--gold-deep)", borderColor: "var(--border-input)" }}>
-            Les restaurants
-          </Link>
+          {SITE_ORDER.filter((k) => k !== "tikanal" && SITES[k].ready).map((k) => (
+            <Link key={k} href={SITES[k].path} className="btn btn-outline-gold"
+              style={{ color: "var(--gold-deep)", borderColor: "var(--border-input)" }}>
+              {SITES[k].name}
+            </Link>
+          ))}
         </div>
       </div>
     </main>
