@@ -54,7 +54,7 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
   const hasLinks = website || instagram || facebook || snapchat || tiktok || email;
 
   return (
-    <article className="card" style={{ position: "relative" }}>
+    <article className="card restaurant-card" style={{ position: "relative" }}>
       <Link
         href={`/food/resto/${r.id}`}
         className="card-link-overlay"
@@ -99,7 +99,7 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
         <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 16.5, lineHeight: 1.25, color: "var(--green)" }}>
           {r.name}
         </span>
-        <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+        <span style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.4 }}>
           {r.quartier} · <span style={{ fontWeight: 700, color: "var(--gold-deep)" }}>{priceLabel(r.price_range)}</span>
           {r.avg_price_eur ? ` · ~${r.avg_price_eur}\u00A0€/pers.` : ""}
           {r.takeaway ? " · À emporter" : ""}

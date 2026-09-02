@@ -104,9 +104,9 @@ function FoodHomeInner() {
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <header className="site-header">
+      <header className="site-header home-header">
       <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
-        <div className="container" style={{ paddingTop: 16 }}>
+        <div className="container home-header-inner">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand site="food" />
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
@@ -116,7 +116,11 @@ function FoodHomeInner() {
           </div>
 
           <p className="hero-tagline">Bien manger, <em>toute l&apos;île</em>.</p>
-          <div style={{ position: "relative", margin: "12px 0 12px" }}>
+          <div className="search-shell">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4 4" />
+            </svg>
             <input
               className="input search-input"
               value={query}
@@ -125,6 +129,7 @@ function FoodHomeInner() {
               aria-label="Rechercher un restaurant"
               type="search"
             />
+            {query && <button type="button" className="search-clear" onClick={() => setQuery("")} aria-label="Effacer la recherche">×</button>}
           </div>
 
         </div>
@@ -132,7 +137,7 @@ function FoodHomeInner() {
       </header>
 
       <div className="container">
-        <div className="filter-row wrap">
+        <div className="filter-row">
           <select
             className="input"
             value={cuisine ?? ""}

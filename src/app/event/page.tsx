@@ -58,9 +58,9 @@ export default function EventHome() {
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <header className="site-header">
+      <header className="site-header home-header">
         <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
-        <div className="container" style={{ paddingTop: 16 }}>
+        <div className="container home-header-inner">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand site="event" />
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
@@ -75,7 +75,7 @@ export default function EventHome() {
       </header>
 
       <div className="container">
-        <div className="filter-row wrap">
+        <div className="filter-row">
           <select
             className="input"
             value={category ?? ""}

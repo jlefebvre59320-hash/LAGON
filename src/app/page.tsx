@@ -11,10 +11,12 @@ import { recordView } from "@/lib/analytics";
 import { SITES } from "@/lib/sites";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import InstallBanner from "@/components/InstallBanner";
+import { eventDay, islandDayStartIso } from "@/lib/event";
 
 const SITE = SITES.tikanal;
 
 type Tab = "home" | ModuleKey;
+type Discovery = { href: string; title: string; meta: string; site: "food" | "guide" | "event" };
 
 export default function HomePage() {
   return (
@@ -36,6 +38,7 @@ function Home() {
   const [error, setError] = useState<string | null>(null);
   const [foodHits, setFoodHits] = useState<{ id: string; name: string; cuisine: string; quartier: string }[]>([]);
   const [guideHits, setGuideHits] = useState<{ id: string; name: string; category: string; quartier: string }[]>([]);
+  const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
 
   const activeModule = tab === "home" ? null : tab;
   const m = activeModule ? MODULES[activeModule] : null;
@@ -44,6 +47,38 @@ function Home() {
   const accentSolid = m ? m.color : "var(--green)";
 
   useEffect(() => { recordView("/"); }, []);
+
+  /* L'accueil reste vivant même avant les premières annonces : l'écosystème
+     Food, Guide et Event fournit des portes d'entrée utiles plutôt qu'un
+     grand écran vide. */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [food, guide, events] = await Promise.all([
+        supabase().from("restaurants").select("id,name,cuisine,quartier")
+          .eq("status", "active").order("name").limit(2),
+        supabase().from("places").select("id,name,category,quartier")
+          .eq("status", "active").order("name").limit(2),
+        supabase().from("events").select("id,title,category,quartier,starts_at")
+          .eq("status", "approved").gte("starts_at", islandDayStartIso()).order("starts_at").limit(2),
+      ]);
+      if (cancelled) return;
+      const items: Discovery[] = [
+        ...((food.data ?? []) as { id: string; name: string; cuisine: string; quartier: string }[]).map((r) => ({
+          href: `/food/resto/${r.id}`, title: r.name, meta: `${r.cuisine} · ${r.quartier}`, site: "food" as const,
+        })),
+        ...((guide.data ?? []) as { id: string; name: string; category: string; quartier: string }[]).map((p) => ({
+          href: `/guide/lieu/${p.id}`, title: p.name, meta: `${p.category} · ${p.quartier}`, site: "guide" as const,
+        })),
+        ...((events.data ?? []) as { id: string; title: string; category: string; quartier: string; starts_at: string }[]).map((e) => {
+          const date = eventDay(e.starts_at);
+          return { href: `/event/${e.id}`, title: e.title, meta: `${date.semaine} ${date.jour} ${date.mois} · ${e.quartier}`, site: "event" as const };
+        }),
+      ];
+      setDiscoveries(items);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,9 +138,9 @@ function Home() {
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <header className="site-header">
+      <header className="site-header home-header">
       <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
-        <div className="container" style={{ paddingTop: 16 }}>
+        <div className="container home-header-inner">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand onClick={() => { setTab("home"); setSub(null); }} />
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
@@ -120,7 +155,11 @@ function Home() {
           {tab === "home" && (
             <p className="hero-tagline">Le canal des <em>bonnes affaires</em> de l&apos;île.</p>
           )}
-          <div style={{ position: "relative", margin: "12px 0 12px" }}>
+          <div className="search-shell">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4 4" />
+            </svg>
             <input
               className="input search-input"
               value={query}
@@ -129,6 +168,9 @@ function Home() {
               aria-label="Rechercher une annonce"
               type="search"
             />
+            {query && (
+              <button type="button" className="search-clear" onClick={() => setQuery("")} aria-label="Effacer la recherche">×</button>
+            )}
           </div>
 
           <nav className="tabs" aria-label="Univers">
@@ -155,42 +197,25 @@ function Home() {
         <div className="header-accent" style={{ background: accent }} />
       </header>
 
-      {/* La tuile St Barth Food : les trois points du bandeau sont discrets,
-          elle fait découvrir. data-site peint ses couleurs. Event n'a pas de
-          tuile — il n'existe que dans le sélecteur, « bientôt » : cap sur les
-          ventes et le food. Masquée hors accueil : place au parcours. */}
       {tab === "home" && (
-        <div className="container" style={{ paddingTop: 12 }}>
-          {/* Rappel animé : la famille de sites vit derrière les ••• du bandeau.
-              Les tuiles compactes font découvrir, le message fait retenir. */}
-          <p className="famille-hint">
-            Un seul site, <em>plusieurs univers</em> — basculez à tout moment avec les{" "}
-            <span className="dots-hint" aria-hidden="true"><i /><i /><i /></span> en haut.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
+        <div className="container">
+          <div className="universe-strip" aria-label="Explorer les univers de l'île">
             {([SITES.food, SITES.guide, SITES.event] as const).map((s) => (
               <Link
                 key={s.key}
                 href={s.path}
                 data-site={s.key}
+                className="universe-card"
                 style={{
-                  display: "flex", alignItems: "center", gap: 9,
                   background: "linear-gradient(120deg, var(--green-700), var(--green))",
-                  border: "1px solid color-mix(in srgb, var(--gold) 40%, transparent)",
-                  borderRadius: 12, padding: "8px 12px", textDecoration: "none",
-                  color: "var(--cream)", minWidth: 0,
                 }}
               >
-                <Mark size={26} color="var(--gold)" />
+                <Mark size={36} color="var(--gold)" />
                 <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: "block", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {s.name}
-                  </span>
-                  <span style={{ display: "block", fontSize: 10.5, color: "var(--gold-light)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {s.baseline}{!s.ready ? " · bientôt" : ""}
-                  </span>
+                  <strong>{s.name}</strong>
+                  <small>{s.baseline}</small>
                 </span>
-                <span aria-hidden="true" style={{ color: "var(--gold)", fontSize: 15 }}>→</span>
+                <span aria-hidden="true" style={{ color: "var(--gold)", fontSize: 18 }}>→</span>
               </Link>
             ))}
           </div>
@@ -199,7 +224,7 @@ function Home() {
 
       <div className="container">
         {m && (
-          <div className="filter-row wrap">
+          <div className="filter-row">
             {/* Menu déroulant plutôt que chips défilantes : la totalité des
                 sous-catégories tient à l'écran, rien à aller chercher. */}
             <select
@@ -219,7 +244,7 @@ function Home() {
 
         {/* Sens de l'annonce : proposé ou recherché. Valable dans tous les
             univers, donc affiché aussi sur l'accueil. */}
-        <div className="filter-row wrap" style={{ paddingTop: m ? 8 : 14 }}>
+        <div className="filter-row" style={{ paddingTop: m ? 8 : 14 }}>
           <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
             Afficher
           </span>
@@ -269,7 +294,6 @@ function Home() {
       </div>
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 90, flex: 1 }}>
-        {tab === "home" && <InstallBanner />}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <h1 className="section-title">
             {m ? m.label : "Dernières annonces"}
@@ -327,17 +351,41 @@ function Home() {
             ))}
           </div>
         ) : listings.length === 0 ? (
-          <div className="panel gold-frame" style={{ textAlign: "center", padding: "44px 20px" }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-              <Mark size={84} color="var(--gold-deep)" />
-            </div>
-            <p style={{ fontWeight: 700, color: "var(--green)", margin: "0 0 4px" }}>
-              Aucune annonce ici pour l&apos;instant.
-            </p>
-            <p style={{ fontSize: 13.5, color: "var(--text-muted)", margin: "0 0 16px" }}>
-              Soyez le premier à ouvrir le canal.
-            </p>
-            <Link href="/deposer" className="btn">Déposer une annonce</Link>
+          <div className="empty-discovery">
+            <section className="empty-cta">
+              <Mark size={70} color="var(--gold)" />
+              <h2>{query || intent || m ? "Aucun résultat" : "Le canal démarre avec vous"}</h2>
+              <p>{query || intent || m
+                ? "Modifiez vos critères ou publiez gratuitement ce que vous recherchez."
+                : "Une vente, une location, un service ou une recherche : publiez votre annonce en quelques minutes."}</p>
+              {(query || intent || m) && (
+                <button className="btn btn-gold" onClick={() => { setQuery(""); setIntent(null); setSub(null); setMinP(""); setMaxP(""); }}>
+                  Effacer les filtres
+                </button>
+              )}
+              {!query && !intent && !m && <Link href="/deposer" className="btn btn-gold">Déposer gratuitement</Link>}
+            </section>
+            <section>
+              <p style={{ margin: "0 0 9px", fontSize: 13, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold-deep)" }}>
+                À découvrir sur l&apos;île
+              </p>
+              <div className="discovery-list">
+                {discoveries.slice(0, 5).map((item) => (
+                  <Link key={`${item.site}-${item.href}`} href={item.href} className="discovery-link">
+                    <span className="discovery-dot" style={{ background: SITES[item.site].dot }} />
+                    <span><strong>{item.title}</strong><small>{item.meta}</small></span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                ))}
+                {discoveries.length === 0 && (
+                  <Link href="/food" className="discovery-link">
+                    <span className="discovery-dot" style={{ background: SITES.food.dot }} />
+                    <span><strong>Où manger aujourd&apos;hui ?</strong><small>Restaurants, quartiers et cuisines</small></span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
+              </div>
+            </section>
           </div>
         ) : tab === "home" && !query && !intent && listings.length > 3 ? (
           (() => {
@@ -361,6 +409,7 @@ function Home() {
             {listings.map((l) => <ListingCard key={l.id} l={l} />)}
           </div>
         )}
+        {tab === "home" && <div style={{ marginTop: 24 }}><InstallBanner /></div>}
       </main>
 
       <Link href="/deposer" className="btn btn-gold fab">+ Déposer</Link>

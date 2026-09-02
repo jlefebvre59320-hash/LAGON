@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { SITES } from "@/lib/sites";
 import { SITE_URL } from "@/lib/siteUrl";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import MobileDock from "@/components/MobileDock";
 import "./globals.css";
 
 const S = SITES.tikanal;
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <body>
         {children}
+        <MobileDock />
         <ServiceWorkerRegistrar />
       </body>
     </html>

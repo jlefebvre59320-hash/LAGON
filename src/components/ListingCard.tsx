@@ -44,7 +44,7 @@ export default function ListingCard({ l }: { l: Listing }) {
   const wanted = l.intent === "wanted";
 
   return (
-    <article className="card" style={{ position: "relative" }}>
+    <article className="card listing-card" style={{ position: "relative" }}>
       <Link
         href={`/annonce/${l.id}`}
         className="card-link-overlay"
@@ -65,6 +65,14 @@ export default function ListingCard({ l }: { l: Listing }) {
           >
             <Mark size={64} color={m.color} />
           </div>
+        )}
+        {(l.photos?.length ?? 0) > 1 && (
+          <span className="photo-count" aria-label={`${l.photos!.length} photos`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="15" rx="2" /><path d="m3 16 5-5 4 4 3-3 6 6M9 9h.01" />
+            </svg>
+            {l.photos!.length}
+          </span>
         )}
         {/* Sous-catégorie en haut, sens de l'annonce en bas : les deux pastilles
             ne se disputent jamais la même ligne, même sur un libellé long. */}
@@ -109,13 +117,13 @@ export default function ListingCard({ l }: { l: Listing }) {
       </div>
 
       <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: "var(--text)" }}>{l.title}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, color: "var(--text)" }}>{l.title}</span>
         <span className="price" style={{ fontSize: 18, color: m.color, marginTop: 2 }}>
           {price == null
             ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
             : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </span>
-        <span style={{ fontSize: 12, color: "var(--text-muted)", marginTop: "auto", paddingTop: 6 }}>
+        <span style={{ fontSize: 13, color: "var(--text-muted)", marginTop: "auto", paddingTop: 6 }}>
           {l.location} · {ago(l.created_at)}
         </span>
       </div>
