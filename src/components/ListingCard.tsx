@@ -5,6 +5,7 @@ import type { Listing } from "@/lib/types";
 import { Mark } from "@/components/Brand";
 import FavoriteButton from "@/components/FavoriteButton";
 import { thumbKey } from "@/lib/images";
+import { estEnAvant } from "@/lib/featured";
 
 const ago = (iso: string) => {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -42,9 +43,10 @@ export default function ListingCard({ l }: { l: Listing }) {
   const price = eur(l.price_cents);
   const badge = INTENT_BADGE[l.intent ?? "offer"];
   const wanted = l.intent === "wanted";
+  const enAvant = estEnAvant(l);
 
   return (
-    <article className="card listing-card" style={{ position: "relative" }}>
+    <article className={`card listing-card${enAvant ? " listing-featured" : ""}`} style={{ position: "relative" }}>
       <Link
         href={`/annonce/${l.id}`}
         className="card-link-overlay"
@@ -66,6 +68,14 @@ export default function ListingCard({ l }: { l: Listing }) {
             <Mark size={64} color={m.color} />
           </div>
         )}
+        {enAvant && (
+          <span className="featured-badge" aria-label="Annonce mise en avant">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2.5l2.7 5.9 6.3.7-4.7 4.3 1.3 6.1L12 16.4 6.4 19.5l1.3-6.1L3 9.1l6.3-.7z" />
+            </svg>
+            À la une
+          </span>
+        )}
         {(l.photos?.length ?? 0) > 1 && (
           <span className="photo-count" aria-label={`${l.photos!.length} photos`}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -77,6 +87,7 @@ export default function ListingCard({ l }: { l: Listing }) {
         {/* Sous-catégorie en haut, sens de l'annonce en bas : les deux pastilles
             ne se disputent jamais la même ligne, même sur un libellé long. */}
         <span
+          className="subcat-pill"
           style={{
             position: "absolute", left: 8, top: 8, maxWidth: "calc(100% - 16px)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",

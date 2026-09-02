@@ -6,9 +6,9 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { compressImage, thumbKey } from "@/lib/images";
+import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS } from "@/lib/featured";
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
 
-const MAX_PHOTOS = 5;
 
 function Field({ f, v, set }: { f: FieldDef; v: string; set: (k: string, v: string) => void }) {
   return (
@@ -36,6 +36,7 @@ export default function Deposer() {
   const [mod, setMod] = useState<ModuleKey | null>(null);
   const [sub, setSub] = useState<string | null>(null);
   const [subQuery, setSubQuery] = useState("");
+  const [enAvant, setEnAvant] = useState(false);
   const [intent, setIntent] = useState<Intent>("offer");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -76,6 +77,7 @@ export default function Deposer() {
   const advFields = fields.filter((f) => f.adv);
   const advFilled = advFields.filter((f) => attrs[f.k]).length;
   const setAttr = (k: string, v: string) => setAttrs((a) => ({ ...a, [k]: v }));
+  const maxPhotos = enAvant ? PHOTOS_EN_AVANT : PHOTOS_LIBRE;
 
   async function publish() {
     if (!mod || !sub || !userId) return;
@@ -112,6 +114,7 @@ export default function Deposer() {
           price_cents: numericPrice == null ? null : Math.round(numericPrice * 100),
           location: location.trim() || "Saint-Barthélemy",
           attrs: cleanAttrs,
+          featured_until: enAvant ? finDeMiseEnAvant() : null,
         })
         .select("id")
         .single();
@@ -317,17 +320,45 @@ export default function Deposer() {
               </div>
             )}
 
+            {/* Mise en avant : gratuite pendant la phase de test. L'option est
+                posée avant les photos parce qu'elle en change le nombre permis. */}
+            <div className="panel gold-frame" style={{ padding: "14px 16px" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={enAvant} style={{ marginTop: 3 }}
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setEnAvant(on);
+                    // Repasser en formule libre : on ne garde que ce qui y tient.
+                    if (!on) setFiles((prev) => prev.slice(0, PHOTOS_LIBRE));
+                  }} />
+                <span>
+                  <span style={{ display: "block", fontWeight: 700, fontSize: 14.5, color: "var(--green)" }}>
+                    Mettre mon annonce en avant
+                  </span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
+                    Encadré doré, place en tête de l&apos;accueil et des recherches,
+                    et {PHOTOS_EN_AVANT} photos au lieu de {PHOTOS_LIBRE} — pendant {DUREE_JOURS} jours.
+                  </span>
+                  <span style={{ display: "inline-block", marginTop: 6, fontSize: 10.5, fontWeight: 800,
+                    letterSpacing: ".07em", textTransform: "uppercase", background: "var(--gold)",
+                    color: "var(--green-900)", padding: "3px 10px", borderRadius: 99 }}>
+                    Gratuit pendant la phase de test
+                  </span>
+                </span>
+              </label>
+            </div>
+
             <div>
               <label htmlFor="photos" style={{
                 display: "block", border: "1.5px dashed var(--border-input)", borderRadius: 14,
                 padding: "24px 12px", textAlign: "center", color: "var(--text-muted)", fontSize: 13.5,
                 cursor: "pointer", background: "var(--surface)",
               }}>
-                {files.length === 0 ? `+ Ajouter des photos (${MAX_PHOTOS} max)` : `${files.length} photo${files.length > 1 ? "s" : ""} sélectionnée${files.length > 1 ? "s" : ""} — appuyer pour changer`}
+                {files.length === 0 ? `+ Ajouter des photos (${maxPhotos} max)` : `${files.length} photo${files.length > 1 ? "s" : ""} sélectionnée${files.length > 1 ? "s" : ""} — appuyer pour changer`}
               </label>
               <input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple
                 style={{ display: "none" }}
-                onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS))} />
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, maxPhotos))} />
               {files.length > 0 && (
                 <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                   {files.map((f, i) => (

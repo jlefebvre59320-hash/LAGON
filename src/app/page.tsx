@@ -9,6 +9,7 @@ import { AccountButton, Brand, Mark } from "@/components/Brand";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
 import { SITES, SITE_ORDER } from "@/lib/sites";
+import { trierEnAvantDabord } from "@/lib/featured";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import InstallBanner from "@/components/InstallBanner";
 import { eventDay, islandDayStartIso } from "@/lib/event";
@@ -92,26 +93,48 @@ function Home() {
     setError(null);
 
     (async () => {
-      let q = supabase()
-        .from("listings")
-        .select("*, photos:listing_photos(storage_key, position)")
-        /* Les vendues récentes restent visibles avec leur bandeau : la RLS
-           limite d'elle-même aux 7 jours suivant la vente. */
-        .in("status", ["active", "sold"])
-        .order("created_at", { ascending: false })
-        .limit(60);
+      /* Les mêmes filtres pour les deux requêtes : celle des annonces
+         ordinaires et celle des mises en avant. */
+      const filtrer = <T extends ReturnType<typeof baseQuery>>(q: T) => {
+        let r = q;
+        if (activeModule) r = r.eq("module", activeModule) as T;
+        if (activeModule && sub) r = r.eq("subcategory", sub) as T;
+        if (intent) r = r.eq("intent", intent) as T;
+        if (minP !== "") r = r.gte("price_cents", parseInt(minP, 10) * 100) as T;
+        if (maxP !== "") r = r.lte("price_cents", parseInt(maxP, 10) * 100) as T;
+        if (query.trim()) r = r.textSearch("search_tsv", query.trim(), { type: "websearch", config: "french" }) as T;
+        return r;
+      };
 
-      if (activeModule) q = q.eq("module", activeModule);
-      if (activeModule && sub) q = q.eq("subcategory", sub);
-      if (intent) q = q.eq("intent", intent);
-      if (minP !== "") q = q.gte("price_cents", parseInt(minP, 10) * 100);
-      if (maxP !== "") q = q.lte("price_cents", parseInt(maxP, 10) * 100);
-      if (query.trim()) q = q.textSearch("search_tsv", query.trim(), { type: "websearch", config: "french" });
+      function baseQuery() {
+        return supabase()
+          .from("listings")
+          .select("*, photos:listing_photos(storage_key, position)")
+          /* Les vendues récentes restent visibles avec leur bandeau : la RLS
+             limite d'elle-même aux 7 jours suivant la vente. */
+          .in("status", ["active", "sold"]);
+      }
 
-      const { data, error } = await q;
+      /* Deux requêtes plutôt qu'une : sans cela, une annonce mise en avant
+         mais ancienne tomberait hors des 60 dernières et ne remonterait
+         jamais — ce pour quoi la mise en avant est justement payée. */
+      const [ordinaires, enAvant] = await Promise.all([
+        filtrer(baseQuery()).order("created_at", { ascending: false }).limit(60),
+        filtrer(baseQuery())
+          .gt("featured_until", new Date().toISOString())
+          .order("featured_until", { ascending: false })
+          .limit(12),
+      ]);
+
       if (cancelled) return;
-      if (error) setError("Impossible de charger les annonces. Réessayez.");
-      else setListings((data as Listing[]) ?? []);
+      if (ordinaires.error) {
+        setError("Impossible de charger les annonces. Réessayez.");
+      } else {
+        const vus = new Set<string>();
+        const fusion = [...((enAvant.data as Listing[]) ?? []), ...((ordinaires.data as Listing[]) ?? [])]
+          .filter((l) => !vus.has(l.id) && vus.add(l.id));
+        setListings(trierEnAvantDabord(fusion));
+      }
       setLoading(false);
     })();
 
