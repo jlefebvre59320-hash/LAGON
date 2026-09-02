@@ -35,6 +35,7 @@ export default function Deposer() {
   const [step, setStep] = useState(0);
   const [mod, setMod] = useState<ModuleKey | null>(null);
   const [sub, setSub] = useState<string | null>(null);
+  const [subQuery, setSubQuery] = useState("");
   const [intent, setIntent] = useState<Intent>("offer");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -193,17 +194,65 @@ export default function Deposer() {
           </div>
         )}
 
-        {step === 1 && m && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
-            {m.subs.map((s) => (
-              <button key={s} className="chip"
-                onClick={() => { setSub(s); setAttrs({}); setShowMore(false); setStep(2); }}
-                style={{ borderColor: m.color, color: m.dark, padding: "8px 16px", fontSize: 13.5 }}>
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
+        {step === 1 && m && (() => {
+          /* Certains univers comptent plus de trente catégories : en mur de
+             pastilles, on lit tout pour trouver une ligne. Un champ de
+             recherche et une liste verticale vont droit au but — et la
+             comparaison ignore les accents, personne ne tape « Électroménager »
+             avec son accent sur un téléphone. */
+          const sansAccent = (t: string) =>
+            t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const q = sansAccent(subQuery.trim());
+          const visibles = q ? m.subs.filter((s) => sansAccent(s).includes(q)) : m.subs;
+          const choisir = (s: string) => {
+            setSub(s); setAttrs({}); setShowMore(false); setSubQuery(""); setStep(2);
+          };
+
+          return (
+            <div style={{ marginTop: 16 }}>
+              <input
+                className="input"
+                value={subQuery}
+                onChange={(e) => setSubQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && visibles.length > 0) choisir(visibles[0]); }}
+                placeholder={`Rechercher dans ${m.label.toLowerCase()}…`}
+                aria-label="Rechercher une catégorie"
+                type="search"
+                autoFocus
+                style={{ marginBottom: 10 }}
+              />
+
+              {visibles.length === 0 ? (
+                <p style={{ fontSize: 13.5, color: "var(--text-muted)", padding: "14px 2px" }}>
+                  Aucune catégorie ne correspond. Essayez un autre mot, ou choisissez
+                  « Autre » en effaçant la recherche.
+                </p>
+              ) : (
+                <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+                  {visibles.map((s, i) => (
+                    <button key={s} onClick={() => choisir(s)}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        width: "100%", minHeight: 48, padding: "12px 16px", gap: 12,
+                        background: "none", cursor: "pointer", fontFamily: "inherit",
+                        fontSize: 14.5, fontWeight: 600, color: m.dark, textAlign: "left",
+                        border: "none", borderTop: i === 0 ? "none" : "1px solid var(--border)",
+                      }}>
+                      {s}
+                      <span aria-hidden="true" style={{ color: m.color, fontSize: 15 }}>→</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {q && (
+                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "8px 2px 0" }}>
+                  {visibles.length} catégorie{visibles.length > 1 ? "s" : ""} sur {m.subs.length}
+                </p>
+              )}
+            </div>
+          );
+        })()}
 
         {step === 2 && mod && m && sub && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
@@ -300,7 +349,7 @@ export default function Deposer() {
 
         <div style={{ marginTop: 20, display: "flex", gap: 18, alignItems: "center" }}>
           {step > 0 && (
-            <button onClick={() => setStep(step - 1)} className="link-quiet">
+            <button onClick={() => { setSubQuery(""); setStep(step - 1); }} className="link-quiet">
               ← Retour
             </button>
           )}
