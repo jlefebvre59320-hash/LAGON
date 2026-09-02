@@ -22,22 +22,20 @@ WhatsApp, il y aura plus de 2 inscriptions dans l'heure.
 
 ---
 
-## Étape 1 — Le domaine (prérequis, ~10 €/an)
+## Étape 1 — Le domaine — ✅ fait
 
-Aucun service d'envoi sérieux n'accepte d'envoyer depuis une adresse Gmail ou
-depuis un domaine qui n'est pas à vous. Il faut donc un domaine.
+**`tikanal.com`**, chez **Cloudflare Registrar**. La zone DNS se gère donc
+sur dash.cloudflare.com → `tikanal.com` → **DNS → Records** : c'est là que
+tous les enregistrements ci-dessous se posent.
 
-- **Registrar conseillé : Cloudflare Registrar** — prix coûtant (pas de
-  première année bradée puis renouvellement triplé), DNS rapide et gratuit,
-  tout au même endroit.
-- Alternatives correctes : OVH, Gandi, Namecheap.
-- Exemple : `tikanal.com`, `ti-kanal.com`, `tikanal.fr`.
-
-> **Sous-domaine d'envoi (recommandé)**
-> Faites envoyer Resend depuis `send.tikanal.com` plutôt que `tikanal.com`.
+> **Sous-domaine d'envoi**
+> Resend enverra depuis **`send.tikanal.com`**, pas depuis `tikanal.com`.
 > Avantage : si un jour un email est mal noté, la réputation du domaine
 > principal (celui du site) n'est pas touchée. Les adresses restent lisibles :
 > `no-reply@send.tikanal.com`.
+>
+> Rien à créer à la main : le sous-domaine naît des enregistrements que
+> Resend vous donnera à l'étape suivante.
 
 ---
 
@@ -45,7 +43,7 @@ depuis un domaine qui n'est pas à vous. Il faut donc un domaine.
 
 1. Compte sur **resend.com** — le palier gratuit (3 000 emails/mois,
    100/jour) couvre largement le lancement.
-2. **Domains → Add Domain** → `send.tikanal.com` (ou votre domaine).
+2. **Domains → Add Domain** → `send.tikanal.com`.
    Choisissez la région **EU (Ireland)** : les données restent en Europe,
    c'est plus propre vis-à-vis du RGPD.
 3. Resend affiche les enregistrements DNS à créer. Recopiez-les
@@ -79,7 +77,7 @@ lettre manquante casse la signature.
 
 ### DMARC — la politique (l'étape que tout le monde oublie)
 
-À créer vous-même, TXT sur `_dmarc.votredomaine` :
+À créer vous-même, TXT sur `_dmarc.send.tikanal.com` :
 
 **Au démarrage** (on observe sans rien bloquer) :
 ```
@@ -145,8 +143,8 @@ retours de rebond et de savoir quelles adresses sont mortes.
 | `email-change.html` | Change Email Address | Confirmez votre nouvelle adresse email |
 
 Et **Authentication → URL Configuration** :
-- Site URL : `https://votredomaine`
-- Redirect URLs : `https://votredomaine/**` **et** `https://lagon-orcin.vercel.app/**`
+- Site URL : `https://tikanal.com`
+- Redirect URLs : `https://tikanal.com/**` **et** `https://lagon-orcin.vercel.app/**`
 
 ---
 
@@ -163,9 +161,9 @@ ou lien de désabonnement).
 
 ### Test 2 — les DNS vus de l'extérieur
 Sur **mxtoolbox.com/SuperTool.aspx** :
-- `spf:votredomaine` → doit rendre un seul enregistrement, valide ;
-- `dmarc:votredomaine` → doit trouver votre politique ;
-- `dkim:votredomaine:resend` → signature trouvée.
+- `spf:send.tikanal.com` → doit rendre un seul enregistrement, valide ;
+- `dmarc:send.tikanal.com` → doit trouver votre politique ;
+- `dkim:send.tikanal.com:resend` → signature trouvée.
 
 ### Test 3 — les vraies boîtes
 Créez un compte de test avec :
