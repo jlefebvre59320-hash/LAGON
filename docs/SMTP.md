@@ -83,21 +83,44 @@ lettre manquante casse la signature.
 
 ### DMARC — la politique (l'étape que tout le monde oublie)
 
-À créer vous-même, TXT sur `_dmarc.tikanal.com` :
+Le DMARC exige une adresse où recevoir les rapports. Elle doit être **sur
+le domaine lui-même** : une adresse extérieure oblige le domaine receveur à
+publier une autorisation supplémentaire, et beaucoup d'expéditeurs
+abandonnent silencieusement l'envoi dans ce cas.
+
+**Prérequis — créer les adresses via Cloudflare Email Routing** (gratuit,
+et rien à héberger : ce sont de simples redirections vers votre boîte
+habituelle).
+
+1. Cloudflare → domaine `tikanal.com` → **Email** → **Email Routing** →
+   **Get started**.
+2. Cloudflare propose d'ajouter les MX et le SPF de routage : **acceptez**.
+   ⚠️ Ce SPF-là est celui de la *réception*, il ne remplace pas celui de
+   Resend et ne rentre pas en conflit avec lui (l'un est sur
+   `send.tikanal.com`, l'autre sur `tikanal.com`).
+3. **Destination addresses** → ajoutez votre boîte personnelle → confirmez
+   le mail de validation que Cloudflare y envoie.
+4. **Routes** → créez deux adresses, toutes deux redirigées vers cette
+   boîte :
+   - `dmarc@tikanal.com` — les rapports quotidiens ;
+   - `contact@tikanal.com` — l'adresse publique du site, reprise dans les
+     mentions légales et la politique de confidentialité.
+
+**Puis l'enregistrement**, TXT sur `_dmarc.tikanal.com` :
 
 **Au démarrage** (on observe sans rien bloquer) :
 ```
-v=DMARC1; p=none; rua=mailto:jl@solutech.com; fo=1
+v=DMARC1; p=none; rua=mailto:dmarc@tikanal.com; fo=1
 ```
 
 **Après 2–4 semaines**, si les rapports sont propres, on durcit :
 ```
-v=DMARC1; p=quarantine; pct=100; rua=mailto:jl@solutech.com
+v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@tikanal.com
 ```
 
 **À terme** (protection maximale contre l'usurpation de votre nom) :
 ```
-v=DMARC1; p=reject; rua=mailto:jl@solutech.com
+v=DMARC1; p=reject; rua=mailto:dmarc@tikanal.com
 ```
 
 > Passer directement à `p=reject` sans période d'observation est le meilleur
@@ -193,7 +216,7 @@ attendez 24 h après un correctif DNS avant de conclure.
 - **Resend → Logs** : chaque email envoyé, délivré, rebondi. À regarder
   après le lancement — un rebond dur (`bounce`) signale une adresse
   invalide, un `complaint` signale un signalement spam.
-- **Rapports DMARC** : ils arrivent à `jl@solutech.com` en XML (illisible
+- **Rapports DMARC** : ils arrivent à `dmarc@tikanal.com` en XML (illisible
   à l'œil). Passez-les dans **dmarcian.com** ou **postmarkapp.com/dmarc**
   (gratuits) pour un rapport lisible.
 - **Quota Resend** : 3 000/mois. Un email par inscription + les alertes à

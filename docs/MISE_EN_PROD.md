@@ -49,7 +49,7 @@ d'inscription se perdent en silence dès le deuxième inscrit de l'heure.
    « Emails sent per hour » (2 par défaut) à **50 ou 100**.
 7. Ajoutez un enregistrement **DMARC** (recommandé, améliore la
    délivrabilité) : TXT sur `_dmarc.tikanal.com` →
-   `v=DMARC1; p=none; rua=mailto:jl@solutech.com`.
+   `v=DMARC1; p=none; rua=mailto:dmarc@tikanal.com`.
 8. **Test** : créez un compte avec une adresse à vous → l'email doit
    arriver en quelques secondes, expéditeur `no-reply@tikanal.com`.
    Vérifiez aussi « mot de passe oublié ».
