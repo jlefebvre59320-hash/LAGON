@@ -8,7 +8,7 @@ import ListingCard from "@/components/ListingCard";
 import { AccountButton, Brand, Mark } from "@/components/Brand";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
-import { SITES } from "@/lib/sites";
+import { SITES, SITE_ORDER } from "@/lib/sites";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import InstallBanner from "@/components/InstallBanner";
 
@@ -89,8 +89,12 @@ function Home() {
     (async () => {
       const like = `%${q}%`;
       const [fr, gp] = await Promise.all([
-        supabase().from("restaurants").select("id, name, cuisine, quartier").eq("status", "active")
-          .or(`name.ilike.${like},cuisine.ilike.${like},quartier.ilike.${like}`).limit(5),
+        /* Une section fermée ne doit pas remonter dans les résultats : la
+           recherche s'arrête à ce qui est réellement ouvert au public. */
+        SITES.food.ready
+          ? supabase().from("restaurants").select("id, name, cuisine, quartier").eq("status", "active")
+              .or(`name.ilike.${like},cuisine.ilike.${like},quartier.ilike.${like}`).limit(5)
+          : Promise.resolve({ data: [] as typeof foodHits }),
         supabase().from("places").select("id, name, category, quartier").eq("status", "active")
           .or(`name.ilike.${like},quartier.ilike.${like},description.ilike.${like}`).limit(5),
       ]);
@@ -156,10 +160,10 @@ function Home() {
         <div className="header-accent" style={{ background: accent }} />
       </header>
 
-      {/* La tuile St Barth Food : les trois points du bandeau sont discrets,
-          elle fait découvrir. data-site peint ses couleurs. Event n'a pas de
-          tuile — il n'existe que dans le sélecteur, « bientôt » : cap sur les
-          ventes et le food. Masquée hors accueil : place au parcours. */}
+      {/* Les tuiles des autres sections : elles font découvrir la famille,
+          data-site peint leurs couleurs, et celles qui ne sont pas encore
+          ouvertes portent la mention « bientôt ». Masquées hors accueil :
+          place au parcours. */}
       {tab === "home" && (
         <div className="container" style={{ paddingTop: 12 }}>
           {/* Rappel animé : la famille de sites vit derrière les ••• du bandeau.
@@ -169,7 +173,10 @@ function Home() {
             <span className="dots-hint" aria-hidden="true"><i /><i /><i /></span> en haut.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
-            {([SITES.food, SITES.guide, SITES.event] as const).map((s) => (
+            {/* Les sections de la famille, hors Ti Kanal qui est la page
+                courante. SITE_ORDER fait foi : une section retirée de la
+                liste disparaît d'ici sans autre changement. */}
+            {SITE_ORDER.filter((k) => k !== "tikanal").map((k) => SITES[k]).map((s) => (
               <Link
                 key={s.key}
                 href={s.path}
@@ -187,9 +194,21 @@ function Home() {
                   <span style={{ display: "block", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {s.name}
                   </span>
-                  <span style={{ display: "block", fontSize: 10.5, color: "var(--gold-light)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {s.baseline}{!s.ready ? " · bientôt" : ""}
-                  </span>
+                  {/* Pastille plutôt que texte accolé : dans une tuile compacte,
+                      une baseline longue mange la mention par ellipse — or c'est
+                      justement l'information à ne pas manquer. */}
+                  {s.ready ? (
+                    <span style={{ display: "block", fontSize: 10.5, color: "var(--gold-light)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {s.baseline}
+                    </span>
+                  ) : (
+                    <span style={{ display: "inline-block", fontSize: 9.5, fontWeight: 700,
+                      letterSpacing: ".08em", textTransform: "uppercase", marginTop: 2,
+                      background: "var(--gold)", color: "var(--green-900)",
+                      padding: "2px 8px", borderRadius: 99 }}>
+                      Bientôt
+                    </span>
+                  )}
                 </span>
                 <span aria-hidden="true" style={{ color: "var(--gold)", fontSize: 15 }}>→</span>
               </Link>

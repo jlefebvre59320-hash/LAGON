@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL as BASE } from "@/lib/siteUrl";
+import { SITES } from "@/lib/sites";
 
 async function ids(table: string): Promise<string[]> {
   try {
@@ -17,16 +18,22 @@ async function ids(table: string): Promise<string[]> {
   }
 }
 
+/* Une section fermée n'entre pas au sitemap : proposer à Google une page
+   « bientôt en ligne » et des fiches inaccessibles au public gaspille le
+   budget d'exploration et donne une mauvaise première impression. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const foodOuvert = SITES.food.ready;
   const [listings, restos, places] = await Promise.all([
-    ids("listings"), ids("restaurants"), ids("places"),
+    ids("listings"),
+    foodOuvert ? ids("restaurants") : Promise.resolve([]),
+    ids("places"),
   ]);
   return [
     { url: BASE, changeFrequency: "hourly", priority: 1 },
-    { url: `${BASE}/food`, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE}/guide`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${BASE}/event`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/soutenir`, changeFrequency: "yearly", priority: 0.2 },
+    ...(foodOuvert ? [{ url: `${BASE}/food`, changeFrequency: "daily" as const, priority: 0.9 }] : []),
+    ...(SITES.event.ready ? [{ url: `${BASE}/event`, changeFrequency: "daily" as const, priority: 0.7 }] : []),
     ...listings.map((id) => ({ url: `${BASE}/annonce/${id}`, changeFrequency: "daily" as const, priority: 0.7 })),
     ...restos.map((id) => ({ url: `${BASE}/food/resto/${id}`, changeFrequency: "weekly" as const, priority: 0.8 })),
     ...places.map((id) => ({ url: `${BASE}/guide/lieu/${id}`, changeFrequency: "monthly" as const, priority: 0.6 })),
