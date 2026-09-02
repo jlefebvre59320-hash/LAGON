@@ -44,7 +44,14 @@ export default function ListingCard({ l }: { l: Listing }) {
   const wanted = l.intent === "wanted";
 
   return (
-    <Link href={`/annonce/${l.id}`} className="card">
+    <article className="card listing-card" style={{ position: "relative" }}>
+      <Link
+        href={`/annonce/${l.id}`}
+        className="card-link-overlay"
+        aria-label={`Voir l'annonce ${l.title}`}
+      >
+        <span className="sr-only">Voir l&apos;annonce {l.title}</span>
+      </Link>
       <div style={{ position: "relative", aspectRatio: "4 / 3", background: m.soft }}>
         {photo ? (
           <Vignette storageKey={photo.storage_key} alt={l.title} />
@@ -59,6 +66,14 @@ export default function ListingCard({ l }: { l: Listing }) {
             <Mark size={64} color={m.color} />
           </div>
         )}
+        {(l.photos?.length ?? 0) > 1 && (
+          <span className="photo-count" aria-label={`${l.photos!.length} photos`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="15" rx="2" /><path d="m3 16 5-5 4 4 3-3 6 6M9 9h.01" />
+            </svg>
+            {l.photos!.length}
+          </span>
+        )}
         {/* Sous-catégorie en haut, sens de l'annonce en bas : les deux pastilles
             ne se disputent jamais la même ligne, même sur un libellé long. */}
         <span
@@ -72,7 +87,7 @@ export default function ListingCard({ l }: { l: Listing }) {
         >
           {l.subcategory}
         </span>
-        <span style={{ position: "absolute", right: 8, bottom: 8 }}>
+        <span style={{ position: "absolute", right: 8, bottom: 8, zIndex: 2 }}>
           <FavoriteButton targetId={l.id} />
         </span>
         {badge && l.status !== "sold" && (
@@ -102,16 +117,16 @@ export default function ListingCard({ l }: { l: Listing }) {
       </div>
 
       <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: "var(--text)" }}>{l.title}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, color: "var(--text)" }}>{l.title}</span>
         <span className="price" style={{ fontSize: 18, color: m.color, marginTop: 2 }}>
           {price == null
             ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
             : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </span>
-        <span style={{ fontSize: 12, color: "var(--text-muted)", marginTop: "auto", paddingTop: 6 }}>
+        <span style={{ fontSize: 13, color: "var(--text-muted)", marginTop: "auto", paddingTop: 6 }}>
           {l.location} · {ago(l.created_at)}
         </span>
       </div>
-    </Link>
+    </article>
   );
 }

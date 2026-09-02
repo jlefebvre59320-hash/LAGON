@@ -72,7 +72,6 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
     (
       <div style={{ width: "100%", height: "100%", display: "flex", background: "#05282c" }}>
         {photoSrc && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={photoSrc} alt="" width={620} height={630}
             style={{ width: 620, height: 630, objectFit: "cover" }} />
         )}

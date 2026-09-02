@@ -4,26 +4,26 @@ import { MIN_RATINGS, isOpenNow, hasHours, priceLabel, type Restaurant, type Rat
 import { CuisineVisual } from "@/components/food/CuisineIcon";
 import FavoriteButton from "@/components/FavoriteButton";
 import { StarRow } from "@/components/food/Stars";
+import { emailHref, safeExternalUrl, socialUrl } from "@/lib/urls";
 
-/* Petit lien externe posé sur une carte : la carte entière est déjà un lien,
-   un <a> imbriqué est interdit — on ouvre donc à la main, sans suivre la carte. */
-function MiniLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+function MiniLink({ href, label, children }: { href: string | null; label: string; children: React.ReactNode }) {
+  if (!href) return null;
   return (
-    <span
-      role="link"
-      tabIndex={0}
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label={label}
       title={label}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(href, "_blank", "noopener,noreferrer"); }}
-      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); window.open(href, "_blank", "noopener,noreferrer"); } }}
+      onClick={(e) => e.stopPropagation()}
       style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         width: 30, height: 30, borderRadius: 999, cursor: "pointer",
-        background: "var(--cream-dark)", color: "var(--gold-deep)",
+        background: "var(--cream-dark)", color: "var(--gold-deep)", position: "relative", zIndex: 2,
       }}
     >
       {children}
-    </span>
+    </a>
   );
 }
 
@@ -45,8 +45,23 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
   const open = known && isOpenNow(r.hours);
   const rated = rating && rating.votes >= MIN_RATINGS;
 
+  const website = safeExternalUrl(r.website);
+  const instagram = socialUrl("instagram", r.instagram);
+  const facebook = safeExternalUrl(r.facebook);
+  const snapchat = socialUrl("snapchat", r.snapchat);
+  const tiktok = socialUrl("tiktok", r.tiktok);
+  const email = emailHref(r.email);
+  const hasLinks = website || instagram || facebook || snapchat || tiktok || email;
+
   return (
-    <Link href={`/food/resto/${r.id}`} className="card">
+    <article className="card restaurant-card" style={{ position: "relative" }}>
+      <Link
+        href={`/food/resto/${r.id}`}
+        className="card-link-overlay"
+        aria-label={`Voir la fiche de ${r.name}`}
+      >
+        <span className="sr-only">Voir la fiche de {r.name}</span>
+      </Link>
       <div style={{ position: "relative", aspectRatio: "4 / 3" }}>
         <CuisineVisual cuisine={r.cuisine} />
         <span
@@ -60,7 +75,7 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
         >
           {r.cuisine}
         </span>
-        <span style={{ position: "absolute", right: 8, bottom: 8 }}>
+        <span style={{ position: "absolute", right: 8, bottom: 8, zIndex: 2 }}>
           <FavoriteButton targetId={r.id} />
         </span>
         {known && (
@@ -84,7 +99,7 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
         <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 16.5, lineHeight: 1.25, color: "var(--green)" }}>
           {r.name}
         </span>
-        <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+        <span style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.4 }}>
           {r.quartier} · <span style={{ fontWeight: 700, color: "var(--gold-deep)" }}>{priceLabel(r.price_range)}</span>
           {r.avg_price_eur ? ` · ~${r.avg_price_eur}\u00A0€/pers.` : ""}
           {r.takeaway ? " · À emporter" : ""}
@@ -97,17 +112,17 @@ export default function RestaurantCard({ r, rating }: { r: Restaurant; rating?: 
             </span>
           </span>
         )}
-        {(r.website || r.instagram || r.facebook || r.snapchat || r.tiktok || r.email) && (
-          <span style={{ display: "inline-flex", gap: 6, marginTop: 6 }}>
-            {r.website && <MiniLink href={r.website} label="Site web"><Glyph d={G_SITE} /></MiniLink>}
-            {r.instagram && <MiniLink href={`https://instagram.com/${r.instagram.replace(/^@/, "")}`} label="Instagram"><Glyph d={G_INSTA} /></MiniLink>}
-            {r.facebook && <MiniLink href={r.facebook} label="Facebook"><Glyph d={G_FB} /></MiniLink>}
-            {r.snapchat && <MiniLink href={`https://www.snapchat.com/add/${r.snapchat.replace(/^@/, "")}`} label="Snapchat"><Glyph d={G_SNAP} /></MiniLink>}
-            {r.tiktok && <MiniLink href={`https://www.tiktok.com/@${r.tiktok.replace(/^@/, "")}`} label="TikTok"><Glyph d={G_TIKTOK} /></MiniLink>}
-            {r.email && <MiniLink href={`mailto:${r.email}`} label="Email"><Glyph d={G_MAIL} /></MiniLink>}
+        {hasLinks && (
+          <span style={{ display: "inline-flex", gap: 6, marginTop: 6, position: "relative", zIndex: 2 }}>
+            <MiniLink href={website} label="Site web"><Glyph d={G_SITE} /></MiniLink>
+            <MiniLink href={instagram} label="Instagram"><Glyph d={G_INSTA} /></MiniLink>
+            <MiniLink href={facebook} label="Facebook"><Glyph d={G_FB} /></MiniLink>
+            <MiniLink href={snapchat} label="Snapchat"><Glyph d={G_SNAP} /></MiniLink>
+            <MiniLink href={tiktok} label="TikTok"><Glyph d={G_TIKTOK} /></MiniLink>
+            <MiniLink href={email} label="Email"><Glyph d={G_MAIL} /></MiniLink>
           </span>
         )}
       </div>
-    </Link>
+    </article>
   );
 }

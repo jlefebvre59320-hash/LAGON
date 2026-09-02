@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { CUISINES, QUARTIERS, isOpenNow, hasHours, type Restaurant, type RatingSummary } from "@/lib/food";
+import { CUISINES, QUARTIERS, MIN_RATINGS, islandNow, isOpenNow, hasHours, type Restaurant, type RatingSummary } from "@/lib/food";
 import { AccountButton, Brand, Mark } from "@/components/Brand";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import RestaurantCard from "@/components/food/RestaurantCard";
@@ -33,6 +33,7 @@ function FoodHomeInner() {
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [quartier, setQuartier] = useState<string | null>(null);
   const [openOnly, setOpenOnly] = useState(false);
+  const [islandTime, setIslandTime] = useState(islandNow);
   const [sort, setSort] = useState<"name" | "rating" | "open">("name");
   const [takeaway, setTakeaway] = useState(false);
   const [view, setView] = useState<"list" | "map">("list");
@@ -42,6 +43,11 @@ function FoodHomeInner() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { recordView("/food"); }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setIslandTime(islandNow()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,30 +82,31 @@ function FoodHomeInner() {
       (!cuisine || r.cuisine === cuisine) &&
       (!quartier || r.quartier === quartier) &&
       (!takeaway || r.takeaway) &&
-      (!openOnly || (hasHours(r.hours) && isOpenNow(r.hours))) &&
+      (!openOnly || (hasHours(r.hours) && isOpenNow(r.hours, islandTime))) &&
       (!q || `${r.name} ${r.cuisine} ${r.quartier}`.toLowerCase().includes(q))
     );
     if (sort === "rating") {
       // Les notés d'abord (meilleure moyenne, puis nombre d'avis) ; les autres
       // suivent par nom — sans note, impossible de les départager autrement.
       list.sort((a, b) => {
-        const ra = ratings[a.id], rb = ratings[b.id];
+        const ra = ratings[a.id]?.votes >= MIN_RATINGS ? ratings[a.id] : undefined;
+        const rb = ratings[b.id]?.votes >= MIN_RATINGS ? ratings[b.id] : undefined;
         if (!!ra !== !!rb) return ra ? -1 : 1;
         if (ra && rb) return (rb.avg_rating - ra.avg_rating) || (rb.votes - ra.votes) || a.name.localeCompare(b.name, "fr");
         return a.name.localeCompare(b.name, "fr");
       });
     } else if (sort === "open") {
-      const isOpen = (r: Restaurant) => hasHours(r.hours) && isOpenNow(r.hours);
+      const isOpen = (r: Restaurant) => hasHours(r.hours) && isOpenNow(r.hours, islandTime);
       list.sort((a, b) => (Number(isOpen(b)) - Number(isOpen(a))) || a.name.localeCompare(b.name, "fr"));
     }
     return list;
-  }, [all, query, cuisine, quartier, openOnly, takeaway, sort, ratings]);
+  }, [all, query, cuisine, quartier, openOnly, takeaway, sort, ratings, islandTime]);
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <header className="site-header">
+      <header className="site-header home-header">
       <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
-        <div className="container" style={{ paddingTop: 16 }}>
+        <div className="container home-header-inner">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand site="food" />
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
@@ -109,7 +116,11 @@ function FoodHomeInner() {
           </div>
 
           <p className="hero-tagline">Bien manger, <em>toute l&apos;île</em>.</p>
-          <div style={{ position: "relative", margin: "12px 0 12px" }}>
+          <div className="search-shell">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4 4" />
+            </svg>
             <input
               className="input search-input"
               value={query}
@@ -118,6 +129,7 @@ function FoodHomeInner() {
               aria-label="Rechercher un restaurant"
               type="search"
             />
+            {query && <button type="button" className="search-clear" onClick={() => setQuery("")} aria-label="Effacer la recherche">×</button>}
           </div>
 
         </div>
@@ -125,7 +137,7 @@ function FoodHomeInner() {
       </header>
 
       <div className="container">
-        <div className="filter-row wrap">
+        <div className="filter-row">
           <select
             className="input"
             value={cuisine ?? ""}
@@ -221,7 +233,7 @@ function FoodHomeInner() {
         ) : (() => {
           const noFilter = !query && !cuisine && !quartier && !openOnly && !takeaway && sort === "name";
           const top = noFilter
-            ? shown.filter((r) => ratings[r.id] && ratings[r.id].votes >= 3)
+            ? shown.filter((r) => ratings[r.id] && ratings[r.id].votes >= MIN_RATINGS)
                 .sort((a, b) => ratings[b.id].avg_rating - ratings[a.id].avg_rating).slice(0, 4)
             : [];
           const topIds = new Set(top.map((r) => r.id));

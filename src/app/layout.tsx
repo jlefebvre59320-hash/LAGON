@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { SITES } from "@/lib/sites";
 import { SITE_URL } from "@/lib/siteUrl";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import MobileDock from "@/components/MobileDock";
 import "./globals.css";
 
 const S = SITES.tikanal;
@@ -28,7 +30,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body>{children}</body>
+      <body>
+        {children}
+        <MobileDock />
+        <ServiceWorkerRegistrar />
+      </body>
     </html>
   );
 }

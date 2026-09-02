@@ -26,14 +26,20 @@ export default function InstallBanner() {
       (navigator as unknown as { standalone?: boolean }).standalone === true;
     if (standalone || localStorage.getItem("tk-install-ferme")) return;
 
-    if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    /* Une proposition d'installation avant même d'avoir découvert le service
+       coupe le parcours. Elle apparaît à partir de la deuxième visite. */
+    const visits = Number.parseInt(localStorage.getItem("tk-visites") ?? "0", 10) + 1;
+    localStorage.setItem("tk-visites", String(Math.min(visits, 20)));
+    const canSuggest = visits >= 2;
+
+    if (canSuggest && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
       setIos(true);
       setVisible(true);
     }
     const onBip = (e: Event) => {
       e.preventDefault();
       setBip(e as BipEvent);
-      setVisible(true);
+      if (canSuggest) setVisible(true);
     };
     window.addEventListener("beforeinstallprompt", onBip);
     return () => window.removeEventListener("beforeinstallprompt", onBip);

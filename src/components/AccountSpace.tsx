@@ -11,6 +11,7 @@ import { SiteHeader, Mark } from "@/components/Brand";
 import { FavoritesProvider, useFavorites } from "@/lib/favorites";
 import type { Restaurant } from "@/lib/food";
 import RestaurantCard from "@/components/food/RestaurantCard";
+import { connexionUrl } from "@/lib/urls";
 
 type Tab = "listings" | "favorites" | "resto_favs" | "restaurants";
 
@@ -59,7 +60,10 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
   useEffect(() => {
     (async () => {
       const { data } = await supabase().auth.getSession();
-      if (!data.session) { router.replace("/connexion"); return; }
+      if (!data.session) {
+        router.replace(connexionUrl(site === "food" ? "/food/mon-espace" : "/mon-espace"));
+        return;
+      }
       setUserId(data.session.user.id);
       setEmail(data.session.user.email ?? "");
       // is_admin() ne répond que pour l'appelant : personne ne peut lister les
@@ -82,7 +86,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
       }
       setChecked(true);
     })();
-  }, [router]);
+  }, [router, site]);
 
   const loadMine = useCallback(async () => {
     if (!userId) return;
@@ -138,16 +142,20 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
     setBusy(l.id);
     /* .select("id") : une suppression refusée par la RLS renvoie « succès,
        0 ligne » — sans vérification, l'annonce resterait là sans explication. */
-    const cles = (l.photos ?? []).flatMap((p) => [p.storage_key, thumbKey(p.storage_key)]);
-    const { data, error } = await supabase().from("listings").delete().eq("id", l.id).select("id");
+    const keys = (l.photos ?? []).flatMap((photo) => [photo.storage_key, thumbKey(photo.storage_key)]);
+    const sb = supabase();
+    const { data, error } = await sb.from("listings").delete().eq("id", l.id).select("id");
     setBusy(null);
     if (error || !data || data.length === 0) {
       alert(error ? `Suppression impossible : ${error.message}` : "La base a refusé la suppression de cette annonce.");
       return;
     }
-    /* La cascade SQL nettoie les lignes, pas les fichiers : sans ce retrait,
-       chaque annonce supprimée laisserait ses photos occuper le bucket à vie. */
-    if (cles.length > 0) await supabase().storage.from("photos").remove(cles);
+    if (keys.length > 0) {
+      const { error: storageError } = await sb.storage.from("photos").remove(keys);
+      if (storageError) {
+        alert("L’annonce est supprimée, mais certaines photos n’ont pas pu être nettoyées. Contactez l’administration pour terminer le nettoyage.");
+      }
+    }
     loadMine();
   }
 
@@ -288,14 +296,23 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                       </div>
 
                       <div style={{ display: "flex", gap: 14, marginTop: 8, flexWrap: "wrap" }}>
+                        {l.status !== "removed" && (
+                          <Link className="link-quiet" href={`/annonce/${l.id}/modifier`}>
+                            Modifier
+                          </Link>
+                        )}
                         {l.status === "active" ? (
                           <button className="link-quiet" disabled={busy === l.id} onClick={() => setStatus(l, "sold")}>
                             Marquer vendu
                           </button>
-                        ) : (
+                        ) : l.status === "sold" || l.status === "expired" ? (
                           <button className="link-quiet" disabled={busy === l.id} onClick={() => setStatus(l, "active")}>
                             Remettre en ligne
                           </button>
+                        ) : (
+                          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                            Retirée par la modération
+                          </span>
                         )}
                         <button className="link-quiet" disabled={busy === l.id} onClick={() => remove(l)} style={{ color: "var(--danger)" }}>
                           Supprimer

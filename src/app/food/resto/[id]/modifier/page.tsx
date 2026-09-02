@@ -6,6 +6,12 @@ import { supabase } from "@/lib/supabase";
 import { CUISINES, QUARTIERS, type HoursMap, type Restaurant } from "@/lib/food";
 import { SiteHeader } from "@/components/Brand";
 import HoursEditor from "@/components/food/HoursEditor";
+import {
+  normalizeExternalUrl,
+  normalizePhoneNumber,
+  normalizeSocialHandle,
+  safeEmail,
+} from "@/lib/urls";
 
 /* Édition d'une fiche par son propriétaire (fiche revendiquée) ou par
    l'administration. La garde d'écran est doublée par le RLS : même en forçant
@@ -25,7 +31,7 @@ export default function ModifierResto() {
     (async () => {
       const sb = supabase();
       const { data: session } = await sb.auth.getSession();
-      if (!session.session) { router.replace("/connexion"); return; }
+      if (!session.session) { router.replace(`/connexion?returnTo=${encodeURIComponent(`/food/resto/${id}/modifier`)}`); return; }
       const [{ data }, { data: admin }] = await Promise.all([
         sb.from("restaurants").select("*").eq("id", id).single(),
         sb.rpc("is_admin"),
@@ -54,6 +60,39 @@ export default function ModifierResto() {
       if (full.length) hours[d as keyof HoursMap] = full as [string, string][];
     }
 
+    const facebook = normalizeExternalUrl(r.facebook);
+    const website = normalizeExternalUrl(r.website);
+    const instagram = normalizeSocialHandle(r.instagram);
+    const snapchat = normalizeSocialHandle(r.snapchat);
+    const tiktok = normalizeSocialHandle(r.tiktok);
+    const email = safeEmail(r.email);
+    const phone = normalizePhoneNumber(r.phone);
+    const whatsapp = normalizePhoneNumber(r.whatsapp);
+    if (r.facebook?.trim() && !facebook) {
+      setError("L’adresse Facebook n’est pas valide."); setSaving(false); return;
+    }
+    if (r.website?.trim() && !website) {
+      setError("L’adresse du site web n’est pas valide."); setSaving(false); return;
+    }
+    if (r.instagram?.trim() && !instagram) {
+      setError("Le compte Instagram contient des caractères non valides."); setSaving(false); return;
+    }
+    if (r.snapchat?.trim() && !snapchat) {
+      setError("Le compte Snapchat contient des caractères non valides."); setSaving(false); return;
+    }
+    if (r.tiktok?.trim() && !tiktok) {
+      setError("Le compte TikTok contient des caractères non valides."); setSaving(false); return;
+    }
+    if (r.email?.trim() && !email) {
+      setError("L’adresse email n’est pas valide."); setSaving(false); return;
+    }
+    if (r.phone?.trim() && !phone) {
+      setError("Le téléphone doit être au format international, par exemple +590590XXXXXX."); setSaving(false); return;
+    }
+    if (r.whatsapp?.trim() && !whatsapp) {
+      setError("Le numéro WhatsApp doit être au format international, par exemple +590690XXXXXX."); setSaving(false); return;
+    }
+
     const { error } = await supabase()
       .from("restaurants")
       .update({
@@ -61,14 +100,14 @@ export default function ModifierResto() {
         cuisine: r.cuisine,
         quartier: r.quartier,
         address: r.address.trim(),
-        phone: r.phone?.trim() || null,
-        whatsapp: r.whatsapp?.trim() || null,
-        instagram: r.instagram?.trim().replace(/^@/, "") || null,
-        facebook: r.facebook?.trim() || null,
-        website: r.website?.trim() || null,
-        snapchat: r.snapchat?.trim().replace(/^@/, "") || null,
-        tiktok: r.tiktok?.trim().replace(/^@/, "") || null,
-        email: r.email?.trim() || null,
+        phone,
+        whatsapp,
+        instagram,
+        facebook,
+        website,
+        snapchat,
+        tiktok,
+        email,
         description: r.description.trim(),
         price_range: r.price_range,
         avg_price_eur: r.avg_price_eur ?? null,
@@ -144,11 +183,11 @@ export default function ModifierResto() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
             <Field label="Téléphone">
-              <input className="input" value={rr.phone ?? ""} inputMode="tel"
+              <input className="input" type="tel" value={rr.phone ?? ""} inputMode="tel"
                 onChange={(e) => set("phone", e.target.value)} placeholder="+590590XXXXXX" />
             </Field>
             <Field label="WhatsApp">
-              <input className="input" value={rr.whatsapp ?? ""} inputMode="tel"
+              <input className="input" type="tel" value={rr.whatsapp ?? ""} inputMode="tel"
                 onChange={(e) => set("whatsapp", e.target.value)} placeholder="+590690XXXXXX" />
             </Field>
             <Field label="Instagram (sans @)">
@@ -156,11 +195,11 @@ export default function ModifierResto() {
                 onChange={(e) => set("instagram", e.target.value)} placeholder="votrecompte" />
             </Field>
             <Field label="Facebook (adresse de la page)">
-              <input className="input" value={rr.facebook ?? ""} inputMode="url"
+              <input className="input" type="url" value={rr.facebook ?? ""} inputMode="url"
                 onChange={(e) => set("facebook", e.target.value)} placeholder="https://facebook.com/…" />
             </Field>
             <Field label="Site web">
-              <input className="input" value={rr.website ?? ""} inputMode="url"
+              <input className="input" type="url" value={rr.website ?? ""} inputMode="url"
                 onChange={(e) => set("website", e.target.value)} placeholder="https://…" />
             </Field>
             <Field label="Snapchat (sans @)">
@@ -172,7 +211,7 @@ export default function ModifierResto() {
                 onChange={(e) => set("tiktok", e.target.value)} placeholder="votrecompte" />
             </Field>
             <Field label="Email de contact">
-              <input className="input" value={rr.email ?? ""} inputMode="email"
+              <input className="input" type="email" value={rr.email ?? ""} inputMode="email"
                 onChange={(e) => set("email", e.target.value)} placeholder="contact@…" />
             </Field>
           </div>

@@ -2,13 +2,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { EVENT_CATEGORIES, eventDay, type IslandEvent } from "@/lib/event";
+import { EVENT_CATEGORIES, eventDay, islandDayStartIso, type IslandEvent } from "@/lib/event";
 import { AccountButton, Brand, Mark } from "@/components/Brand";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import ShareButton from "@/components/ShareButton";
 import { recordView } from "@/lib/analytics";
 import { SITES } from "@/lib/sites";
 import { SITE_URL } from "@/lib/siteUrl";
+import { safeExternalUrl } from "@/lib/urls";
 
 const SITE = SITES.event;
 
@@ -23,14 +24,13 @@ export default function EventHome() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      /* Les événements du jour restent affichés jusqu'au bout de la nuit :
-         on remonte à minuit moins douze heures, pas à l'instant présent. */
-      const depuis = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
+      const depuis = new Date(islandDayStartIso()).toISOString();
+      const maintenant = new Date().toISOString();
       const { data, error } = await supabase()
         .from("events")
-        .select("*")
+        .select("id,title,category,venue,quartier,starts_at,ends_at,price,description,link,organizer,status")
         .eq("status", "approved")
-        .gte("starts_at", depuis)
+        .or(`starts_at.gte.${depuis},ends_at.gte.${maintenant}`)
         .order("starts_at");
       if (cancelled) return;
       if (error) setError("Impossible de charger l'agenda. Réessayez.");
@@ -58,9 +58,9 @@ export default function EventHome() {
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <header className="site-header">
+      <header className="site-header home-header">
         <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
-        <div className="container" style={{ paddingTop: 16 }}>
+        <div className="container home-header-inner">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <Brand site="event" />
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
@@ -75,7 +75,7 @@ export default function EventHome() {
       </header>
 
       <div className="container">
-        <div className="filter-row wrap">
+        <div className="filter-row">
           <select
             className="input"
             value={category ?? ""}
@@ -169,6 +169,7 @@ export default function EventHome() {
 function EventCard({ e }: { e: IslandEvent }) {
   const [open, setOpen] = useState(false);
   const d = eventDay(e.starts_at);
+  const eventLink = safeExternalUrl(e.link);
   return (
     <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
       <button
@@ -213,15 +214,19 @@ function EventCard({ e }: { e: IslandEvent }) {
             <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>Organisé par {e.organizer}</p>
           )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {e.link && (
-              <a href={e.link} target="_blank" rel="noopener noreferrer" className="btn" style={{ fontSize: 13, padding: "9px 16px" }}>
+            <Link href={`/event/${e.id}`} className="btn btn-outline-gold"
+              style={{ fontSize: 13, padding: "9px 16px", color: "var(--gold-deep)" }}>
+              Voir la fiche
+            </Link>
+            {eventLink && (
+              <a href={eventLink} target="_blank" rel="noopener noreferrer" className="btn" style={{ fontSize: 13, padding: "9px 16px" }}>
                 Billets / infos ↗
               </a>
             )}
             <ShareButton
               title={e.title}
               text={`${e.title} — ${d.semaine} ${d.jour} ${d.mois}${e.venue ? ` à ${e.venue}` : ""} · sur St Barth Event`}
-              url={`${SITE_URL}/event`}
+              url={`${SITE_URL}/event/${e.id}`}
             />
           </div>
         </div>

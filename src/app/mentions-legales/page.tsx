@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/Brand";
+import { LEGAL } from "@/lib/legal";
 
 export const metadata = { title: "Mentions légales — Ti Kanal" };
 
-/* Les [crochets] sont à compléter par l'éditeur du site avant lancement
-   public : les publier tels quels vaut mieux que pas de page du tout,
-   mais pas mieux qu'une page complète. */
 export default function MentionsLegales() {
+  const contact = LEGAL.contactEmail;
   return (
     <div>
       <SiteHeader />
@@ -15,16 +14,16 @@ export default function MentionsLegales() {
 
         <h2 style={{ fontSize: 17, marginTop: 26 }}>Éditeur du site</h2>
         <p style={{ fontSize: 14, lineHeight: 1.7 }}>
-          Ti Kanal — [nom / raison sociale de l&apos;éditeur]<br />
-          [Adresse à Saint-Barthélemy]<br />
-          Contact : [adresse email de contact]<br />
-          Directeur de la publication : [nom]
+          {LEGAL.editorName}<br />
+          {LEGAL.editorAddress}<br />
+          Contact : {contact ? <a href={`mailto:${contact}`}>{contact}</a> : <Link href="/retours">formulaire de contact</Link>}<br />
+          Directeur de la publication : {LEGAL.publicationDirector}
         </p>
 
         <h2 style={{ fontSize: 17, marginTop: 22 }}>Hébergement</h2>
         <p style={{ fontSize: 14, lineHeight: 1.7 }}>
           Application hébergée par Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.<br />
-          Données hébergées par Supabase (projet situé dans l&apos;Union européenne).
+          Base de données et authentification fournies par Supabase, selon la région configurée pour le projet.
         </p>
 
         <h2 style={{ fontSize: 17, marginTop: 22 }}>Nature du service</h2>
@@ -43,6 +42,20 @@ export default function MentionsLegales() {
           titre indicatif. Un établissement peut demander la correction ou le retrait de sa fiche
           à tout moment via « C&apos;est votre établissement ? » sur sa fiche — la demande est
           traitée sans délai.
+        </p>
+
+        <h2 style={{ fontSize: 17, marginTop: 22 }}>Propriété intellectuelle</h2>
+        <p style={{ fontSize: 14, lineHeight: 1.7 }}>
+          La marque, l&apos;identité graphique et les contenus éditoriaux propres à Ti Kanal sont protégés.
+          Les annonces, marques et photographies publiées par les utilisateurs ou établissements restent
+          sous la responsabilité et, le cas échéant, la propriété de leurs auteurs.
+        </p>
+
+        <h2 style={{ fontSize: 17, marginTop: 22 }}>Contact et signalement</h2>
+        <p style={{ fontSize: 14, lineHeight: 1.7 }}>
+          Une annonce peut être signalée depuis sa fiche. Pour toute autre demande concernant un contenu,
+          une fiche d&apos;établissement ou vos données personnelles, utilisez le <Link href="/retours">formulaire de contact</Link>
+          {contact ? <> ou écrivez à <a href={`mailto:${contact}`}>{contact}</a></> : null}.
         </p>
 
         <p style={{ marginTop: 28 }}>

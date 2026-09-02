@@ -4,6 +4,7 @@ import { useSession } from "@/lib/session";
 import { usePathname } from "next/navigation";
 import { SITES, siteFromPath, type SiteKey } from "@/lib/sites";
 import SiteSwitcher from "@/components/SiteSwitcher";
+import { connexionUrl } from "@/lib/urls";
 
 /* Contour de Saint-Barthélemy, tracé vectoriel du logo.
    Deux niveaux de détail : le tracé complet pour le logo, une version
@@ -93,7 +94,7 @@ export function AccountButton() {
 
   return (
     <Link
-      href={userId ? espace : "/connexion"}
+      href={userId ? espace : connexionUrl(pathname ?? "/")}
       className="btn btn-outline-gold acct-btn"
       style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
     >

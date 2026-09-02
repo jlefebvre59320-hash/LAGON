@@ -54,15 +54,19 @@ export default function FoodMap({
           iconAnchor: [11, 11],
           popupAnchor: [0, -10],
         });
+        const popup = document.createElement("div");
+        popup.className = "resto-popup";
+        const name = document.createElement("strong");
+        name.textContent = r.name;
+        const details = document.createElement("span");
+        details.textContent = `${r.cuisine} · ${r.quartier}${note}`;
+        const link = document.createElement("a");
+        link.href = `/food/resto/${encodeURIComponent(r.id)}`;
+        link.textContent = "Voir la fiche →";
+        popup.append(name, details, link);
+
         L.marker([r.lat!, r.lng!], { icon, title: r.name })
-          .bindPopup(
-            `<div class="resto-popup">
-               <strong>${r.name.replace(/</g, "&lt;")}</strong>
-               <span>${r.cuisine} · ${r.quartier}${note}</span>
-               <a href="/food/resto/${r.id}">Voir la fiche →</a>
-             </div>`,
-            { closeButton: false }
-          )
+          .bindPopup(popup, { closeButton: false })
           .addTo(group);
       }
 

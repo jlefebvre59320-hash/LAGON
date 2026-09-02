@@ -1,6 +1,7 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useFavorites } from "@/lib/favorites";
+import { connexionUrl } from "@/lib/urls";
 
 function Heart({ filled, size }: { filled: boolean; size: number }) {
   return (
@@ -24,6 +25,7 @@ export default function FavoriteButton({
   label?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { ids, userId, toggle } = useFavorites();
   const on = ids.has(targetId);
 
@@ -38,7 +40,7 @@ export default function FavoriteButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!userId) { router.push("/connexion"); return; }
+        if (!userId) { router.push(connexionUrl(pathname ?? "/")); return; }
         toggle(targetId);
       }}
       style={{
