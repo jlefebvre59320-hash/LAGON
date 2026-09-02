@@ -114,7 +114,10 @@ export default function Deposer() {
           price_cents: numericPrice == null ? null : Math.round(numericPrice * 100),
           location: location.trim() || "Saint-Barthélemy",
           attrs: cleanAttrs,
-          featured_until: enAvant ? finDeMiseEnAvant() : null,
+          /* La colonne n'est mentionnée que si l'option est demandée : sur une
+             base où la migration 0021 n'est pas encore passée, un dépôt
+             ordinaire continue de fonctionner au lieu d'échouer en bloc. */
+          ...(enAvant ? { featured_until: finDeMiseEnAvant() } : {}),
         })
         .select("id")
         .single();
@@ -153,14 +156,26 @@ export default function Deposer() {
       // avant d'afficher l'erreur à l'utilisateur.
       if (uploadedKeys.length > 0) await sb.storage.from("photos").remove(uploadedKeys);
       if (createdListingId) await sb.from("listings").delete().eq("id", createdListingId);
-      const message = cause instanceof Error ? cause.message : "";
+      /* Les erreurs de Supabase ne sont pas des Error : sans cette lecture,
+         leur message se perdrait et l'écran resterait muet sur la cause. */
+      const message =
+        cause instanceof Error ? cause.message
+        : typeof cause === "object" && cause !== null && "message" in cause
+          ? String((cause as { message: unknown }).message)
+          : "";
+      /* Une erreur technique ne doit pas se déguiser en faute de saisie :
+         renvoyer « vérifiez les champs » sur une colonne manquante envoie
+         l'utilisateur relire un formulaire pourtant correct. On distingue
+         donc nos propres motifs de validation du message de la base. */
+      const nôtre = ["phone", "price", "photo"].includes(message);
+      if (!nôtre) console.error("Publication :", cause);
       setError(message === "phone"
         ? "Le numéro WhatsApp doit être au format international, par exemple +590690XXXXXX."
         : message === "price"
           ? "Le prix indiqué n’est pas valide."
           : message === "photo"
             ? "Une photo n’a pas pu être préparée. Utilisez une image JPG, PNG ou WebP de moins de 5 Mo."
-            : "La publication a échoué sans créer d’annonce incomplète. Vérifiez les champs et réessayez.");
+            : `La publication a échoué et aucune annonce incomplète n’a été créée. Détail technique : ${message || "erreur inconnue"}`);
       setPublishing(false);
     }
   }
