@@ -27,8 +27,8 @@ d'inscription se perdent en silence dès le deuxième inscrit de l'heure.
 
 1. Créez un compte sur **resend.com** (gratuit jusqu'à 3 000 emails/mois,
    largement assez pour démarrer).
-2. **Domains → Add Domain** → `send.tikanal.com` (sous-domaine d'envoi dédié,
-   pour isoler la réputation d'envoi de celle du site).
+2. **Domains → Add Domain** → `tikanal.com`, région **Ireland (eu-west-1)**,
+   Custom Return-Path `send`, click tracking **décoché**.
 3. Resend affiche 3–4 enregistrements DNS à créer (SPF, DKIM, éventuellement
    MX de retour). Recopiez-les **exactement** dans votre zone DNS,
    puis cliquez **Verify** dans Resend. La vérification prend de quelques
@@ -38,7 +38,7 @@ d'inscription se perdent en silence dès le deuxième inscrit de l'heure.
 5. Dans **Supabase → Project Settings → Authentication → SMTP Settings**
    (section « Custom SMTP ») :
    - Enable Custom SMTP : **activé**
-   - Sender email : `no-reply@send.tikanal.com`
+   - Sender email : `no-reply@tikanal.com`
    - Sender name : `Ti Kanal`
    - Host : `smtp.resend.com`
    - Port : `465`
@@ -48,10 +48,10 @@ d'inscription se perdent en silence dès le deuxième inscrit de l'heure.
 6. Toujours dans Supabase : **Authentication → Rate Limits** → montez
    « Emails sent per hour » (2 par défaut) à **50 ou 100**.
 7. Ajoutez un enregistrement **DMARC** (recommandé, améliore la
-   délivrabilité) : TXT sur `_dmarc.send.tikanal.com` →
+   délivrabilité) : TXT sur `_dmarc.tikanal.com` →
    `v=DMARC1; p=none; rua=mailto:jl@solutech.com`.
 8. **Test** : créez un compte avec une adresse à vous → l'email doit
-   arriver en quelques secondes, expéditeur `no-reply@send.tikanal.com`.
+   arriver en quelques secondes, expéditeur `no-reply@tikanal.com`.
    Vérifiez aussi « mot de passe oublié ».
 
 ## 3. URLs d'authentification Supabase
