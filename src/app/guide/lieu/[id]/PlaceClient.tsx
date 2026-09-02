@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { CATEGORY_HUE, CATEGORY_ONE, mapsUrlPlace, type Place } from "@/lib/guide";
 import { SiteHeader, Mark } from "@/components/Brand";
-import { PlaceGlyph } from "@/components/guide/PlaceCard";
+import PlaceCard, { PlaceGlyph } from "@/components/guide/PlaceCard";
 import ShareButton from "@/components/ShareButton";
 import { recordView } from "@/lib/analytics";
 import { SITE_URL } from "@/lib/siteUrl";
@@ -15,6 +15,7 @@ export default function LieuPage({ initialPlace = null }: { initialPlace?: Place
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<Place | null>(initialPlace);
   const [notFound, setNotFound] = useState(false);
+  const [voisins, setVoisins] = useState<Place[]>([]);
 
   useEffect(() => {
     if (initialPlace) {
@@ -31,6 +32,22 @@ export default function LieuPage({ initialPlace = null }: { initialPlace?: Place
       }
     })();
   }, [id, initialPlace]);
+
+  /* Une fiche seule est un cul-de-sac : le quartier est le fil naturel pour
+     continuer à explorer, bien plus que la catégorie — on va à Colombier, on
+     n'y va pas « pour une plage ». */
+  useEffect(() => {
+    if (!p) return;
+    let annule = false;
+    (async () => {
+      const { data } = await supabase()
+        .from("places").select("*")
+        .eq("status", "active").eq("quartier", p.quartier).neq("id", p.id)
+        .order("name").limit(6);
+      if (!annule) setVoisins((data as Place[]) ?? []);
+    })();
+    return () => { annule = true; };
+  }, [p]);
 
   if (notFound) return (
     <>
@@ -65,18 +82,17 @@ export default function LieuPage({ initialPlace = null }: { initialPlace?: Place
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "18px 0 6px" }}>
-          <span style={{ flex: "0 0 auto", width: 56, height: 56, borderRadius: 16, display: "flex",
-            alignItems: "center", justifyContent: "center",
-            background: `color-mix(in srgb, ${hue} 12%, var(--surface))`, color: hue,
-            border: "1px solid var(--border)" }}>
+        {/* Bandeau à la teinte de la catégorie : la fiche s'annonce avant
+            d'être lue, et une plage ne ressemble pas à un service public. */}
+        <div className="place-hero" style={{ "--place-hue": hue } as React.CSSProperties}>
+          <span className="place-hero-glyph">
             <PlaceGlyph category={p.category} size={30} />
           </span>
-          <div>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: hue }}>
+          <div style={{ minWidth: 0 }}>
+            <span className="place-hero-over">
               {CATEGORY_ONE[p.category]} · {p.quartier}
             </span>
-            <h1 style={{ margin: "2px 0 0", fontSize: "clamp(24px, 5.5vw, 32px)", lineHeight: 1.15 }}>{p.name}</h1>
+            <h1 className="place-hero-title">{p.name}</h1>
           </div>
         </div>
 
@@ -117,9 +133,22 @@ export default function LieuPage({ initialPlace = null }: { initialPlace?: Place
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 14 }}>{p.address}</p>
         )}
 
+        {voisins.length > 0 && (
+          <section style={{ marginTop: 30 }}>
+            <h2 style={{ fontSize: 13, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase",
+              color: "var(--gold-deep)", margin: "0 0 10px" }}>
+              Aussi à {p.quartier}
+            </h2>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+              {voisins.map((v) => <PlaceCard key={v.id} p={v} />)}
+            </div>
+          </section>
+        )}
+
         <p style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 26, lineHeight: 1.5 }}>
           Informations données à titre indicatif, à vérifier sur place — accès, horaires et
-          conditions de mer changent. Position sur la carte : repère approximatif.
+          conditions de mer changent. Position sur la carte : repère approximatif.{" "}
+          <Link href="/retours" style={{ color: "var(--gold-deep)" }}>Signaler une erreur</Link>.
         </p>
 
         <div style={{ display: "flex", justifyContent: "center", marginTop: 30, opacity: 0.5 }}>
