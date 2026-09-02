@@ -35,7 +35,7 @@ type PendingEvent = {
 };
 type AdminUser = {
   id: string; email: string; display_name: string; created_at: string;
-  last_sign_in: string | null; is_banned: boolean; listings: number;
+  last_sign_in: string | null; is_banned: boolean; is_admin: boolean; listings: number;
 };
 const FEEDBACK_KIND: Record<Feedback["kind"], string> = {
   idee: "Idée", probleme: "Problème", avis: "Avis",
@@ -101,6 +101,22 @@ export default function Stats() {
     setBusyClaim(e.id);
     await supabase().from("events").update({ status }).eq("id", e.id);
     setBusyClaim(null);
+    loadClaims();
+  }
+
+  /* Nommer un administrateur, c'est donner accès aux emails de tous les
+     comptes, au bannissement et à la suppression de n'importe quelle annonce :
+     la confirmation le dit franchement. La base refuse de son côté qu'on se
+     retire ses propres droits, pour ne pas fermer la porte de l'intérieur. */
+  async function toggleAdmin(u: AdminUser) {
+    const message = u.is_admin
+      ? `Retirer les droits d'administration à ${u.email} ?`
+      : `Nommer ${u.email} administrateur ?\n\nIl pourra voir les emails de tous les comptes, bannir, supprimer n'importe quelle annonce et valider les événements.`;
+    if (!confirm(message)) return;
+    setBusyClaim(u.id);
+    const { error } = await supabase().rpc("set_admin", { target_id: u.id, value: !u.is_admin });
+    setBusyClaim(null);
+    if (error) { alert(`Modification impossible : ${error.message}`); return; }
     loadClaims();
   }
 
@@ -453,6 +469,17 @@ export default function Stats() {
                       </div>
                     </td>
                     <td style={{ padding: "8px 0", textAlign: "right", whiteSpace: "nowrap" }}>
+                      {u.is_admin && (
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
+                          background: "var(--green)", color: "var(--gold-light)", padding: "3px 9px",
+                          borderRadius: 99, marginRight: 10 }}>
+                          Admin
+                        </span>
+                      )}
+                      <button className="link-quiet" disabled={busyClaim === u.id} onClick={() => toggleAdmin(u)}
+                        style={{ marginRight: 14 }}>
+                        {u.is_admin ? "Retirer l'admin" : "Nommer admin"}
+                      </button>
                       <button className="link-quiet" disabled={busyClaim === u.id} onClick={() => toggleBan(u)}
                         style={u.is_banned ? undefined : { color: "var(--danger)" }}>
                         {u.is_banned ? "Rétablir" : "Bannir"}
