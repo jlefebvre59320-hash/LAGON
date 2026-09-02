@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { EVENT_CATEGORIES } from "@/lib/event";
 import { QUARTIERS } from "@/lib/food";
 import { SiteHeader } from "@/components/Brand";
+import { connexionUrl, normalizeExternalUrl } from "@/lib/urls";
 
 /* Dépôt d'un événement par son organisateur. Compte requis (anti-spam,
    et la RLS l'exige de toute façon) ; rien ne paraît sans validation. */
@@ -48,18 +49,23 @@ export default function ProposerEvenement() {
        décalage AST (UTC-4, sans heure d'été) pour ne pas dépendre du
        fuseau du téléphone qui la dépose. */
     const starts = `${date}T${heure}:00-04:00`;
+    const safeLink = normalizeExternalUrl(link);
+    if (link.trim() && !safeLink) {
+      setSending(false);
+      setError("Le lien de billetterie n’est pas valide.");
+      return;
+    }
     const { error } = await supabase().from("events").insert({
       title: title.trim().slice(0, 100),
       category,
-      venue: venue.trim(),
+      venue: venue.trim().slice(0, 200),
       quartier,
       starts_at: starts,
-      price: price.trim(),
+      price: price.trim().slice(0, 100),
       description: description.trim().slice(0, 2000),
-      link: link.trim() || null,
-      organizer: organizer.trim(),
-      contact: contact.trim(),
-      status: "pending",
+      link: safeLink,
+      organizer: organizer.trim().slice(0, 120),
+      contact: contact.trim().slice(0, 200),
       submitted_by: userId,
     });
     setSending(false);
@@ -84,7 +90,7 @@ export default function ProposerEvenement() {
             Pour proposer un événement, connectez-vous — c&apos;est gratuit et
             ça nous permet de vous répondre.
           </p>
-          <button className="btn" onClick={() => router.push("/connexion")}>Se connecter</button>
+          <button className="btn" onClick={() => router.push(connexionUrl("/event/proposer"))}>Se connecter</button>
         </div>
       </main>
     </>
@@ -137,7 +143,7 @@ export default function ProposerEvenement() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
             <Champ label="Lieu">
-              <input className="input" value={venue} onChange={(e) => setVenue(e.target.value)}
+              <input className="input" value={venue} maxLength={200} onChange={(e) => setVenue(e.target.value)}
                 placeholder="ex : Quai du port, Shell Beach…" />
             </Champ>
             <Champ label="Quartier">
@@ -147,7 +153,7 @@ export default function ProposerEvenement() {
               </select>
             </Champ>
             <Champ label="Prix">
-              <input className="input" value={price} onChange={(e) => setPrice(e.target.value)}
+              <input className="input" value={price} maxLength={100} onChange={(e) => setPrice(e.target.value)}
                 placeholder="ex : Gratuit, 25 €…" />
             </Champ>
           </div>
@@ -159,17 +165,17 @@ export default function ProposerEvenement() {
           </Champ>
 
           <Champ label="Lien billetterie ou infos">
-            <input className="input" inputMode="url" value={link} onChange={(e) => setLink(e.target.value)}
+            <input className="input" type="url" inputMode="url" value={link} maxLength={500} onChange={(e) => setLink(e.target.value)}
               placeholder="https://…" />
           </Champ>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
             <Champ label="Organisateur *">
-              <input className="input" value={organizer} onChange={(e) => setOrganizer(e.target.value)}
+              <input className="input" value={organizer} maxLength={120} onChange={(e) => setOrganizer(e.target.value)}
                 placeholder="Association, établissement, vous…" />
             </Champ>
             <Champ label="Votre contact (jamais publié) *">
-              <input className="input" value={contact} onChange={(e) => setContact(e.target.value)}
+              <input className="input" value={contact} maxLength={200} onChange={(e) => setContact(e.target.value)}
                 placeholder="Email ou téléphone" />
             </Champ>
           </div>

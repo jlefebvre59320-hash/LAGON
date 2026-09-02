@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import { SiteHeader } from "@/components/Brand";
 import { SITES, SITE_ORDER, type SiteKey } from "@/lib/sites";
+import { connexionUrl, safeExternalUrl } from "@/lib/urls";
 
 type Daily = { day: string; visits: number };
 type Top = { id: string; title: string; module: ModuleKey; views: number };
@@ -79,36 +80,45 @@ export default function Stats() {
   const [busyClaim, setBusyClaim] = useState<string | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pendingEvents, setPendingEvents] = useState<PendingEvent[]>([]);
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   const loadClaims = async () => {
-    const { data } = await supabase()
-      .from("restaurant_claims")
-      .select("*, restaurant:restaurants(name)")
-      .eq("handled", false)
-      .order("created_at", { ascending: true });
-    setClaims((data as Claim[]) ?? []);
-    const { data: reps } = await supabase()
-      .from("reports")
-      .select("id, listing_id, reason, created_at, listing:listings(title, status)")
-      .eq("handled", false).order("created_at", { ascending: true });
-    setReports((reps as unknown as Report[]) ?? []);
-    const { data: fb } = await supabase()
-      .from("feedback").select("*").eq("handled", false).order("created_at", { ascending: true });
-    setFeedback((fb as Feedback[]) ?? []);
-    const { data: us } = await supabase().rpc("admin_users");
-    setUsers((us as AdminUser[]) ?? []);
-    /* La table events n'existe qu'après la migration 0018 : un échec ici ne
-       doit pas faire tomber le reste du tableau de bord. */
-    const { data: evs, error: evErr } = await supabase()
-      .from("events").select("*").eq("status", "pending").order("starts_at");
-    setPendingEvents(evErr ? [] : ((evs as PendingEvent[]) ?? []));
+    setAdminError(null);
+    const sb = supabase();
+    const [claimsResult, reportsResult, feedbackResult, usersResult, eventsResult] = await Promise.all([
+      sb.from("restaurant_claims")
+        .select("*, restaurant:restaurants(name)")
+        .eq("handled", false)
+        .order("created_at", { ascending: true }),
+      sb.from("reports")
+        .select("id, listing_id, reason, created_at, listing:listings(title, status)")
+        .eq("handled", false).order("created_at", { ascending: true }),
+      sb.from("feedback").select("*").eq("handled", false).order("created_at", { ascending: true }),
+      sb.rpc("admin_users"),
+      sb.rpc("admin_pending_events"),
+    ]);
+
+    const failed = [claimsResult, reportsResult, feedbackResult, usersResult, eventsResult]
+      .find((result) => result.error);
+    if (failed?.error) setAdminError(`Certaines données n’ont pas pu être chargées : ${failed.error.message}`);
+
+    setClaims((claimsResult.data as Claim[]) ?? []);
+    setReports((reportsResult.data as unknown as Report[]) ?? []);
+    setFeedback((feedbackResult.data as Feedback[]) ?? []);
+    setUsers((usersResult.data as AdminUser[]) ?? []);
+    setPendingEvents((eventsResult.data as PendingEvent[]) ?? []);
   };
 
   async function resolveEvent(e: PendingEvent, status: "approved" | "rejected") {
     setBusyClaim(e.id);
-    await supabase().from("events").update({ status }).eq("id", e.id);
+    setAdminError(null);
+    const { error } = await supabase().rpc("admin_set_event_status", {
+      p_event_id: e.id,
+      p_status: status,
+    });
     setBusyClaim(null);
-    loadClaims();
+    if (error) setAdminError(`Événement non traité : ${error.message}`);
+    else await loadClaims();
   }
 
   /* Nommer un administrateur, c'est donner accès aux emails de tous les
@@ -130,9 +140,14 @@ export default function Stats() {
   async function toggleBan(u: AdminUser) {
     if (!confirm(u.is_banned ? `Rétablir ${u.email} ?` : `Bannir ${u.email} ? Il ne pourra plus publier.`)) return;
     setBusyClaim(u.id);
-    await supabase().from("profiles").update({ is_banned: !u.is_banned }).eq("id", u.id);
+    setAdminError(null);
+    const { error } = await supabase().rpc("admin_set_user_banned", {
+      p_user_id: u.id,
+      p_is_banned: !u.is_banned,
+    });
     setBusyClaim(null);
-    loadClaims();
+    if (error) setAdminError(`Compte non modifié : ${error.message}`);
+    else await loadClaims();
   }
 
   /* Signalement : retirer l'annonce (elle disparaît du site, l'auteur la voit
@@ -140,26 +155,29 @@ export default function Stats() {
      traité et sort de la liste. */
   async function resolveReport(rep: Report, action: "remove" | "dismiss") {
     setBusyClaim(rep.id);
-    const sb = supabase();
-    if (action === "remove") {
-      await sb.from("listings").update({ status: "removed", removed_reason: rep.reason.slice(0, 200) }).eq("id", rep.listing_id);
-    }
-    await sb.from("reports").update({ handled: true }).eq("id", rep.id);
+    setAdminError(null);
+    const { error } = await supabase().rpc("admin_resolve_report", {
+      p_report_id: rep.id,
+      p_remove_listing: action === "remove",
+    });
     setBusyClaim(null);
-    loadClaims();
+    if (error) setAdminError(`Signalement non traité : ${error.message}`);
+    else await loadClaims();
   }
 
   async function resolveFeedback(f: Feedback) {
     setBusyClaim(f.id);
-    await supabase().from("feedback").update({ handled: true }).eq("id", f.id);
+    setAdminError(null);
+    const { error } = await supabase().rpc("admin_resolve_feedback", { p_feedback_id: f.id });
     setBusyClaim(null);
-    loadClaims();
+    if (error) setAdminError(`Retour non traité : ${error.message}`);
+    else await loadClaims();
   }
 
   useEffect(() => {
     (async () => {
       const { data: session } = await supabase().auth.getSession();
-      if (!session.session) { router.replace("/connexion"); return; }
+      if (!session.session) { router.replace(connexionUrl("/stats")); return; }
       const { data, error } = await supabase().rpc("site_stats");
       if (error || !data) { setDenied(true); return; }
       setS(data as SiteStats);
@@ -172,16 +190,14 @@ export default function Stats() {
      formulaire. */
   async function resolveClaim(c: Claim, action: "grant" | "hide" | "done") {
     setBusyClaim(c.id);
-    const sb = supabase();
-    if (action === "grant" && c.user_id) {
-      await sb.from("restaurants").update({ owner_id: c.user_id }).eq("id", c.restaurant_id);
-    }
-    if (action === "hide") {
-      await sb.from("restaurants").update({ status: "hidden" }).eq("id", c.restaurant_id);
-    }
-    await sb.from("restaurant_claims").update({ handled: true }).eq("id", c.id);
+    setAdminError(null);
+    const { error } = await supabase().rpc("admin_resolve_claim", {
+      p_claim_id: c.id,
+      p_action: action,
+    });
     setBusyClaim(null);
-    loadClaims();
+    if (error) setAdminError(`Demande non traitée : ${error.message}`);
+    else await loadClaims();
   }
 
   if (denied) return (
@@ -219,11 +235,21 @@ export default function Stats() {
           Fréquentation mesurée sur le site lui-même, visiteurs non connectés compris.
         </p>
 
+        {adminError && (
+          <p role="alert" style={{ color: "var(--danger)", fontSize: 13, fontWeight: 600,
+            background: "rgba(176,58,46,.08)", border: "1px solid rgba(176,58,46,.24)",
+            padding: "10px 12px", borderRadius: 10 }}>
+            {adminError}
+          </p>
+        )}
+
         {pendingEvents.length > 0 && (
           <Section titre={`Événements à valider (${pendingEvents.length})`}
             sousTitre="Proposés par leurs organisateurs — rien ne paraît sans votre accord">
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {pendingEvents.map((e) => (
+              {pendingEvents.map((e) => {
+                const eventLink = safeExternalUrl(e.link);
+                return (
                 <div key={e.id} className="panel" style={{ padding: "12px 14px" }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
                     <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
@@ -240,7 +266,7 @@ export default function Stats() {
                   <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
                     Par <strong style={{ color: "var(--text)" }}>{e.organizer}</strong> · contact :{" "}
                     <strong style={{ color: "var(--text)" }}>{e.contact}</strong>
-                    {e.link && <> · <a href={e.link} target="_blank" rel="noopener noreferrer">lien ↗</a></>}
+                    {eventLink && <> · <a href={eventLink} target="_blank" rel="noopener noreferrer">lien ↗</a></>}
                   </p>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                     <button className="btn" disabled={busyClaim === e.id}
@@ -255,7 +281,8 @@ export default function Stats() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </Section>
         )}

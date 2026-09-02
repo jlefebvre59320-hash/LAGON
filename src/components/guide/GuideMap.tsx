@@ -42,15 +42,19 @@ export default function GuideMap({ places }: { places: Place[] }) {
           iconAnchor: [11, 11],
           popupAnchor: [0, -10],
         });
+        const popup = document.createElement("div");
+        popup.className = "resto-popup";
+        const name = document.createElement("strong");
+        name.textContent = p.name;
+        const details = document.createElement("span");
+        details.textContent = `${CATEGORY_ONE[p.category]} · ${p.quartier}`;
+        const link = document.createElement("a");
+        link.href = `/guide/lieu/${encodeURIComponent(p.id)}`;
+        link.textContent = "Voir la fiche →";
+        popup.append(name, details, link);
+
         L.marker([p.lat!, p.lng!], { icon, title: p.name })
-          .bindPopup(
-            `<div class="resto-popup">
-               <strong>${p.name.replace(/</g, "&lt;")}</strong>
-               <span>${CATEGORY_ONE[p.category]} · ${p.quartier}</span>
-               <a href="/guide/lieu/${p.id}">Voir la fiche →</a>
-             </div>`,
-            { closeButton: false }
-          )
+          .bindPopup(popup, { closeButton: false })
           .addTo(group);
       }
 

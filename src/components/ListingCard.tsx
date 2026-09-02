@@ -44,7 +44,14 @@ export default function ListingCard({ l }: { l: Listing }) {
   const wanted = l.intent === "wanted";
 
   return (
-    <Link href={`/annonce/${l.id}`} className="card">
+    <article className="card" style={{ position: "relative" }}>
+      <Link
+        href={`/annonce/${l.id}`}
+        className="card-link-overlay"
+        aria-label={`Voir l'annonce ${l.title}`}
+      >
+        <span className="sr-only">Voir l&apos;annonce {l.title}</span>
+      </Link>
       <div style={{ position: "relative", aspectRatio: "4 / 3", background: m.soft }}>
         {photo ? (
           <Vignette storageKey={photo.storage_key} alt={l.title} />
@@ -72,7 +79,7 @@ export default function ListingCard({ l }: { l: Listing }) {
         >
           {l.subcategory}
         </span>
-        <span style={{ position: "absolute", right: 8, bottom: 8 }}>
+        <span style={{ position: "absolute", right: 8, bottom: 8, zIndex: 2 }}>
           <FavoriteButton targetId={l.id} />
         </span>
         {badge && l.status !== "sold" && (
@@ -112,6 +119,6 @@ export default function ListingCard({ l }: { l: Listing }) {
           {l.location} · {ago(l.created_at)}
         </span>
       </div>
-    </Link>
+    </article>
   );
 }

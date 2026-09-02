@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { compressImage, thumbKey } from "@/lib/images";
+import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
 
 const MAX_PHOTOS = 5;
 
@@ -45,11 +46,14 @@ export default function Deposer() {
   const [files, setFiles] = useState<File[]>([]);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
+
+  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase().auth.getSession();
-      if (!data.session) { router.replace("/connexion"); return; }
+      if (!data.session) { router.replace(connexionUrl("/deposer")); return; }
       setUserId(data.session.user.id);
       const { data: profile } = await supabase()
         .from("profiles").select("phone_wa").eq("id", data.session.user.id).single();
@@ -76,15 +80,26 @@ export default function Deposer() {
     if (!mod || !sub || !userId) return;
     setPublishing(true);
     setError(null);
+    const sb = supabase();
+    let createdListingId: string | null = null;
+    const uploadedKeys: string[] = [];
     try {
       // 1. Mettre à jour le numéro WhatsApp du profil si renseigné
       if (phoneWa.trim()) {
-        await supabase().from("profiles").update({ phone_wa: phoneWa.trim() }).eq("id", userId);
+        const normalizedPhone = normalizePhoneNumber(phoneWa);
+        if (!normalizedPhone) throw new Error("phone");
+        const { error: profileError } = await sb
+          .from("profiles").update({ phone_wa: normalizedPhone }).eq("id", userId);
+        if (profileError) throw profileError;
       }
 
       // 2. Créer l'annonce
       const cleanAttrs = Object.fromEntries(Object.entries(attrs).filter(([, v]) => v !== ""));
-      const { data: listing, error: insErr } = await supabase()
+      const numericPrice = price === "" ? null : Number.parseFloat(price.replace(",", "."));
+      if (numericPrice != null && (!Number.isFinite(numericPrice) || numericPrice < 0)) {
+        throw new Error("price");
+      }
+      const { data: listing, error: insErr } = await sb
         .from("listings")
         .insert({
           user_id: userId,
@@ -93,35 +108,55 @@ export default function Deposer() {
           intent,
           title: title.trim(),
           description: description.trim(),
-          price_cents: price === "" ? null : Math.round(parseFloat(price.replace(",", ".")) * 100),
+          price_cents: numericPrice == null ? null : Math.round(numericPrice * 100),
           location: location.trim() || "Saint-Barthélemy",
           attrs: cleanAttrs,
         })
         .select("id")
         .single();
       if (insErr || !listing) throw insErr ?? new Error("insert failed");
+      createdListingId = listing.id;
 
       // 3. Compresser puis uploader les photos dans le dossier de l'utilisateur.
       // Sans compression, une photo de téléphone dépasse souvent la limite du
       // bucket (5 Mo) et le dépôt perd ses images sans explication.
       for (let i = 0; i < files.length; i++) {
         const { full, thumb } = await compressImage(files[i]);
+        if (!full.type.match(/^image\/(jpeg|png|webp)$/) || full.size > 5 * 1024 * 1024) {
+          throw new Error("photo");
+        }
         const ext = full.name.split(".").pop()?.toLowerCase() || "jpg";
         const key = `${userId}/${listing.id}/${i}.${ext}`;
-        const { error: upErr } = await supabase().storage.from("photos").upload(key, full, { upsert: true });
-        if (!upErr) {
-          await supabase().from("listing_photos").insert({ listing_id: listing.id, storage_key: key, position: i });
-          /* La vignette part après coup et sans bloquer : si son envoi échoue,
-             l'annonce garde sa photo, l'affichage se rabat sur l'originale. */
-          if (thumb) {
-            await supabase().storage.from("photos").upload(thumbKey(key), thumb, { upsert: true });
-          }
+        const { error: upErr } = await sb.storage.from("photos").upload(key, full, { upsert: false });
+        if (upErr) throw upErr;
+        uploadedKeys.push(key);
+        const { error: photoError } = await sb
+          .from("listing_photos")
+          .insert({ listing_id: listing.id, storage_key: key, position: i });
+        if (photoError) throw photoError;
+        /* La vignette est une optimisation : si elle échoue, l'affichage se
+           rabat sur l'original sans faire échouer toute la publication. */
+        if (thumb) {
+          const thumbnailKey = thumbKey(key);
+          const { error: thumbError } = await sb.storage.from("photos").upload(thumbnailKey, thumb, { upsert: false });
+          if (!thumbError) uploadedKeys.push(thumbnailKey);
         }
       }
 
       router.push(`/annonce/${listing.id}`);
-    } catch {
-      setError("La publication a échoué. Vérifiez les champs et réessayez.");
+    } catch (cause) {
+      // Pas d'annonce incomplète : on nettoie les objets et la ligne créés
+      // avant d'afficher l'erreur à l'utilisateur.
+      if (uploadedKeys.length > 0) await sb.storage.from("photos").remove(uploadedKeys);
+      if (createdListingId) await sb.from("listings").delete().eq("id", createdListingId);
+      const message = cause instanceof Error ? cause.message : "";
+      setError(message === "phone"
+        ? "Le numéro WhatsApp doit être au format international, par exemple +590690XXXXXX."
+        : message === "price"
+          ? "Le prix indiqué n’est pas valide."
+          : message === "photo"
+            ? "Une photo n’a pas pu être préparée. Utilisez une image JPG, PNG ou WebP de moins de 5 Mo."
+            : "La publication a échoué sans créer d’annonce incomplète. Vérifiez les champs et réessayez.");
       setPublishing(false);
     }
   }
@@ -248,7 +283,7 @@ export default function Deposer() {
                 <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                   {files.map((f, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={URL.createObjectURL(f)} alt=""
+                    <img key={`${f.name}-${i}`} src={previews[i]} alt={`Aperçu ${i + 1}`}
                       style={{ width: 72, height: 54, objectFit: "cover", borderRadius: 6 }} />
                   ))}
                 </div>

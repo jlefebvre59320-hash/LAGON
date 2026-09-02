@@ -1,12 +1,12 @@
 # La famille St Barth — Ti Kanal · St Barth Event · St Barth Food
 
 Un seul code, une charte commune, trois sites : les annonces (Ti Kanal),
-l'agenda (St Barth Event, à venir) et les restaurants (St Barth Food).
-Next.js 15 (App Router) + Supabase (Postgres, Auth, Storage) — base commune,
+l'agenda (St Barth Event) et les restaurants (St Barth Food).
+Next.js 16 (App Router) + Supabase (Postgres, Auth, Storage) — base commune,
 compte unique valable sur les trois sites.
 
 Une seule application, une seule adresse : Ti Kanal est le site, St Barth Food
-vit sous `/food` et St Barth Event sous `/event` (page d'attente). Chaque
+vit sous `/food` et St Barth Event sous `/event`. Chaque
 section a sa marque et ses couleurs — un bloc `[data-site="…"]` dans
 `globals.css`, posé par le layout de la section. Le sélecteur « Nos sites » du
 bandeau navigue entre les sections. Un seul projet Vercel suffit ; la variable
@@ -59,7 +59,9 @@ Tokens dans `src/app/globals.css`, marque vectorielle dans `src/components/Brand
 | Crème | `#f6f2e9` (`--cream`) | fond de page |
 | Encre | `#16292b` (`--text`) | texte courant |
 
-Typographie : **Playfair Display** (marque, titres, prix) + **Inter** (interface).
+Typographie : pile sérif de caractère pour la marque et les titres, pile système
+pour l'interface. Aucune police distante n'est chargée, afin d'éviter une requête
+de suivi et de garder un affichage rapide même avec un réseau mobile faible.
 Capitales très espacées (`.overline`, `letter-spacing: .32em`) pour les sur-titres.
 
 Couleurs d'univers (`src/lib/taxonomy.ts`) : déclinaisons de la charte — lagon
@@ -87,8 +89,8 @@ presque entièrement téléphone) :
 
 ### 1. Créer le projet Supabase
 - Créer un compte sur https://supabase.com et un nouveau projet (région : `eu-west-3` Paris, la plus proche des Antilles avec de bonnes latences transatlantiques).
-- Dans **SQL Editor**, exécuter dans l'ordre les migrations de
-  `supabase/migrations/` (0001 → 0008).
+- Dans **SQL Editor**, exécuter dans l'ordre toutes les migrations de
+  `supabase/migrations/` (0001 → 0019).
   Le premier crée les tables (profiles, listings, listing_photos, reports), les index,
   toutes les policies RLS, le bucket `photos` et le quota anti-spam (10 annonces actives/utilisateur).
   Le second reprend le nom affiché saisi à l'inscription ; il est rejouable sans risque.
@@ -120,6 +122,9 @@ cp .env.example .env.local
 Remplir avec les valeurs de **Settings → API** du projet Supabase :
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL`
+- les quatre variables `NEXT_PUBLIC_LEGAL_*` avec l'identité réelle de
+  l'éditeur (obligatoires avant la mise en production)
 
 ### 4. Lancer
 ```
@@ -128,9 +133,13 @@ npm run dev
 ```
 → http://localhost:3000
 
+Avant un push, `npm run check` exécute le lint, le typage, les tests et le build.
+La procédure de livraison de la migration de sécurité est détaillée dans
+[`docs/DEPLOIEMENT_SECURITE.md`](docs/DEPLOIEMENT_SECURITE.md).
+
 ## Mise en ligne
 
-Le site est une application Next.js 15 : il lui faut un hébergeur qui exécute
+Le site est une application Next.js 16 : il lui faut un hébergeur qui exécute
 Node (Vercel, Netlify, Cloudflare Workers…), pas un simple hébergement de
 fichiers statiques. La fiche annonce `/annonce/[id]` est une route dynamique,
 elle ne peut pas être pré-générée en export statique.
@@ -141,7 +150,9 @@ elle ne peut pas être pré-générée en export statique.
 2. Rien à configurer : framework détecté, `npm run build` par défaut.
 3. **Settings → Environment Variables**, pour *Production* et *Preview* :
    - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SITE_URL`
+  - les quatre variables `NEXT_PUBLIC_LEGAL_*`
    Ces deux valeurs sont publiques par nature (préfixe `NEXT_PUBLIC_`, envoyées
    au navigateur) ; c'est le RLS Supabase qui protège les données, jamais le
    secret de la clé. Ne jamais mettre la `service_role` ici.
@@ -174,11 +185,12 @@ supabase/migrations/0003_intent.sql Sens de l'annonce : proposition ou recherche
 supabase/migrations/0004_favoris_stats.sql  Favoris, fréquentation, droits admin
 supabase/migrations/0005_profiles_colonnes.sql  Lecture de profiles colonne par colonne
 supabase/migrations/0006_restaurants.sql    Restaurants + demandes des établissements
+supabase/migrations/0019_security_hardening.sql  RLS, confidentialité, quotas et RPC admin
 src/lib/sites.ts                    La famille de sites (marque, couleurs, URLs)
 src/lib/food.ts                     Cuisines, quartiers, horaires (heure de l'île)
 src/components/SiteSwitcher.tsx     Bascule entre les sites de la famille
 src/components/food/                Accueil et cartes St Barth Food
-src/app/resto/[id]/page.tsx         Fiche restaurant + revendication
+src/app/food/resto/[id]/page.tsx    Fiche restaurant + revendication
 src/lib/session.ts                  Session courante (hook useSession)
 src/lib/favorites.tsx               Favoris chargés une fois pour toute la page
 src/lib/analytics.ts                Enregistrement des pages vues
@@ -189,7 +201,8 @@ src/lib/supabase.ts                 Client Supabase (navigateur)
 src/app/globals.css                 Charte graphique (tokens, composants, breakpoints)
 src/components/Brand.tsx            Marque : île en SVG (2 niveaux de détail), verrouillage typo, bandeau
 src/app/page.tsx                    Accueil : onglets modules, chips, recherche, filtre prix
-src/app/annonce/[id]/page.tsx       Fiche annonce : photos, détails, WhatsApp, signalement
+src/app/annonce/[id]/page.tsx       Fiche annonce rendue côté serveur
+src/app/annonce/[id]/modifier/      Édition du contenu et des photos par l'auteur
 src/app/deposer/page.tsx            Dépôt en 3 étapes, champs par catégorie, upload photos
 src/app/connexion/page.tsx          Compte : inscription, connexion, mot de passe oublié
 ```
@@ -261,34 +274,33 @@ ajouter une ligne `{ k: "Libellé", t: "select", o: ["Oui","Non"], adv: true }`.
 `adv: true` = replié derrière « Plus de détails » au dépôt.
 Aucune migration nécessaire : les valeurs vont dans la colonne JSONB `attrs`.
 
-## Sécurité (déjà en place)
+## Sécurité
 
-- RLS activé sur toutes les tables : seules les annonces `active` sont lisibles publiquement,
-  chaque utilisateur ne peut écrire que ses propres annonces/photos.
-- Bucket photos : lecture publique, écriture limitée au dossier `{user_id}/` de chacun,
-  5 Mo max, jpeg/png/webp uniquement.
-- Quota : 10 annonces actives max par compte (trigger SQL).
-- Les utilisateurs bannis (`profiles.is_banned`) ne peuvent plus publier.
+- RLS activé sur toutes les tables et droits d'écriture limités colonne par
+  colonne pour empêcher la modification des rôles, auteurs et dates techniques.
+- Les annonces publiques sont limitées aux actives et aux vendues depuis moins
+  de sept jours ; une annonce retirée par la modération ne peut pas être réactivée.
+- Bucket photos : écriture liée à une annonce possédée par l'utilisateur,
+  5 photos maximum par annonce, 5 Mo par fichier, JPEG/PNG/WebP uniquement.
+- Quotas transactionnels sur les annonces, les événements et les demandes en
+  double ; les comptes bannis ne peuvent plus publier ni envoyer de photos.
+- Contacts privés des événements exclus de l'API publique ; fonctions admin
+  atomiques et contrôlées dans PostgreSQL.
+- CSP et en-têtes HTTP de sécurité, validation des liens externes et protection
+  des JSON-LD et des cartes contre l'injection de code.
 
-## Reste à faire avant lancement public (par ordre de priorité)
+## À finaliser pour la production
 
-0. **SMTP dédié** (Resend/Brevo + SPF/DKIM/DMARC) : sans lui, les emails de
-   confirmation ne partent pas de façon fiable — bloquant pour toute inscription.
-0bis. **Notifications** (à brancher plus tard, demandé) : prévenir un vendeur
-   d'un favori ou d'un message, un restaurateur d'une note — email d'abord,
-   push ensuite. Rien n'existe encore.
-0ter. **St Barth Event** : construire la section (page d'attente en place).
-   Pas de base ouverte d'évènements : sources = partenariats (comité du
-   tourisme, associations, organisateurs) et saisie directe.
+1. **Appliquer la migration 0019 avant le frontend**, en suivant
+   [`docs/DEPLOIEMENT_SECURITE.md`](docs/DEPLOIEMENT_SECURITE.md).
+2. **Renseigner l'identité légale réelle** dans les variables
+   `NEXT_PUBLIC_LEGAL_*` ; les valeurs d'exemple ne doivent pas être publiées.
+3. **Configurer un SMTP dédié** (Resend/Brevo avec SPF, DKIM et DMARC), puis
+   vérifier les confirmations et réinitialisations d'email.
+4. **Activer la protection anti-bot de Supabase Auth** (Turnstile) et conserver
+   ses limites de tentatives pour les créations de comptes.
+5. **Relire les données éditoriales** importées depuis OpenStreetMap et les
+   événements avant validation publique.
 
-1. **Expiration automatique** : activer pg_cron (extension Supabase) et décommenter
-   le `cron.schedule` en fin de migration, ou appeler la requête via un cron externe.
-2. **Modération** : back-office admin (lecture de `reports`, passage d'annonces en
-   `removed`, bannissement). V1 possible directement dans le Table Editor Supabase.
-3. **Compression des images côté client** avant upload (une photo de téléphone fait
-   4-8 Mo ; recompresser en WebP ~1600px divise le poids par 10). Lib : browser-image-compression.
-4. **Mes annonces** : page de gestion (marquer vendu, renouveler, supprimer).
-5. **Mentions légales, CGU, politique de confidentialité** (obligations LCEN + RGPD).
-6. **SEO** : les pages sont en rendu client (choix v1 pour la simplicité) ; passer la
-   fiche annonce en Server Component quand le trafic organique deviendra un enjeu.
-7. **Rate limiting** sur la création de comptes (protection Supabase Auth ou Cloudflare Turnstile).
+Les notifications de favoris, messages et notes restent une évolution
+fonctionnelle ultérieure ; elles ne sont pas nécessaires au lancement actuel.

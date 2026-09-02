@@ -2,6 +2,7 @@
 import { supabase } from "./supabase";
 
 const VIEWER_KEY = "tk_viewer";
+const OPT_OUT_KEY = "tk_analytics_optout";
 
 /* Identifiant aléatoire de navigateur, tiré une fois et gardé en local.
    Aucun lien avec un compte, aucune donnée personnelle : il sert seulement à
@@ -24,13 +25,16 @@ function viewerKey(): string | null {
 export async function recordView(path: string, listingId?: string) {
   if (typeof window === "undefined") return;
   try {
+    if (localStorage.getItem(OPT_OUT_KEY) === "1") return;
     const once = `tk_seen:${path}`;
     if (sessionStorage.getItem(once)) return;
+    const key = viewerKey();
+    if (!key) return;
     sessionStorage.setItem(once, "1");
-    await supabase().from("page_views").insert({
-      path,
-      listing_id: listingId ?? null,
-      viewer_key: viewerKey(),
+    await supabase().rpc("record_page_view", {
+      p_path: path,
+      p_listing_id: listingId ?? null,
+      p_viewer_key: key,
     });
   } catch {
     /* ignoré volontairement */

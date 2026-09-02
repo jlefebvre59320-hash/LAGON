@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap");
-
 /* ==========================================================================
    Ti Kanal — charte graphique
    Vert lagon profond (#05282c) · Or sable (#c9a86a) · Crème (#f6f2e9)
@@ -437,6 +435,27 @@ h1, h2, h3 {
   flex-direction: column;
   text-decoration: none;
   transition: box-shadow 0.18s, transform 0.18s;
+}
+.card-link-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+.card-link-overlay:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 @media (hover: hover) {
   .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }

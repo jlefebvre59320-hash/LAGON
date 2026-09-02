@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { SiteHeader, Mark } from "@/components/Brand";
+import { safeReturnTo } from "@/lib/urls";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
 
@@ -44,6 +45,10 @@ export default function Connexion() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const returnTo = () => typeof window === "undefined"
+    ? "/deposer"
+    : safeReturnTo(new URLSearchParams(window.location.search).get("returnTo"));
+
   /* Retour depuis l'email de réinitialisation : Supabase pose la session et
      émet PASSWORD_RECOVERY, on bascule alors sur le choix du nouveau mot de passe. */
   useEffect(() => {
@@ -79,7 +84,7 @@ export default function Connexion() {
       if (mode === "login") {
         const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        router.replace("/deposer");
+        router.replace(returnTo());
         return;
       }
 
@@ -89,13 +94,15 @@ export default function Connexion() {
           password,
           options: {
             data: { display_name: name.trim() },
-            emailRedirectTo: origin ? `${origin}/connexion?confirme=1` : undefined,
+            emailRedirectTo: origin
+              ? `${origin}/connexion?confirme=1&returnTo=${encodeURIComponent(returnTo())}`
+              : undefined,
           },
         });
         if (error) throw error;
         // Session immédiate si la confirmation d'email est désactivée côté Supabase.
         if (data.session) {
-          router.replace("/deposer");
+          router.replace(returnTo());
           return;
         }
         setNotice(`Compte créé. Un email de confirmation part vers ${email.trim()} : ouvrez-le pour activer votre compte. Rien au bout de quelques minutes ? Regardez vos spams, puis utilisez « Renvoyer l'email de confirmation ».`);
@@ -117,7 +124,7 @@ export default function Connexion() {
       // mode === "reset"
       const { error } = await sb.auth.updateUser({ password });
       if (error) throw error;
-      router.replace("/deposer");
+      router.replace(returnTo());
     } catch (e) {
       setError(humanError(e instanceof Error ? e.message : ""));
       setLoading(false);
@@ -135,7 +142,11 @@ export default function Connexion() {
     const { error } = await supabase().auth.resend({
       type: "signup",
       email: email.trim(),
-      options: { emailRedirectTo: origin ? `${origin}/connexion?confirme=1` : undefined },
+      options: {
+        emailRedirectTo: origin
+          ? `${origin}/connexion?confirme=1&returnTo=${encodeURIComponent(returnTo())}`
+          : undefined,
+      },
     });
     setLoading(false);
     if (error) setError(humanError(error.message));
@@ -150,7 +161,7 @@ export default function Connexion() {
     const origin = typeof window !== "undefined" ? window.location.origin : undefined;
     const { error } = await supabase().auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: origin ? `${origin}/deposer` : undefined },
+      options: { emailRedirectTo: origin ? `${origin}${returnTo()}` : undefined },
     });
     setLoading(false);
     if (error) setError(humanError(error.message));

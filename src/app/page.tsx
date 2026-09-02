@@ -99,7 +99,6 @@ function Home() {
       setGuideHits((gp.data as typeof guideHits) ?? []);
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, tab]);
 
   return (

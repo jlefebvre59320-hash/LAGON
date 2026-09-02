@@ -14,10 +14,9 @@ export type IslandEvent = {
   description: string;
   link: string | null;
   organizer: string;
-  contact: string;
+  /* Présent uniquement dans le RPC d'administration, jamais dans l'API publique. */
+  contact?: string;
   status: EventStatus;
-  submitted_by: string | null;
-  created_at: string;
 };
 
 export const EVENT_CATEGORIES = [
@@ -34,6 +33,20 @@ export const EVENT_CATEGORIES = [
 
 /* L'île vit à l'heure de l'île : les dates de l'agenda aussi. */
 const TZ = "America/St_Barthelemy";
+
+/** Minuit du jour courant à Saint-Barthélemy. L'île reste en UTC-4 toute
+ * l'année, ce qui évite qu'un visiteur à Paris ou Montréal filtre le mauvais
+ * jour. */
+export function islandDayStartIso(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}T00:00:00-04:00`;
+}
 
 export function eventDay(iso: string) {
   const d = new Date(iso);
