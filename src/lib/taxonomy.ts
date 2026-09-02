@@ -93,7 +93,9 @@ export const MODULES: Record<ModuleKey, {
   },
 };
 
-export const MODULE_ORDER: ModuleKey[] = ["vehicle", "housing", "job", "goods"];
+/* Ordre voulu par l'éditeur du site, appliqué partout d'un seul endroit :
+   filtres de l'accueil, choix de catégorie au dépôt, colonnes des stats. */
+export const MODULE_ORDER: ModuleKey[] = ["goods", "vehicle", "job", "housing"];
 
 const BOAT_SUBS = ["Bateaux à moteur", "Voiliers", "Jetskis"];
 const BIKE_SUBS = ["Vélos & Trottinettes"];

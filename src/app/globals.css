@@ -742,6 +742,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-radius: 18px;
   box-shadow: var(--shadow-lg);
 }
+/* h1/h2/h3 portent une couleur d'élément (vert lagon) qui l'emporte sur la
+   couleur héritée du panneau : sur un fond sombre, le titre se retrouve
+   vert foncé sur vert foncé, donc illisible. Il faut la reprendre
+   explicitement partout où le fond est sombre. */
+.empty-cta h2,
+.site-header h1, .site-header h2, .site-header h3 { color: inherit; }
 .empty-cta h2 { margin: 13px 0 8px; font-size: 26px; line-height: 1.1; }
 .empty-cta p { margin: 0 0 18px; color: rgba(246, 242, 233, .78); font-size: 15px; line-height: 1.55; }
 .discovery-list { display: grid; gap: 8px; }
