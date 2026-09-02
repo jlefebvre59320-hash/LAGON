@@ -750,6 +750,125 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .site-header h1, .site-header h2, .site-header h3 { color: inherit; }
 .empty-cta h2 { margin: 13px 0 8px; font-size: 26px; line-height: 1.1; }
 .empty-cta p { margin: 0 0 18px; color: rgba(246, 242, 233, .78); font-size: 15px; line-height: 1.55; }
+/* --- Fiches du Guide ----------------------------------------------------
+   Une fiche d'annuaire n'a pas de photo : c'est la teinte de la catégorie
+   qui doit porter la lecture. Un liseré coloré à gauche, un picto sur son
+   halo, et le conseil pratique visible dès la grille — pour reconnaître
+   une plage d'un service public sans lire une ligne. */
+.place-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 14px 11px 17px;
+  overflow: hidden;
+  transition: border-color .16s, transform .16s, box-shadow .16s;
+}
+.place-card-rule {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom,
+    var(--place-hue),
+    color-mix(in srgb, var(--place-hue) 45%, transparent));
+}
+.place-card:hover {
+  border-color: color-mix(in srgb, var(--place-hue) 55%, var(--border));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.place-card-body { display: flex; gap: 12px; align-items: flex-start; }
+.place-card-glyph {
+  flex: 0 0 auto;
+  width: 42px; height: 42px;
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--place-hue);
+  background: color-mix(in srgb, var(--place-hue) 11%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--place-hue) 18%, transparent);
+}
+.place-card-over {
+  display: block;
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--place-hue);
+}
+.place-card-sep { margin: 0 5px; opacity: .55; }
+.place-card-name {
+  margin: 3px 0 4px;
+  font-size: 15.5px; font-weight: 700; line-height: 1.25;
+  color: var(--text);
+}
+.place-card-desc {
+  margin: 0;
+  font-size: 12.5px; line-height: 1.5; color: var(--text-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Le conseil est ce qui distingue un annuaire d'une liste : il mérite sa
+   propre ligne, en retrait et en italique, jamais confondu avec la description. */
+.place-card-tip {
+  margin: 7px 0 0;
+  padding-left: 9px;
+  border-left: 2px solid color-mix(in srgb, var(--place-hue) 35%, transparent);
+  font-size: 12px; font-style: italic; line-height: 1.45;
+  color: var(--text-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.place-card-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px; padding-top: 9px;
+  border-top: 1px solid var(--border);
+  min-height: 22px;
+}
+.place-card-go {
+  font-size: 11.5px; font-weight: 700;
+  color: var(--place-hue);
+  opacity: 0; transform: translateX(-4px);
+  transition: opacity .16s, transform .16s;
+  margin-left: auto;
+}
+.place-card:hover .place-card-go { opacity: 1; transform: none; }
+/* Au doigt il n'y a pas de survol : l'invitation reste visible en permanence. */
+@media (hover: none) {
+  .place-card-go { opacity: .7; transform: none; }
+}
+
+/* En-tête d'une fiche de lieu : le même code couleur que la carte, en plus
+   ample. Le dégradé part de la teinte et s'éteint — assez pour identifier la
+   catégorie, pas assez pour concurrencer le titre. */
+.place-hero {
+  display: flex; align-items: center; gap: 14px;
+  margin: 18px 0 6px;
+  padding: 15px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--place-hue) 15%, var(--surface)),
+    var(--surface) 72%);
+  border: 1px solid color-mix(in srgb, var(--place-hue) 24%, var(--border));
+}
+.place-hero-glyph {
+  flex: 0 0 auto;
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--place-hue);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--place-hue) 28%, transparent);
+}
+.place-hero-over {
+  display: block;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--place-hue);
+}
+.place-hero-title {
+  margin: 2px 0 0;
+  font-size: clamp(24px, 5.5vw, 32px);
+  line-height: 1.15;
+}
+
 .discovery-list { display: grid; gap: 8px; }
 .discovery-link {
   display: flex;
