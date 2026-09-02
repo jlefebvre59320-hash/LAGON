@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import { SiteHeader } from "@/components/Brand";
+import { SITES, SITE_ORDER, type SiteKey } from "@/lib/sites";
 
 type Daily = { day: string; visits: number };
 type Top = { id: string; title: string; module: ModuleKey; views: number };
@@ -35,7 +36,7 @@ type PendingEvent = {
 };
 type AdminUser = {
   id: string; email: string; display_name: string; created_at: string;
-  last_sign_in: string | null; is_banned: boolean; listings: number;
+  last_sign_in: string | null; is_banned: boolean; is_admin: boolean; listings: number;
 };
 const FEEDBACK_KIND: Record<Feedback["kind"], string> = {
   idee: "Idée", probleme: "Problème", avis: "Avis",
@@ -52,6 +53,12 @@ type SiteStats = {
   users_total: number; users_30d: number;
   views_total: number; views_7d: number;
   visits_7d: number; visitors_7d: number;
+  /* Ajoutés par la migration 0020 : optionnels pour que le tableau de bord
+     reste lisible si elle n'a pas encore été exécutée. */
+  visits_30d?: number; visitors_30d?: number; visitors_total?: number;
+  by_site?: Partial<Record<SiteKey, {
+    visits_7d: number; visitors_7d: number; visits_30d: number; visitors_30d: number;
+  }>>;
   favorites_total: number;
   by_module: Partial<Record<ModuleKey, number>>;
   by_intent: Partial<Record<Intent, number>>;
@@ -101,6 +108,22 @@ export default function Stats() {
     setBusyClaim(e.id);
     await supabase().from("events").update({ status }).eq("id", e.id);
     setBusyClaim(null);
+    loadClaims();
+  }
+
+  /* Nommer un administrateur, c'est donner accès aux emails de tous les
+     comptes, au bannissement et à la suppression de n'importe quelle annonce :
+     la confirmation le dit franchement. La base refuse de son côté qu'on se
+     retire ses propres droits, pour ne pas fermer la porte de l'intérieur. */
+  async function toggleAdmin(u: AdminUser) {
+    const message = u.is_admin
+      ? `Retirer les droits d'administration à ${u.email} ?`
+      : `Nommer ${u.email} administrateur ?\n\nIl pourra voir les emails de tous les comptes, bannir, supprimer n'importe quelle annonce et valider les événements.`;
+    if (!confirm(message)) return;
+    setBusyClaim(u.id);
+    const { error } = await supabase().rpc("set_admin", { target_id: u.id, value: !u.is_admin });
+    setBusyClaim(null);
+    if (error) { alert(`Modification impossible : ${error.message}`); return; }
     loadClaims();
   }
 
@@ -356,8 +379,46 @@ export default function Stats() {
             { k: "Comptes", v: s.users_total, sub: `${s.users_30d} sur 30 j` },
             { k: "Vues d'annonces", v: s.views_total, sub: `${s.views_7d} sur 7 j` },
             { k: "Visiteurs (7 j)", v: s.visitors_7d, sub: `${s.visits_7d} pages vues` },
+            { k: "Visiteurs (30 j)", v: s.visitors_30d ?? 0, sub: `${s.visitors_total ?? 0} depuis le début` },
             { k: "Mises en favori", v: s.favorites_total, sub: "toutes annonces" },
           ]} />
+        </Section>
+
+        <Section titre="Fréquentation par univers"
+          sousTitre="Visiteurs uniques et pages vues sur 7 et 30 jours — une même personne peut compter dans plusieurs univers">
+          <div className="panel" style={{ padding: "6px 14px 10px", overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)" }}>
+                  <th style={{ textAlign: "left", padding: "6px 8px 6px 0" }}>Univers</th>
+                  <th style={{ textAlign: "right", padding: "6px 10px" }}>Visiteurs 7 j</th>
+                  <th style={{ textAlign: "right", padding: "6px 10px" }}>Pages 7 j</th>
+                  <th style={{ textAlign: "right", padding: "6px 10px" }}>Visiteurs 30 j</th>
+                  <th style={{ textAlign: "right", padding: "6px 0 6px 10px" }}>Pages 30 j</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SITE_ORDER.map((key) => {
+                  const d = s.by_site?.[key];
+                  const site = SITES[key];
+                  return (
+                    <tr key={key} style={{ borderTop: "1px solid var(--border)" }}>
+                      <td style={{ padding: "9px 8px 9px 0" }}>
+                        <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 99,
+                          background: site.dot, marginRight: 8 }} />
+                        <strong>{site.name}</strong>
+                        <span style={{ color: "var(--text-muted)", fontSize: 11.5 }}> · {site.path}</span>
+                      </td>
+                      <td style={{ textAlign: "right", padding: "9px 10px", fontWeight: 700 }}>{d?.visitors_7d ?? 0}</td>
+                      <td style={{ textAlign: "right", padding: "9px 10px", color: "var(--text-muted)" }}>{d?.visits_7d ?? 0}</td>
+                      <td style={{ textAlign: "right", padding: "9px 10px", fontWeight: 700 }}>{d?.visitors_30d ?? 0}</td>
+                      <td style={{ textAlign: "right", padding: "9px 0 9px 10px", color: "var(--text-muted)" }}>{d?.visits_30d ?? 0}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </Section>
 
         <Section titre="Fréquentation des 14 derniers jours" sousTitre="Pages vues par jour, toutes pages confondues">
@@ -453,6 +514,17 @@ export default function Stats() {
                       </div>
                     </td>
                     <td style={{ padding: "8px 0", textAlign: "right", whiteSpace: "nowrap" }}>
+                      {u.is_admin && (
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
+                          background: "var(--green)", color: "var(--gold-light)", padding: "3px 9px",
+                          borderRadius: 99, marginRight: 10 }}>
+                          Admin
+                        </span>
+                      )}
+                      <button className="link-quiet" disabled={busyClaim === u.id} onClick={() => toggleAdmin(u)}
+                        style={{ marginRight: 14 }}>
+                        {u.is_admin ? "Retirer l'admin" : "Nommer admin"}
+                      </button>
                       <button className="link-quiet" disabled={busyClaim === u.id} onClick={() => toggleBan(u)}
                         style={u.is_banned ? undefined : { color: "var(--danger)" }}>
                         {u.is_banned ? "Rétablir" : "Bannir"}

@@ -28,14 +28,15 @@ WhatsApp, il y aura plus de 2 inscriptions dans l'heure.
 sur dash.cloudflare.com → `tikanal.com` → **DNS → Records** : c'est là que
 tous les enregistrements ci-dessous se posent.
 
-> **Sous-domaine d'envoi**
-> Resend enverra depuis **`send.tikanal.com`**, pas depuis `tikanal.com`.
-> Avantage : si un jour un email est mal noté, la réputation du domaine
-> principal (celui du site) n'est pas touchée. Les adresses restent lisibles :
-> `no-reply@send.tikanal.com`.
+> **Où vivent les enregistrements**
+> Les emails partent de `no-reply@tikanal.com` — une adresse lisible, qui
+> inspire confiance. L'isolation technique passe par le **Custom Return-Path**
+> de Resend, réglé sur `send` : les rebonds et le SPF vivent donc sur
+> `send.tikanal.com`, tandis que la signature DKIM et la politique DMARC
+> sont sur `tikanal.com`.
 >
-> Rien à créer à la main : le sous-domaine naît des enregistrements que
-> Resend vous donnera à l'étape suivante.
+> Rien à créer à la main : l'intégration Cloudflare de Resend pose tous ces
+> enregistrements pour vous (sauf le DMARC, voir étape 3).
 
 ---
 
@@ -43,11 +44,16 @@ tous les enregistrements ci-dessous se posent.
 
 1. Compte sur **resend.com** — le palier gratuit (3 000 emails/mois,
    100/jour) couvre largement le lancement.
-2. **Domains → Add Domain** → `send.tikanal.com`.
-   Choisissez la région **EU (Ireland)** : les données restent en Europe,
-   c'est plus propre vis-à-vis du RGPD.
-3. Resend affiche les enregistrements DNS à créer. Recopiez-les
-   **exactement** (copier-coller, jamais à la main) chez votre registrar.
+2. **Domains → Add Domain** → `tikanal.com`.
+   Dans **Advanced options** : région **Ireland (eu-west-1)** — les données
+   restent en Europe ; **Custom Return-Path** `send` ; et **décochez
+   « Enable click tracking »** (sur un email de confirmation, réécrire le
+   lien d'activation via un domaine de redirection nuit à la délivrabilité
+   et ajoute un point de panne sur le lien le plus critique du site).
+3. Utilisez le bouton **Auto configure** : Resend crée directement les
+   enregistrements chez Cloudflare, sans risque de faute de frappe. S'il
+   signale un conflit avec un enregistrement existant, vérifiez qu'il ne
+   s'agit que de résidus d'une configuration précédente avant d'autoriser.
 4. **Verify** dans Resend. Compte quelques minutes à 1 heure.
 5. **API Keys → Create API Key**, permission **Sending access** uniquement,
    et si proposé, restreinte à votre domaine. Copiez la clé
@@ -77,7 +83,7 @@ lettre manquante casse la signature.
 
 ### DMARC — la politique (l'étape que tout le monde oublie)
 
-À créer vous-même, TXT sur `_dmarc.send.tikanal.com` :
+À créer vous-même, TXT sur `_dmarc.tikanal.com` :
 
 **Au démarrage** (on observe sans rien bloquer) :
 ```
@@ -113,7 +119,7 @@ retours de rebond et de savoir quelles adresses sont mortes.
 | Champ | Valeur |
 |---|---|
 | Enable Custom SMTP | **activé** |
-| Sender email | `no-reply@send.tikanal.com` |
+| Sender email | `no-reply@tikanal.com` |
 | Sender name | `Ti Kanal` |
 | Host | `smtp.resend.com` |
 | Port | **465** (SSL) — si bloqué, `587` en STARTTLS |
@@ -161,9 +167,9 @@ ou lien de désabonnement).
 
 ### Test 2 — les DNS vus de l'extérieur
 Sur **mxtoolbox.com/SuperTool.aspx** :
-- `spf:send.tikanal.com` → doit rendre un seul enregistrement, valide ;
-- `dmarc:send.tikanal.com` → doit trouver votre politique ;
-- `dkim:send.tikanal.com:resend` → signature trouvée.
+- `spf:send.tikanal.com` → un seul enregistrement, valide (le SPF vit sur le return-path) ;
+- `dmarc:tikanal.com` → doit trouver votre politique ;
+- `dkim:tikanal.com:resend` → signature trouvée.
 
 ### Test 3 — les vraies boîtes
 Créez un compte de test avec :

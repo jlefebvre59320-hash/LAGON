@@ -4,6 +4,7 @@ import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { Mark } from "@/components/Brand";
 import FavoriteButton from "@/components/FavoriteButton";
+import { thumbKey } from "@/lib/images";
 
 const ago = (iso: string) => {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -12,6 +13,27 @@ const ago = (iso: string) => {
 
 export function photoUrl(key: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${key}`;
+}
+
+/* Vignette pour les grilles : ~30 Ko au lieu de ~400 Ko. Les photos déposées
+   avant l'arrivée des vignettes n'en ont pas — l'attribut onError bascule
+   alors sur l'image pleine taille, sans que le visiteur voie quoi que ce soit. */
+function Vignette({ storageKey, alt }: { storageKey: string; alt: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={photoUrl(thumbKey(storageKey))}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={(e) => {
+        const img = e.currentTarget;
+        const plein = photoUrl(storageKey);
+        if (img.src !== plein) img.src = plein;
+      }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+    />
+  );
 }
 
 export default function ListingCard({ l }: { l: Listing }) {
@@ -25,13 +47,7 @@ export default function ListingCard({ l }: { l: Listing }) {
     <Link href={`/annonce/${l.id}`} className="card">
       <div style={{ position: "relative", aspectRatio: "4 / 3", background: m.soft }}>
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={photoUrl(photo.storage_key)}
-            alt={l.title}
-            loading="lazy"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          <Vignette storageKey={photo.storage_key} alt={l.title} />
         ) : (
           <div
             style={{

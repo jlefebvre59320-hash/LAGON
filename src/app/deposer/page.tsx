@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
 import { SiteHeader, Mark } from "@/components/Brand";
-import { compressImage } from "@/lib/images";
+import { compressImage, thumbKey } from "@/lib/images";
 
 const MAX_PHOTOS = 5;
 
@@ -105,12 +105,17 @@ export default function Deposer() {
       // Sans compression, une photo de téléphone dépasse souvent la limite du
       // bucket (5 Mo) et le dépôt perd ses images sans explication.
       for (let i = 0; i < files.length; i++) {
-        const f = await compressImage(files[i]);
-        const ext = f.name.split(".").pop()?.toLowerCase() || "jpg";
+        const { full, thumb } = await compressImage(files[i]);
+        const ext = full.name.split(".").pop()?.toLowerCase() || "jpg";
         const key = `${userId}/${listing.id}/${i}.${ext}`;
-        const { error: upErr } = await supabase().storage.from("photos").upload(key, f, { upsert: true });
+        const { error: upErr } = await supabase().storage.from("photos").upload(key, full, { upsert: true });
         if (!upErr) {
           await supabase().from("listing_photos").insert({ listing_id: listing.id, storage_key: key, position: i });
+          /* La vignette part après coup et sans bloquer : si son envoi échoue,
+             l'annonce garde sa photo, l'affichage se rabat sur l'originale. */
+          if (thumb) {
+            await supabase().storage.from("photos").upload(thumbKey(key), thumb, { upsert: true });
+          }
         }
       }
 

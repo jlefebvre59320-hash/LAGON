@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import ListingCard, { photoUrl } from "@/components/ListingCard";
+import { thumbKey } from "@/lib/images";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { FavoritesProvider, useFavorites } from "@/lib/favorites";
 import type { Restaurant } from "@/lib/food";
@@ -137,12 +138,16 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
     setBusy(l.id);
     /* .select("id") : une suppression refusée par la RLS renvoie « succès,
        0 ligne » — sans vérification, l'annonce resterait là sans explication. */
+    const cles = (l.photos ?? []).flatMap((p) => [p.storage_key, thumbKey(p.storage_key)]);
     const { data, error } = await supabase().from("listings").delete().eq("id", l.id).select("id");
     setBusy(null);
     if (error || !data || data.length === 0) {
       alert(error ? `Suppression impossible : ${error.message}` : "La base a refusé la suppression de cette annonce.");
       return;
     }
+    /* La cascade SQL nettoie les lignes, pas les fichiers : sans ce retrait,
+       chaque annonce supprimée laisserait ses photos occuper le bucket à vie. */
+    if (cles.length > 0) await supabase().storage.from("photos").remove(cles);
     loadMine();
   }
 
@@ -246,7 +251,9 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                     <Link href={`/annonce/${l.id}`} style={{ flex: "0 0 auto" }}>
                       {photo ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={photoUrl(photo.storage_key)} alt="" style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 10 }} />
+                        <img src={photoUrl(thumbKey(photo.storage_key))} alt=""
+                          onError={(e) => { const i = e.currentTarget, f = photoUrl(photo.storage_key); if (i.src !== f) i.src = f; }}
+                          style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 10 }} />
                       ) : (
                         <div style={{ width: 76, height: 76, borderRadius: 10, background: m.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <Mark size={46} color={m.color} />
