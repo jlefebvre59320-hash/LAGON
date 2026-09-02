@@ -845,3 +845,41 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .mobile-dock-publish small { font-size: 10px; }
   .fab { display: none !important; }
 }
+
+/* ---- Mise en avant d'une annonce ---- */
+.listing-featured {
+  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent), var(--shadow-lg);
+}
+/* Un filet doré en tête de carte : on distingue l'annonce d'un coup d'œil
+   dans la grille, sans crier ni dénaturer la charte. */
+.listing-featured::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold), var(--gold-light));
+  border-radius: var(--radius) var(--radius) 0 0;
+  z-index: 3;
+}
+.featured-badge {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--gold);
+  color: var(--green-900);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(5, 40, 44, 0.28);
+}
+/* La pastille de sous-catégorie descend d'un cran quand le badge occupe
+   le coin : superposées, les deux étiquettes deviennent illisibles. */
+.listing-featured .subcat-pill { top: 38px !important; }

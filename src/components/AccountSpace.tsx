@@ -12,6 +12,7 @@ import { FavoritesProvider, useFavorites } from "@/lib/favorites";
 import type { Restaurant } from "@/lib/food";
 import RestaurantCard from "@/components/food/RestaurantCard";
 import { SITES } from "@/lib/sites";
+import { estEnAvant, joursRestants, finDeMiseEnAvant } from "@/lib/featured";
 import { connexionUrl } from "@/lib/urls";
 
 type Tab = "listings" | "favorites" | "resto_favs" | "restaurants";
@@ -130,6 +131,26 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
   async function setStatus(l: Listing, status: Listing["status"]) {
     setBusy(l.id);
     const { data, error } = await supabase().from("listings").update({ status }).eq("id", l.id).select("id");
+    setBusy(null);
+    if (error || !data || data.length === 0) {
+      alert(error ? `Modification impossible : ${error.message}` : "La base a refusé la modification.");
+      return;
+    }
+    loadMine();
+  }
+
+  /* Mise en avant depuis l'espace : gratuite pendant la phase de test.
+     Quand la facturation arrivera, c'est ici que le paiement s'insérera —
+     l'annonce, elle, ne change pas de forme. */
+  async function toggleEnAvant(l: Listing) {
+    const actif = estEnAvant(l);
+    if (actif && !confirm(`Retirer « ${l.title} » de la mise en avant ?`)) return;
+    setBusy(l.id);
+    const { data, error } = await supabase()
+      .from("listings")
+      .update({ featured_until: actif ? null : finDeMiseEnAvant() })
+      .eq("id", l.id)
+      .select("id");
     setBusy(null);
     if (error || !data || data.length === 0) {
       alert(error ? `Modification impossible : ${error.message}` : "La base a refusé la modification.");
@@ -317,6 +338,14 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                             Retirée par la modération
                           </span>
+                        )}
+                        {l.status !== "removed" && (
+                          <button className="link-quiet" disabled={busy === l.id} onClick={() => toggleEnAvant(l)}
+                            style={estEnAvant(l) ? undefined : { color: "var(--gold-deep)", fontWeight: 700 }}>
+                            {estEnAvant(l)
+                              ? `Retirer de la une (${joursRestants(l)} j restants)`
+                              : "★ Mettre en avant"}
+                          </button>
                         )}
                         <button className="link-quiet" disabled={busy === l.id} onClick={() => remove(l)} style={{ color: "var(--danger)" }}>
                           Supprimer
