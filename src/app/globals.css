@@ -1018,6 +1018,199 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .champ-label { font-size: 12.5px; font-weight: 700; color: var(--text); }
 .champ-aide { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
 
+/* --- Tableau de bord administrateur --------------------------------------
+   L'écran doit respirer : des cartes nettes sur le fond crème, des chiffres
+   qui portent, une grille discrète. Aucune couleur hors charte — le vert
+   lagon pour la série principale, l'or profond pour la seconde, et rien
+   d'autre. Deux teintes suffisent quand il n'y a que deux séries. */
+.dash { display: grid; gap: 14px; }
+
+.dash-tete {
+  display: flex; flex-wrap: wrap; align-items: flex-end;
+  justify-content: space-between; gap: 12px;
+}
+.dash-titre { margin: 0; font-size: 22px; }
+.dash-sous { margin: 2px 0 0; font-size: 12.5px; color: var(--text-muted); }
+
+.dash-periodes {
+  display: flex; gap: 3px; flex-wrap: wrap;
+  background: var(--cream-dark);
+  border-radius: 999px; padding: 3px;
+}
+.dash-periode {
+  border: none; cursor: pointer; font-family: inherit;
+  border-radius: 999px; padding: 8px 13px; min-height: 36px;
+  font-size: 13px; font-weight: 700;
+  background: transparent; color: var(--text-muted);
+  transition: background .15s, color .15s;
+}
+.dash-periode.actif { background: var(--green); color: var(--cream); }
+.dash-periode:hover:not(.actif) { color: var(--text); }
+.only-desktop-inline { display: none; }
+.only-mobile-inline { display: inline; }
+@media (min-width: 560px) {
+  .only-desktop-inline { display: inline; }
+  .only-mobile-inline { display: none; }
+}
+
+/* Les cartes s'empilent en deux colonnes dès qu'il y a la place, six de
+   front sur grand écran. auto-fit plutôt qu'un nombre figé : la rangée
+   reste pleine quel que soit le nombre d'indicateurs affichés. */
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+  gap: 10px;
+}
+.dash-kpi {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 13px 14px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+}
+.dash-kpi-titre {
+  font-size: 11.5px; font-weight: 700;
+  letter-spacing: .04em; color: var(--text-muted);
+}
+.dash-kpi-valeur {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 28px; font-weight: 700; line-height: 1.05;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+.dash-kpi-delta { font-size: 11.5px; font-weight: 700; color: var(--text-muted); }
+.dash-kpi-delta small { font-weight: 600; opacity: .8; }
+.dash-kpi-delta.hausse { color: var(--green-600); }
+.dash-kpi-delta.baisse { color: var(--danger); }
+.dash-kpi-delta.neutre { font-weight: 600; }
+.sparkline {
+  display: block; width: 100%; height: 26px;
+  margin-top: 7px; opacity: .55;
+}
+
+.dash-carte {
+  padding: 15px 16px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  box-shadow: var(--shadow);
+}
+.dash-carte h3 { margin: 0 0 2px; font-size: 15.5px; }
+.dash-note { margin: 0 0 8px; font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+.dash-principal .chart-svg { height: clamp(190px, 34vw, 300px); }
+
+.dash-grille {
+  display: grid; gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 860px) {
+  .dash-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* --- Graphiques ---------------------------------------------------------- */
+
+.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 6px 0 4px; }
+.chart-legend-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; cursor: pointer; padding: 3px 0;
+  font-family: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--text-muted);
+  transition: opacity .15s;
+}
+.chart-legend-item i { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+
+.chart-wrap { position: relative; }
+.chart-svg {
+  display: block; width: 100%;
+  height: clamp(150px, 30vw, 220px);
+  touch-action: pan-y;   /* le survol tactile ne doit pas bloquer le défilement */
+}
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-plafond {
+  position: absolute; top: 0; left: 0;
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  padding: 0 4px 0 0; border-radius: 3px;
+  pointer-events: none;
+}
+.chart-dates {
+  display: flex; justify-content: space-between;
+  margin-top: 2px;
+  font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+}
+.chart-curseur { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: .6; }
+/* Animation courte, une seule fois au tracé : une courbe qui se redessine à
+   chaque survol devient fatigante. */
+.chart-line {
+  stroke-dasharray: 2000; stroke-dashoffset: 2000;
+  animation: chart-trace .7s ease-out forwards;
+}
+@keyframes chart-trace { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .chart-line { animation: none; stroke-dashoffset: 0; }
+}
+
+.chart-tooltip {
+  position: absolute; top: 6px;
+  display: grid; gap: 3px;
+  padding: 9px 11px;
+  background: var(--green); color: var(--cream);
+  border-radius: 11px;
+  box-shadow: var(--shadow-lg);
+  font-size: 12.5px; line-height: 1.35;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 3;
+}
+.chart-tooltip strong { font-size: 12px; opacity: .85; font-weight: 700; }
+.chart-tooltip span { display: flex; align-items: center; gap: 6px; }
+/* L'infobulle est sur fond vert : une pastille elle-même verte y disparaît.
+   Un liseré clair la fait ressortir quelle que soit la couleur de la série. */
+.chart-tooltip i {
+  width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto;
+  box-shadow: 0 0 0 1px rgba(246, 242, 233, .6);
+}
+.chart-tooltip b { font-variant-numeric: tabular-nums; }
+
+.chart-vide {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 30px 16px; text-align: center;
+  color: var(--text-muted);
+}
+.chart-vide p { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--text); }
+.chart-vide small { font-size: 12px; line-height: 1.45; max-width: 40ch; }
+
+.bar-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 11px; }
+.bar-list-haut { display: flex; align-items: baseline; gap: 10px; }
+.bar-list-label {
+  flex: 1; min-width: 0;
+  font-size: 13.5px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bar-list-valeur {
+  flex: 0 0 auto; font-size: 13.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.bar-list-valeur small {
+  display: block; text-align: right;
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+}
+.bar-list-piste {
+  display: block; height: 7px; margin-top: 5px;
+  background: var(--cream-dark); border-radius: 99px; overflow: hidden;
+}
+.bar-list-barre {
+  display: block; height: 100%; border-radius: 99px;
+  animation: barre-pousse .5s ease-out;
+}
+@keyframes barre-pousse { from { width: 0 !important; } }
+@media (prefers-reduced-motion: reduce) {
+  .bar-list-barre { animation: none; }
+}
+
 .discovery-list { display: grid; gap: 8px; }
 .discovery-link {
   display: flex;
