@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { normalizePhoneNumber } from "@/lib/urls";
 import { messageErreur } from "@/lib/messages";
+import { activerPush, desactiverPush, etatPush, type EtatPush } from "@/lib/push";
 
 /* Réglages du compte : nom affiché, numéro WhatsApp, messagerie interne,
    et l'adresse de connexion.
@@ -12,6 +13,19 @@ import { messageErreur } from "@/lib/messages";
    adresse (et, si le projet l'exige, à l'ancienne) : tant que le lien n'est
    pas suivi, rien ne bouge. C'est volontaire, et c'est dit à l'écran, sinon
    l'utilisateur croit que sa modification a échoué. */
+/* Ce que dit la ligne d'aide sous l'interrupteur, selon ce qui bloque —
+   ou ne bloque pas. Un « impossible » sec n'aide personne à comprendre
+   ce qu'il faut faire. */
+const AIDE_PUSH: Record<EtatPush, string> = {
+  inconnu: "Vérification…",
+  actif: "Les notifications arrivent sur cet appareil. Décochez pour les couper ici seulement.",
+  inactif: "Recevez une notification même site fermé. Votre navigateur vous demandera l’autorisation.",
+  refuse: "Vous avez refusé les notifications pour ce site. Rouvrez-les dans les réglages de votre navigateur.",
+  indisponible: "Ce navigateur ne gère pas les notifications.",
+  "ios-non-installe": "Sur iPhone, ajoutez d’abord Ti Kanal à votre écran d’accueil (Partager → Sur l’écran d’accueil), puis revenez ici.",
+  "non-configure": "Les notifications ne sont pas encore activées sur le site.",
+};
+
 export default function ProfilForm() {
   const [chargement, setChargement] = useState(true);
   const [emailActuel, setEmailActuel] = useState("");
@@ -20,6 +34,8 @@ export default function ProfilForm() {
   const [phone, setPhone] = useState("");
   const [messagerie, setMessagerie] = useState(true);
   const [emailNotif, setEmailNotif] = useState(true);
+  const [push, setPush] = useState<EtatPush>("inconnu");
+  const [pushBusy, setPushBusy] = useState(false);
   const [enregistre, setEnregistre] = useState(false);
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -50,9 +66,19 @@ export default function ProfilForm() {
         setMessagerie(p.allow_messages !== false);
         setEmailNotif(p.notify_email !== false);
       }
+      setPush(await etatPush());
       setChargement(false);
     })();
   }, []);
+
+  /* L'autorisation du navigateur ne se demande que sur un geste : un appel
+     automatique au chargement est ignoré par Chrome et Safari, et surtout
+     c'est une fenêtre qu'on ne surgit pas sans qu'on l'ait demandée. */
+  async function basculerPush(veut: boolean) {
+    setPushBusy(true);
+    setPush(veut ? await activerPush() : await desactiverPush());
+    setPushBusy(false);
+  }
 
   async function enregistrer(e: React.FormEvent) {
     e.preventDefault();
@@ -140,6 +166,10 @@ export default function ProfilForm() {
 
   if (chargement) return <p style={{ color: "var(--text-muted)" }}>Chargement…</p>;
 
+  // Seuls deux états permettent d'agir sur l'interrupteur : les autres
+  // décrivent un obstacle que cocher une case ne lèvera pas.
+  const pushActivable = push === "actif" || push === "inactif";
+
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <form onSubmit={enregistrer} className="panel" style={{ padding: "16px 16px 18px", display: "grid", gap: 12 }}>
@@ -172,22 +202,40 @@ export default function ProfilForm() {
           </span>
         </label>
 
-        {/* La case de notification ne s'offre que si la messagerie est ouverte :
+        {/* Les notifications ne s'offrent que si la messagerie est ouverte :
             sans messages à recevoir, il n'y a rien à notifier. */}
         {messagerie && (
-          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
-            <input type="checkbox" checked={emailNotif} onChange={(e) => setEmailNotif(e.target.checked)}
-              style={{ width: 20, height: 20, marginTop: 2, flex: "0 0 auto", accentColor: "var(--green)" }} />
-            <span>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>Recevoir un email quand on m’écrit</span>
-              <span className="champ-aide" style={{ display: "block" }}>
-                Un seul email par conversation et par quart d’heure : une discussion animée ne remplit pas votre boîte.
+          <div className="notif-bloc">
+            <span className="contact-titre">Être prévenu</span>
+
+            <label className="contact-case">
+              <input type="checkbox" checked={emailNotif} onChange={(e) => setEmailNotif(e.target.checked)} />
+              <span>
+                <strong>Par email</strong>
+                <small>Un seul email par conversation et par quart d’heure : une discussion animée ne remplit pas votre boîte.</small>
               </span>
-            </span>
-          </label>
+            </label>
+
+            {/* Le push vaut pour cet appareil-ci, pas pour le compte : le
+                dire évite de croire qu'on a activé son téléphone depuis
+                son ordinateur. */}
+            <label className="contact-case" style={{ opacity: pushActivable ? 1 : 0.55 }}>
+              <input
+                type="checkbox"
+                checked={push === "actif"}
+                disabled={!pushActivable || pushBusy}
+                onChange={(e) => basculerPush(e.target.checked)}
+              />
+              <span>
+                <strong>Sur cet appareil</strong>
+                <small>{AIDE_PUSH[push]}</small>
+              </span>
+            </label>
+          </div>
         )}
 
         {erreur && <p style={{ color: "var(--danger)", fontWeight: 600, fontSize: 13.5, margin: 0 }}>{erreur}</p>}
+
         {enregistre && <p style={{ color: "var(--green)", fontWeight: 700, fontSize: 13.5, margin: 0 }}>Profil enregistré.</p>}
 
         <button className="btn btn-gold" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer"}</button>

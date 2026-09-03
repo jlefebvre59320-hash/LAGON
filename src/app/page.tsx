@@ -47,6 +47,17 @@ function Home() {
   // Le filet du bandeau peut rester en or ; un aplat de chip, non (texte blanc).
   const accentSolid = m ? m.color : "var(--green)";
 
+  /* Les filtres n'existent que dans une catégorie : les laisser actifs en
+     revenant à l'accueil donnerait un fil silencieusement amputé, sans
+     aucun bouton à l'écran pour l'expliquer. */
+  function retourAccueil() {
+    setTab("home");
+    setSub(null);
+    setIntent(null);
+    setMinP("");
+    setMaxP("");
+  }
+
   useEffect(() => { recordView("/"); }, []);
 
   /* L'accueil reste vivant même avant les premières annonces : l'écosystème
@@ -175,7 +186,7 @@ function Home() {
       <div className="header-island" aria-hidden="true"><Mark size={300} detail="full" /></div>
         <div className="container home-header-inner">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-            <Brand onClick={() => { setTab("home"); setSub(null); }} />
+            <Brand onClick={() => retourAccueil()} />
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
               <Link href="/deposer" className="btn btn-gold only-desktop">
                 + Déposer une annonce
@@ -209,7 +220,7 @@ function Home() {
           <nav className="tabs" aria-label="Univers">
             <button
               className={`tab${tab === "home" ? " tab-active" : ""}`}
-              onClick={() => { setTab("home"); setSub(null); }}
+              onClick={() => retourAccueil()}
               aria-current={tab === "home" ? "page" : undefined}
             >
               Accueil
@@ -295,9 +306,12 @@ function Home() {
           </div>
         )}
 
-        {/* Sens de l'annonce : proposé ou recherché. Valable dans tous les
-            univers, donc affiché aussi sur l'accueil. */}
-        <div className="filter-row" style={{ paddingTop: m ? 8 : 14 }}>
+        {/* Filtres réservés aux catégories. L'accueil est un fil, pas un
+            outil de recherche : on y montre les dernières annonces, mises
+            en avant d'abord. Quelqu'un qui sait ce qu'il cherche entre
+            d'abord dans une catégorie — c'est là que trier a un sens. */}
+        {m && (
+        <div className="filter-row" style={{ paddingTop: 8 }}>
           <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
             Afficher
           </span>
@@ -319,8 +333,6 @@ function Home() {
             </button>
           ))}
 
-          {m && (
-            <>
             <span style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 4px", flex: "0 0 auto" }} />
             <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               Prix
@@ -341,9 +353,8 @@ function Home() {
                 effacer
               </button>
             )}
-            </>
-          )}
         </div>
+        )}
       </div>
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 90, flex: 1 }}>
@@ -440,24 +451,13 @@ function Home() {
               </div>
             </section>
           </div>
-        ) : tab === "home" && !query && !intent && listings.length > 3 ? (
-          (() => {
-            /* « À la une » ne met en avant que du disponible : une annonce
-               vendue en vitrine, c'est une invitation à repartir. */
-            const featured = listings.filter((l) => l.status === "active").slice(0, 3);
-            const featIds = new Set(featured.map((l) => l.id));
-            return (
-              <>
-                <div className="featured-row">
-                  {featured.map((l) => <ListingCard key={l.id} l={l} />)}
-                </div>
-                <div className="grid">
-                  {listings.filter((l) => !featIds.has(l.id)).map((l) => <ListingCard key={l.id} l={l} />)}
-                </div>
-              </>
-            );
-          })()
         ) : (
+          /* Un seul fil, du plus utile au plus ancien. La bande « à la une »
+             qui doublait la grille a disparu : elle défilait à l'horizontale,
+             cachait la moitié de son contenu hors écran, et faisait passer
+             deux fois les mêmes annonces sous les yeux. La mise en avant se
+             lit désormais dans le fil lui-même — bordure dorée, badge, et la
+             première place. C'est ce pour quoi elle est payée. */
           <div className="grid">
             {listings.map((l) => <ListingCard key={l.id} l={l} />)}
           </div>

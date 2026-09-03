@@ -11,7 +11,12 @@ export type Conversation = {
   /* Vrai si c'est moi qui ai publié l'annonce — change le vocabulaire
      affiché : on ne dit pas la même chose à un vendeur et à un acheteur. */
   je_suis_auteur: boolean;
+  autre_id: string | null;
   autre_nom: string;
+  /* Deux états distincts : « j'ai bloqué » se lève d'un clic, « je suis
+     bloqué » ne se lève pas. L'écran ne dit pas la même chose. */
+  jai_bloque?: boolean;
+  bloque?: boolean;
   last_message_at: string;
   dernier: string | null;
   non_lus: number;
