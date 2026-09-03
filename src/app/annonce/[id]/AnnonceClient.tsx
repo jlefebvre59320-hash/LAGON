@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
+import { MODULES, intentBadge, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { photoUrl } from "@/components/ListingCard";
 import { SiteHeader, Mark } from "@/components/Brand";
@@ -123,7 +123,7 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
   const sold = l.status === "sold";
   const attrs = Object.entries(l.attrs ?? {}).filter(([, v]) => v !== "" && v != null);
   const wanted = l.intent === "wanted";
-  const badge = INTENT_BADGE[l.intent ?? "offer"];
+  const badge = intentBadge(l.module, l.subcategory, l.intent ?? "offer");
   const wa = l.profile?.phone_wa
     ? `https://wa.me/${l.profile.phone_wa.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour, je vous contacte au sujet de votre annonce "${l.title}" sur Ti Kanal.`)}`
     : null;
@@ -277,17 +277,23 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "16px 0 8px" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "16px 0 8px", alignItems: "center" }}>
+          {/* Sur la fiche, la pastille de sens passe devant la catégorie :
+              savoir si l'annonce vend ou cherche change tout ce qu'on lit
+              ensuite, à commencer par le prix. */}
+          <span className={`intent-badge intent-${badge.sens} intent-grand`}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {badge.sens === "wanted"
+                ? <><circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4.5 4.5" /></>
+                : <><path d="M3 12.5V4a1 1 0 0 1 1-1h8.5L21 11.5 12.5 20z" /><path d="M7.5 7.5h.01" /></>}
+            </svg>
+            {badge.texte}
+          </span>
           <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
             color: m.dark, background: m.soft, padding: "5px 12px", borderRadius: 99 }}>
             {m.label} · {l.subcategory}
           </span>
-          {badge && (
-            <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
-              color: "var(--gold-light)", background: "var(--green)", padding: "5px 12px", borderRadius: 99 }}>
-              {badge}
-            </span>
-          )}
         </div>
         <h1 style={{ margin: "2px 0 8px", fontSize: 24, lineHeight: 1.2 }}>{l.title}</h1>
         <div className="price price-hero" style={{ color: m.color }}>

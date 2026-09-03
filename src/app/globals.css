@@ -1359,3 +1359,75 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* La pastille de sous-catégorie descend d'un cran quand le badge occupe
    le coin : superposées, les deux étiquettes deviennent illisibles. */
 .listing-featured .subcat-pill { top: 38px !important; }
+
+/* --- Sens de l'annonce : proposée ou recherchée ---------------------------
+   Dans un fil mélangé, savoir en un regard si quelqu'un vend ou cherche
+   compte autant que le prix. Deux couleurs pleines, franchement opposées,
+   et volontairement distinctes de l'or : l'or dit « mise en avant », il ne
+   doit jamais dire autre chose.
+
+   Le vert lagon pour ce qui est proposé — la couleur de la maison, le cas
+   courant. Une brique profonde pour ce qui est recherché : chaude, tournée
+   vers l'extérieur, elle se remarque sans agresser sur fond crème. */
+:root {
+  --intent-offer: var(--green);
+  --intent-offer-texte: var(--gold-light);
+  --intent-wanted: #9a4527;
+  --intent-wanted-texte: #ffeee5;
+}
+[data-site="event"], [data-site="guide"], [data-site="food"] {
+  --intent-offer: var(--green);
+  --intent-offer-texte: var(--cream);
+}
+
+.intent-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  /* Nettement plus grosse qu'avant : c'est l'information qui décide si
+     l'annonce concerne le visiteur, elle ne peut pas être une note de bas
+     de page. */
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(5, 40, 44, 0.28);
+}
+.intent-offer { background: var(--intent-offer); color: var(--intent-offer-texte); }
+.intent-wanted { background: var(--intent-wanted); color: var(--intent-wanted-texte); }
+
+/* Sur la fiche, la pastille n'est plus posée sur une photo : elle reprend
+   le flux normal du texte. */
+.intent-grand {
+  position: static;
+  font-size: 11.5px;
+  padding: 6px 13px;
+  box-shadow: none;
+}
+
+/* La carte entière porte la marque, pas seulement la pastille : un liseré
+   gauche suffit à repérer les recherches en balayant la grille du pouce,
+   là où une pastille en bas d'image se voit trop tard. */
+.listing-wanted {
+  border-color: color-mix(in srgb, var(--intent-wanted) 42%, var(--border));
+}
+.listing-wanted::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--intent-wanted);
+  border-radius: var(--radius) 0 0 var(--radius);
+  z-index: 3;
+  pointer-events: none;
+}
+/* Une carte à la fois mise en avant et recherchée garde les deux signaux :
+   le filet doré en tête, le liseré brique à gauche. Ils ne se recouvrent
+   pas, le filet commence après le liseré. */
+.listing-featured.listing-wanted::before { left: 4px; }
