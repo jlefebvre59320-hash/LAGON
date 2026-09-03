@@ -8,6 +8,7 @@ import { SiteHeader, Mark } from "@/components/Brand";
 import { compressImage, thumbKey } from "@/lib/images";
 import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS } from "@/lib/featured";
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
+import { empreinteFichier } from "@/lib/moderation";
 
 
 function Field({ f, v, set }: { f: FieldDef; v: string; set: (k: string, v: string) => void }) {
@@ -132,7 +133,10 @@ export default function Deposer() {
       // Sans compression, une photo de téléphone dépasse souvent la limite du
       // bucket (5 Mo) et le dépôt perd ses images sans explication.
       for (let i = 0; i < files.length; i++) {
-        const { full, thumb } = await compressImage(files[i]);
+        /* L'empreinte de l'original, avant compression : elle permet de
+           reconnaître une photo déjà déposée ailleurs (migration 0032). Si
+           le navigateur ne sait pas la calculer, la photo passe sans. */
+        const [{ full, thumb }, hash] = await Promise.all([compressImage(files[i]), empreinteFichier(files[i])]);
         if (!full.type.match(/^image\/(jpeg|png|webp)$/) || full.size > 5 * 1024 * 1024) {
           throw new Error("photo");
         }
@@ -143,7 +147,7 @@ export default function Deposer() {
         uploadedKeys.push(key);
         const { error: photoError } = await sb
           .from("listing_photos")
-          .insert({ listing_id: listing.id, storage_key: key, position: i });
+          .insert({ listing_id: listing.id, storage_key: key, position: i, ...(hash ? { content_hash: hash } : {}) });
         if (photoError) throw photoError;
         /* La vignette est une optimisation : si elle échoue, l'affichage se
            rabat sur l'original sans faire échouer toute la publication. */
@@ -173,7 +177,11 @@ export default function Deposer() {
          donc nos propres motifs de validation du message de la base. */
       const nôtre = ["phone", "price", "photo", "contact"].includes(message);
       if (!nôtre) console.error("Publication :", cause);
-      setError(message === "contact"
+      /* Un compte suspendu par la modération reçoit le message de la base
+         tel quel : il dit jusqu'à quand, c'est tout ce qu'il faut savoir. */
+      const suspendu = message.startsWith("Votre compte est suspendu");
+      setError(suspendu ? message
+        : message === "contact"
         ? "Indiquez un numéro WhatsApp ou laissez la messagerie du site active : votre annonce doit rester joignable."
         : message === "phone"
         ? "Le numéro WhatsApp doit être au format international, par exemple +590690XXXXXX."

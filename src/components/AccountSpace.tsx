@@ -317,16 +317,42 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                        <span style={{
-                          fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
-                          padding: "3px 9px", borderRadius: 999,
-                          background: l.status === "active" ? m.soft : "var(--cream-dark)",
-                          color: l.status === "active" ? m.dark : "var(--text-muted)",
-                        }}>
-                          {STATUS_LABEL[l.status]}
-                        </span>
+                        {/* Une annonce active mais en attente de vérification
+                            n'est pas « en ligne » : le dire ici évite d'aller
+                            la chercher sur l'accueil sans la trouver. */}
+                        {l.status === "active" && (l.review_state === "pending" || l.review_state === "blocked") ? (
+                          <span style={{
+                            fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+                            padding: "3px 9px", borderRadius: 999,
+                            background: l.review_state === "blocked" ? "color-mix(in srgb, var(--danger) 12%, var(--surface))" : "#fdf1d6",
+                            color: l.review_state === "blocked" ? "var(--danger)" : "#8a5a00",
+                          }}>
+                            {l.review_state === "blocked" ? "Retenue" : "En vérification"}
+                          </span>
+                        ) : (
+                          <span style={{
+                            fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
+                            padding: "3px 9px", borderRadius: 999,
+                            background: l.status === "active" ? m.soft : "var(--cream-dark)",
+                            color: l.status === "active" ? m.dark : "var(--text-muted)",
+                          }}>
+                            {STATUS_LABEL[l.status]}
+                          </span>
+                        )}
                         <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{l.subcategory}</span>
                       </div>
+                      {l.status === "active" && l.review_state === "pending" && (
+                        <p style={{ margin: "6px 0 0", fontSize: 12.5, lineHeight: 1.45, color: "#8a5a00" }}>
+                          {l.moderation_note
+                            ? <>Message de la modération : {l.moderation_note}</>
+                            : "En attente d’un modérateur — elle paraîtra dès validation, sans action de votre part."}
+                        </p>
+                      )}
+                      {l.status === "removed" && l.moderation_note && (
+                        <p style={{ margin: "6px 0 0", fontSize: 12.5, lineHeight: 1.45, color: "var(--text-muted)" }}>
+                          {l.moderation_note}
+                        </p>
+                      )}
 
                       <Link href={`/annonce/${l.id}`} style={{ display: "block", fontWeight: 600, fontSize: 14.5, margin: "4px 0 2px", textDecoration: "none" }}>
                         {l.title}

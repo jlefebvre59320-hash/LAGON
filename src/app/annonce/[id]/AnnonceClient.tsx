@@ -19,6 +19,9 @@ import { MESSAGE_MAX, messageErreur } from "@/lib/messages";
 import { EtoilesLecture } from "@/components/Etoiles";
 import { noteCourte } from "@/lib/membre";
 import { notifierParEmail } from "@/lib/notifierMessage";
+import SignalerPanel from "@/components/SignalerPanel";
+import AvertissementPaiement from "@/components/AvertissementPaiement";
+import { RAISON_LABEL, niveauRisque } from "@/lib/moderation";
 
 export default function AnnoncePage({ initialListing = null }: { initialListing?: Listing | null }) {
   return (
@@ -35,11 +38,11 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
-  const [reporting, setReporting] = useState(false);
+  const [signaler, setSignaler] = useState(false);
   const [reported, setReported] = useState(false);
-  const [reportError, setReportError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [dossierOuvert, setDossierOuvert] = useState<string | null>(null);
   const [moi, setMoi] = useState<string | null>(null);
   const [composer, setComposer] = useState(false);
   const [messageTexte, setMessageTexte] = useState("");
@@ -134,6 +137,12 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
      n'est pas passée, la colonne est absente et la messagerie doit rester
      proposée : c'est le comportement par défaut voulu. */
   const messagerieOuverte = l.profile?.allow_messages !== false;
+  /* Une annonce en attente ou retenue n'est visible que de son auteur et de
+     l'administration (la RLS s'en charge) : si on la voit, c'est qu'on est
+     l'un des deux, et il faut dire clairement dans quel état elle est. */
+  const enVerification = l.review_state === "pending";
+  const retenue = l.review_state === "blocked";
+  const niveau = niveauRisque(l.risk_score ?? 0);
 
   /* Ouvrir le composeur — ou renvoyer vers la connexion. On ne laisse pas
      quelqu'un rédiger un message pour découvrir ensuite qu'il faut un compte :
@@ -167,26 +176,22 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
     router.push(`/messages?c=${data as string}`);
   }
 
-  async function report() {
+  /* Signaler demande un compte : le détour par la connexion se fait avant
+     d'ouvrir le panneau, pas après avoir choisi un motif. */
+  async function ouvrirSignalement() {
     const { data: session } = await supabase().auth.getSession();
     if (!session.session) {
       router.push(connexionUrl(`/annonce/${l!.id}`));
       return;
     }
-    const reason = prompt("Pourquoi signaler cette annonce ?");
-    if (!reason || reason.trim().length < 3) return;
-    setReporting(true);
-    setReportError(null);
-    const { error } = await supabase().from("reports").insert({
-      listing_id: l!.id,
-      reporter_id: session.session.user.id,
-      reason: reason.trim().slice(0, 500),
-    });
-    setReporting(false);
-    if (error) setReportError(error.message.includes("déjà")
-      ? "Cette annonce a déjà été signalée avec votre compte."
-      : "Le signalement n’a pas pu être envoyé. Réessayez dans un instant.");
-    else setReported(true);
+    setMoi(session.session.user.id);
+    setSignaler(true);
+  }
+
+  async function ouvrirDossier() {
+    if (!l) return;
+    const { error } = await supabase().rpc("admin_ouvrir_dossier", { p_listing_id: l.id });
+    setDossierOuvert(error ? `Impossible d’ouvrir le dossier : ${error.message}` : "Dossier ouvert — retrouvez-le dans Administration › Modération.");
   }
 
   async function adminDelete() {
@@ -232,6 +237,28 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 110, maxWidth: 740, flex: 1 }}>
         <Link href="/" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Toutes les annonces</Link>
+
+        {(enVerification || retenue) && (
+          <div className={`verif-bandeau${retenue ? " retenue" : ""}`} role="status">
+            <strong>
+              {retenue
+                ? "Cette annonce a été retenue et n’est pas visible du public."
+                : "Votre annonce est en cours de vérification."}
+            </strong>
+            <span>
+              {l.moderation_note
+                ? l.moderation_note
+                : retenue
+                  ? "Elle contient un élément que Ti Kanal n’accepte pas. Modifiez-la, ou contactez-nous depuis « Donner un avis » si vous pensez à une erreur."
+                  : "Quelques éléments demandent un regard humain — c’est rapide, en général quelques heures. Elle paraîtra dès qu’un modérateur l’aura validée, sans que vous ayez rien à faire."}
+            </span>
+            {monAnnonce && !retenue && (
+              <Link href={`/annonce/${l.id}/modifier`} className="link-quiet" style={{ fontSize: 12.5, color: "inherit", textDecoration: "underline" }}>
+                Modifier l&apos;annonce
+              </Link>
+            )}
+          </div>
+        )}
 
         {sold && (
           <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 12, background: "var(--green)",
@@ -355,29 +382,65 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
           <p style={{ fontSize: 14.5, lineHeight: 1.6, whiteSpace: "pre-wrap", color: "#33403f" }}>{l.description}</p>
         )}
 
+        {!monAnnonce && !sold && <AvertissementPaiement style={{ marginTop: 18 }} />}
+
         <div style={{ marginTop: 18 }}>
           {reported ? (
-            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>✓ Annonce signalée, merci.</span>
-          ) : (
-            <button onClick={report} disabled={reporting} className="link-quiet" style={{ fontSize: 12 }}>
+            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+              ✓ Merci, votre signalement est transmis à la modération.
+            </span>
+          ) : signaler && moi ? (
+            <SignalerPanel
+              listingId={l.id}
+              reporterId={moi}
+              onFait={() => { setSignaler(false); setReported(true); }}
+              onAnnuler={() => setSignaler(false)}
+            />
+          ) : !monAnnonce ? (
+            <button onClick={ouvrirSignalement} className="link-quiet" style={{ fontSize: 12 }}>
               Signaler cette annonce
             </button>
-          )}
-          {reportError && <p role="alert" style={{ color: "var(--danger)", fontSize: 12.5 }}>{reportError}</p>}
+          ) : null}
         </div>
 
         {isAdmin && (
           <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 12,
-            border: "1px dashed var(--danger)", background: "rgba(176,58,46,.05)",
-            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--danger)" }}>
-              Modération
-            </span>
-            <button onClick={adminDelete} disabled={deleting}
-              style={{ background: "var(--danger)", color: "#fff", border: "none", borderRadius: 99,
-                padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: deleting ? 0.6 : 1 }}>
-              {deleting ? "Suppression…" : "Supprimer cette annonce"}
-            </button>
+            border: "1px dashed var(--danger)", background: "rgba(176,58,46,.05)", display: "grid", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--danger)" }}>
+                Modération
+                {l.risk_score != null && (
+                  <span className={`risque-pastille risque-${niveau.cle}`} style={{ marginLeft: 10 }}>
+                    Risque {niveau.label.toLowerCase()} · {l.risk_score}/100
+                  </span>
+                )}
+              </span>
+              <span style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {l.review_state && l.review_state !== "pending" && l.review_state !== "blocked" && (
+                  <button onClick={ouvrirDossier} className="link-quiet" style={{ fontSize: 12.5 }}>
+                    Ouvrir un dossier
+                  </button>
+                )}
+                <button onClick={adminDelete} disabled={deleting}
+                  style={{ background: "var(--danger)", color: "#fff", border: "none", borderRadius: 99,
+                    padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: deleting ? 0.6 : 1 }}>
+                  {deleting ? "Suppression…" : "Supprimer cette annonce"}
+                </button>
+              </span>
+            </div>
+            {/* Les raisons du score, telles que la base les a écrites : la
+                machine explique, l'humain tranche. */}
+            {(l.risk_reasons?.length ?? 0) > 0 && (
+              <ul className="risque-raisons">
+                {l.risk_reasons!.map((r, i) => (
+                  <li key={i}>
+                    <b>{r.points > 0 ? `+${r.points}` : "·"}</b>
+                    <span><strong>{RAISON_LABEL[r.code] ?? r.code}</strong> — {r.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {dossierOuvert && <p style={{ margin: 0, fontSize: 12.5, color: "var(--text-muted)" }}>{dossierOuvert}</p>}
           </div>
         )}
       </main>
