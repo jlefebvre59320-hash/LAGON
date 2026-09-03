@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/Brand";
 import { supabase } from "@/lib/supabase";
@@ -9,6 +9,7 @@ import { connexionUrl, safeExternalUrl } from "@/lib/urls";
 import { MODULES, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import { SITES, type SiteKey } from "@/lib/sites";
 import Dashboard from "@/components/admin/Dashboard";
+import FileModeration from "@/components/admin/FileModeration";
 import styles from "./admin.module.css";
 
 type View = "overview" | "moderation" | "content" | "users" | "analytics" | "activity";
@@ -56,6 +57,12 @@ export default function AdminPage() {
   const [userFilter,setUserFilter] = useState<"all"|"admin"|"banned">("all");
   const [contentSearch,setContentSearch] = useState("");
   const [contentFilter,setContentFilter] = useState<"all"|Kind>("all");
+  /* La file de modération (0032) remplace la liste brute des signalements
+     dès qu'elle existe : les signalements y ouvrent des dossiers. Tant
+     qu'elle n'est pas là, l'ancienne liste reste affichée. */
+  const [modDispo,setModDispo] = useState(false);
+  const [modNb,setModNb] = useState(0);
+  const onEtatMod = useCallback((dispo:boolean,nb:number)=>{setModDispo(dispo);setModNb(nb);},[]);
 
   const load = async () => {
     setError(null);
@@ -90,7 +97,8 @@ export default function AdminPage() {
     if(error||!data){setDenied(true);return;} setStats(data as Stats); await load();
   })();},[router]);
 
-  const queue=events.length+claims.length+reports.length+feedback.length;
+  const aVerifier=modDispo?modNb:reports.length;
+  const queue=events.length+claims.length+aVerifier+feedback.length;
   const shownUsers=useMemo(()=>{const q=userSearch.trim().toLowerCase();return users.filter(x=>(userFilter==="all"||(userFilter==="admin"&&x.is_admin)||(userFilter==="banned"&&x.is_banned))&&(!q||`${x.email} ${x.display_name}`.toLowerCase().includes(q)));},[users,userSearch,userFilter]);
   const shownContent=useMemo(()=>{const q=contentSearch.trim().toLowerCase();return content.filter(x=>(contentFilter==="all"||x.kind===contentFilter)&&(!q||`${x.title} ${x.detail}`.toLowerCase().includes(q)));},[content,contentSearch,contentFilter]);
 
@@ -110,8 +118,14 @@ export default function AdminPage() {
     <header className={styles.heading}><div><span>Ti Kanal</span><h1>Administration</h1><p>Les urgences et les outils de pilotage au même endroit.</p></div><Link href="/mon-espace">Mon espace →</Link></header>
     <nav className={styles.nav} aria-label="Sections de l’administration">{VIEWS.map(x=><button key={x.key} onClick={()=>setView(x.key)} className={view===x.key?styles.active:""} aria-current={view===x.key?"page":undefined}>{x.label}{x.key==="moderation"&&queue>0&&<b>{queue}</b>}</button>)}</nav>
     {error&&<p className={styles.error} role="alert">{error}</p>}
-    {view==="overview"&&<Overview stats={stats} queue={[events.length,reports.length,claims.length,feedback.length]} users={users} go={setView}/>}
-    {view==="moderation"&&<Moderation events={events} reports={reports} claims={claims} feedback={feedback} busy={busy} setEvent={setEvent} setReport={setReport} setClaim={setClaim} setFeedback={resolveFeedback}/>}
+    {view==="overview"&&<Overview stats={stats} queue={[events.length,aVerifier,claims.length,feedback.length]} users={users} go={setView}/>}
+    {/* La file reste montée quel que soit l'onglet : c'est elle qui donne le
+        compteur de la navigation, et on ne la recharge pas à chaque passage. */}
+    <div hidden={view!=="moderation"}><div className={styles.stack}>
+      <Head title="Modération" text={queue?"Les annonces à vérifier d’abord, puis les demandes classées par type.":"Rien n’attend votre intervention. La file, la surveillance et les réglages restent accessibles ci-dessous."}/>
+      <FileModeration onEtat={onEtatMod}/>
+    </div></div>
+    {view==="moderation"&&<Moderation events={events} reports={modDispo?[]:reports} claims={claims} feedback={feedback} busy={busy} setEvent={setEvent} setReport={setReport} setClaim={setClaim} setFeedback={resolveFeedback}/>}
     {view==="content"&&<ContentPanel items={shownContent} total={content.length} search={contentSearch} setSearch={setContentSearch} filter={contentFilter} setFilter={setContentFilter} busy={busy} toggle={toggleContent}/>}
     {view==="users"&&<UsersPanel users={shownUsers} total={users.length} search={userSearch} setSearch={setUserSearch} filter={userFilter} setFilter={setUserFilter} busy={busy} toggleAdmin={toggleAdmin} toggleBan={toggleBan}/>}
     {view==="analytics"&&<Analytics stats={stats}/>}
@@ -121,7 +135,7 @@ export default function AdminPage() {
 
 function Overview({stats,queue,users,go}:{stats:Stats;queue:number[];users:AdminUser[];go:(v:View)=>void}){const labels=["Événements","Signalements","Établissements","Retours"];return <div className={styles.stack}><Head title="À traiter" text={queue.reduce((a,b)=>a+b,0)?"Les actions qui demandent votre attention.":"Tout est à jour."}/><div className={styles.actions}>{queue.map((n,i)=><button key={labels[i]} onClick={()=>go("moderation")} className={n?styles.attention:styles.ok}><span>{labels[i]}</span><strong>{n}</strong><small>{n?"en attente":"À jour"}</small></button>)}</div><Section title="Activité du site"><Tiles data={[["Annonces en ligne",stats.listings_active,`${stats.listings_7d} nouvelles sur 7 j`],["Visiteurs sur 7 j",stats.visitors_7d,`${stats.visits_7d} pages vues`],["Comptes",stats.users_total,`${stats.users_30d} nouveaux sur 30 j`],["Administrateurs",users.filter(x=>x.is_admin).length,`${users.filter(x=>x.is_banned).length} compte(s) banni(s)`]]}/></Section><div className={styles.quick}>{[["Gérer les contenus","Publier ou masquer une fiche","content"],["Rechercher un compte","Rôles et bannissement","users"],["Voir les statistiques","Fréquentation par univers","analytics"]].map(x=><button key={x[0]} onClick={()=>go(x[2] as View)}><strong>{x[0]}</strong><span>{x[1]} →</span></button>)}</div></div>}
 
-function Moderation({events,reports,claims,feedback,busy,setEvent,setReport,setClaim,setFeedback}:{events:PendingEvent[];reports:Report[];claims:Claim[];feedback:Feedback[];busy:string|null;setEvent:(x:PendingEvent,s:"approved"|"rejected")=>void;setReport:(x:Report,r:boolean)=>void;setClaim:(x:Claim,a:"grant"|"hide"|"done")=>void;setFeedback:(x:Feedback)=>void}){if(!events.length&&!reports.length&&!claims.length&&!feedback.length)return <div className={styles.stack}><Head title="Modération" text="Les demandes sont classées par type."/><Empty title="Rien à modérer" text="Aucun événement, signalement ou message n’attend votre intervention."/></div>;return <div className={styles.stack}><Head title="Modération" text="Les demandes sont classées par type pour décider plus vite."/>
+function Moderation({events,reports,claims,feedback,busy,setEvent,setReport,setClaim,setFeedback}:{events:PendingEvent[];reports:Report[];claims:Claim[];feedback:Feedback[];busy:string|null;setEvent:(x:PendingEvent,s:"approved"|"rejected")=>void;setReport:(x:Report,r:boolean)=>void;setClaim:(x:Claim,a:"grant"|"hide"|"done")=>void;setFeedback:(x:Feedback)=>void}){if(!events.length&&!reports.length&&!claims.length&&!feedback.length)return null;return <div className={styles.stack} style={{marginTop:28}}>
   {!!events.length&&<Section title={`Événements à valider (${events.length})`} text="Rien ne paraît sans votre accord.">{events.map(x=><Card key={x.id} badge={x.category} title={x.title} meta={`${new Date(x.starts_at).toLocaleString("fr-FR",{timeZone:"America/St_Barthelemy",dateStyle:"medium",timeStyle:"short"})}${x.venue?` · ${x.venue}`:""}`} body={x.description} extra={<>Par <strong>{x.organizer}</strong> · {x.contact}{safeExternalUrl(x.link)&&<> · <a href={safeExternalUrl(x.link)!} target="_blank" rel="noopener noreferrer">lien ↗</a></>}</>} actions={<><button className="btn" disabled={busy===x.id} onClick={()=>setEvent(x,"approved")}>Publier</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>confirm("Refuser cet événement ?")&&setEvent(x,"rejected")}>Refuser</button></>}/>)}</Section>}
   {!!reports.length&&<Section title={`Signalements (${reports.length})`} text="Vérifiez l’annonce avant de la retirer.">{reports.map(x=><Card key={x.id} badge="Signalement" title={x.listing?.title??"Annonce supprimée"} href={`/annonce/${x.listing_id}`} meta={shortDate(x.created_at)} body={x.reason} actions={<><button className={`btn ${styles.danger}`} disabled={busy===x.id} onClick={()=>confirm("Retirer cette annonce ?")&&setReport(x,true)}>Retirer</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>setReport(x,false)}>Classer sans suite</button></>}/>)}</Section>}
   {!!claims.length&&<Section title={`Demandes des établissements (${claims.length})`} text="Vérifiez le contact avant un transfert de gestion.">{claims.map(x=><Card key={x.id} badge={CLAIM[x.kind]} danger={x.kind==="removal"} title={x.restaurant?.name??"Fiche supprimée"} href={`/food/resto/${x.restaurant_id}`} meta={shortDate(x.created_at)} body={x.message} extra={<>Contact : <strong>{x.contact}</strong>{x.kind==="claim"&&!x.user_id&&" · demande sans compte"}</>} actions={<>{x.kind==="claim"&&x.user_id&&<button className="btn" disabled={busy===x.id} onClick={()=>confirm("Donner la gestion de cette fiche ?")&&setClaim(x,"grant")}>Donner la main</button>}{x.kind==="removal"&&<button className={`btn ${styles.danger}`} disabled={busy===x.id} onClick={()=>confirm("Masquer cette fiche ?")&&setClaim(x,"hide")}>Masquer</button>}<button className="link-quiet" disabled={busy===x.id} onClick={()=>setClaim(x,"done")}>Traité sans action</button></>}/>)}</Section>}

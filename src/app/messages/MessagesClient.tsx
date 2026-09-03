@@ -13,6 +13,7 @@ import {
   type Conversation, type Message,
 } from "@/lib/messages";
 import NoterPanel from "@/components/NoterPanel";
+import AvertissementPaiement from "@/components/AvertissementPaiement";
 
 export default function MessagesClient() {
   const router = useRouter();
@@ -265,6 +266,10 @@ function Fil({
           />
         </div>
       )}
+
+      {/* Le rappel arrive avant le premier message, là où la tentation de
+          « réserver » contre un acompte se joue. */}
+      {!retiree && <AvertissementPaiement compact style={{ marginBottom: 10 }} />}
 
       <div className="fil">
         {fil.map((m) => (
