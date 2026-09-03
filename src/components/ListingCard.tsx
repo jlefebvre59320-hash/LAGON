@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { MODULES, intentBadge, eur, priceSuffix } from "@/lib/taxonomy";
+import { MODULES, intentBadge, eur, priceSuffix, prixAbsent } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { Mark } from "@/components/Brand";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -142,7 +142,7 @@ export default function ListingCard({ l }: { l: Listing }) {
         <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, color: "var(--text)" }}>{l.title}</span>
         <span className="price" style={{ fontSize: 18, color: m.color, marginTop: 2 }}>
           {price == null
-            ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
+            ? prixAbsent(l.module, l.intent ?? "offer")
             : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </span>
         <span style={{ fontSize: 13, color: "var(--text-muted)", marginTop: "auto", paddingTop: 6 }}>

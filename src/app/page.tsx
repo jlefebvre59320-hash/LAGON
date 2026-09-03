@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
+import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_FILTER, ZONES_SERVICE, TARIFS_SERVICE, DISPOS_SERVICE, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import ListingCard from "@/components/ListingCard";
 import { AccountButton, Brand, Mark } from "@/components/Brand";
@@ -27,6 +27,32 @@ export default function HomePage() {
   );
 }
 
+/* Les trois filtres de services partagent la même mise en forme : une seule
+   définition évite qu'ils divergent au premier ajustement. */
+function SelectFiltre({
+  valeur, set, defaut, options, aria,
+}: {
+  valeur: string; set: (v: string) => void;
+  defaut: string; options: readonly string[]; aria: string;
+}) {
+  return (
+    <select
+      className="input"
+      value={valeur}
+      onChange={(e) => set(e.target.value)}
+      aria-label={aria}
+      style={{
+        width: "auto", minHeight: 38, padding: "8px 32px 8px 13px",
+        borderRadius: 999, fontSize: 13.5, flex: "0 0 auto", fontWeight: 600,
+        ...(valeur ? { borderColor: "var(--green)", color: "var(--green)" } : {}),
+      }}
+    >
+      <option value="">{defaut}</option>
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
+
 function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<string | null>(null);
@@ -34,6 +60,12 @@ function Home() {
   const [query, setQuery] = useState("");
   const [minP, setMinP] = useState("");
   const [maxP, setMaxP] = useState("");
+  /* Critères propres aux services : ils ne s'affichent que dans cet univers,
+     et se vident en le quittant — un filtre invisible qui continue d'agir
+     donne une liste inexplicablement courte. */
+  const [zone, setZone] = useState("");
+  const [tarif, setTarif] = useState("");
+  const [dispo, setDispo] = useState("");
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +88,13 @@ function Home() {
     setIntent(null);
     setMinP("");
     setMaxP("");
+    viderCriteresService();
+  }
+
+  function viderCriteresService() {
+    setZone("");
+    setTarif("");
+    setDispo("");
   }
 
   useEffect(() => { recordView("/"); }, []);
@@ -113,6 +152,17 @@ function Home() {
         if (intent) r = r.eq("intent", intent) as T;
         if (minP !== "") r = r.gte("price_cents", parseInt(minP, 10) * 100) as T;
         if (maxP !== "") r = r.lte("price_cents", parseInt(maxP, 10) * 100) as T;
+        /* contains plutôt qu'une comparaison sur attrs->>clé : les libellés
+           contiennent espaces et apostrophes, que la syntaxe de chemin de
+           PostgREST digère mal. L'index GIN de la migration 0030 sert
+           justement cet opérateur. */
+        const critere: Record<string, string> = {};
+        if (activeModule === "service") {
+          if (zone) critere["Zone d'intervention"] = zone;
+          if (tarif) critere["Tarification"] = tarif;
+          if (dispo) critere["Disponibilité"] = dispo;
+        }
+        if (Object.keys(critere).length > 0) r = r.contains("attrs", critere) as T;
         if (query.trim()) r = r.textSearch("search_tsv", query.trim(), { type: "websearch", config: "french" }) as T;
         return r;
       };
@@ -150,7 +200,7 @@ function Home() {
     })();
 
     return () => { cancelled = true; };
-  }, [activeModule, sub, intent, query, minP, maxP]);
+  }, [activeModule, sub, intent, query, minP, maxP, zone, tarif, dispo]);
 
   const subs = useMemo(() => (m ? m.subs : []), [m]);
 
@@ -229,7 +279,7 @@ function Home() {
               <button
                 key={key}
                 className={`tab${tab === key ? " tab-active" : ""}`}
-                onClick={() => { setTab(key); setSub(null); }}
+                onClick={() => { setTab(key); setSub(null); viderCriteresService(); }}
                 aria-current={tab === key ? "page" : undefined}
                 style={tab === key ? { background: MODULES[key].color, borderColor: MODULES[key].color, color: "#fff" } : undefined}
               >
@@ -354,6 +404,22 @@ function Home() {
               </button>
             )}
         </div>
+        )}
+
+        {/* Trois questions décident si l'on appelle un artisan : vient-il
+            jusqu'à moi, comment facture-t-il, et quand est-il disponible.
+            Ce sont exactement les trois filtres — pas un de plus. */}
+        {activeModule === "service" && (
+          <div className="filter-row" style={{ paddingTop: 0, paddingBottom: 4 }}>
+            <SelectFiltre valeur={zone} set={setZone} defaut="Toute zone" options={ZONES_SERVICE} aria="Zone d'intervention" />
+            <SelectFiltre valeur={tarif} set={setTarif} defaut="Tout tarif" options={TARIFS_SERVICE} aria="Tarification" />
+            <SelectFiltre valeur={dispo} set={setDispo} defaut="Toute disponibilité" options={DISPOS_SERVICE} aria="Disponibilité" />
+            {(zone || tarif || dispo) && (
+              <button className="link-quiet" onClick={viderCriteresService} style={{ whiteSpace: "nowrap" }}>
+                effacer
+              </button>
+            )}
+          </div>
         )}
       </div>
 

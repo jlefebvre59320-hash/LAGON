@@ -32,6 +32,7 @@ export default function ProfilForm() {
 
   const [nom, setNom] = useState("");
   const [phone, setPhone] = useState("");
+  const [quartier, setQuartier] = useState("");
   const [messagerie, setMessagerie] = useState(true);
   const [emailNotif, setEmailNotif] = useState(true);
   const [push, setPush] = useState<EtatPush>("inconnu");
@@ -53,18 +54,19 @@ export default function ProfilForm() {
       setEmailActuel(session.session.user.email ?? "");
       const { data } = await sb
         .from("profiles")
-        .select("display_name, phone_wa, allow_messages, notify_email")
+        .select("display_name, phone_wa, allow_messages, notify_email, quartier")
         .eq("id", session.session.user.id)
         .maybeSingle();
       if (data) {
         const p = data as {
           display_name: string; phone_wa: string | null;
-          allow_messages?: boolean; notify_email?: boolean;
+          allow_messages?: boolean; notify_email?: boolean; quartier?: string | null;
         };
         setNom(p.display_name ?? "");
         setPhone(p.phone_wa ?? "");
         setMessagerie(p.allow_messages !== false);
         setEmailNotif(p.notify_email !== false);
+        setQuartier(p.quartier ?? "");
       }
       setPush(await etatPush());
       setChargement(false);
@@ -123,6 +125,7 @@ export default function ProfilForm() {
       .update({
         display_name: nomPropre, phone_wa: numero,
         allow_messages: messagerie, notify_email: emailNotif,
+        quartier: quartier.trim() || null,
       })
       .eq("id", session.session.user.id)
       .select("id");
@@ -180,6 +183,13 @@ export default function ProfilForm() {
           <input className="input" value={nom} onChange={(e) => setNom(e.target.value)}
             maxLength={80} placeholder="Le nom vu sur vos annonces" />
           <span className="champ-aide">C’est ce que voient les autres sur vos annonces et dans vos messages.</span>
+        </label>
+
+        <label style={{ display: "grid", gap: 5 }}>
+          <span className="champ-label">Quartier</span>
+          <input className="input" value={quartier} onChange={(e) => setQuartier(e.target.value)}
+            maxLength={60} placeholder="ex. Lorient, Gustavia, Saint-Jean" />
+          <span className="champ-aide">Affiché sur votre fiche publique. Facultatif — sinon c’est le quartier de vos annonces qui apparaît.</span>
         </label>
 
         <label style={{ display: "grid", gap: 5 }}>

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { MODULES, intentBadge, eur, priceSuffix } from "@/lib/taxonomy";
+import { MODULES, intentBadge, eur, priceSuffix, prixAbsent } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { photoUrl } from "@/components/ListingCard";
 import { SiteHeader, Mark } from "@/components/Brand";
@@ -16,6 +16,8 @@ import { connexionUrl } from "@/lib/urls";
 import { serializeJsonLd } from "@/lib/jsonLd";
 import { thumbKey } from "@/lib/images";
 import { MESSAGE_MAX, messageErreur } from "@/lib/messages";
+import { EtoilesLecture } from "@/components/Etoiles";
+import { noteCourte } from "@/lib/membre";
 import { notifierParEmail } from "@/lib/notifierMessage";
 
 export default function AnnoncePage({ initialListing = null }: { initialListing?: Listing | null }) {
@@ -68,7 +70,7 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
       const { data, error } = await supabase()
         .from("listings")
         .select(
-          "*, photos:listing_photos(storage_key, position), profile:profiles!listings_user_id_fkey(display_name, phone_wa, allow_messages)"
+          "*, photos:listing_photos(storage_key, position), profile:profiles!listings_user_id_fkey(display_name, phone_wa, allow_messages, rating_avg, rating_count)"
         )
         .eq("id", id)
         .single();
@@ -298,13 +300,12 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
         <h1 style={{ margin: "2px 0 8px", fontSize: 24, lineHeight: 1.2 }}>{l.title}</h1>
         <div className="price price-hero" style={{ color: m.color }}>
           {price == null
-            ? wanted ? "Budget à discuter" : l.module === "job" ? "Selon profil" : "Prix à discuter"
+            ? prixAbsent(l.module, l.intent ?? "offer")
             : (wanted ? "Budget " : "") + price + priceSuffix(l.module, l.subcategory)}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "6px 0 18px" }}>
           <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
             {l.location} · publié le {new Date(l.created_at).toLocaleDateString("fr-FR")}
-            {l.profile?.display_name ? ` · par ${l.profile.display_name}` : ""}
           </span>
           <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
             <ShareButton
@@ -315,6 +316,28 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
             <FavoriteButton targetId={l.id} variant="plain" label />
           </span>
         </div>
+
+        {/* Qui vend : le nom mène à la fiche publique — ancienneté, annonces,
+            avis — pour savoir à qui on a affaire avant d'écrire ou de se
+            déplacer. Les étoiles n'apparaissent qu'avec au moins une note :
+            « 0 étoile » n'est pas une information, c'est une accusation. */}
+        {l.profile?.display_name && (
+          <Link href={`/membre/${l.user_id}`} className="vendeur-lien" style={{ marginBottom: 16 }}>
+            <span className="vendeur-avatar" aria-hidden="true">
+              {l.profile.display_name.trim().charAt(0).toUpperCase() || "?"}
+            </span>
+            <span className="vendeur-nom">{l.profile.display_name}</span>
+            {(l.profile.rating_count ?? 0) > 0 && l.profile.rating_avg != null ? (
+              <span className="vendeur-note">
+                <EtoilesLecture note={l.profile.rating_avg} taille={13} />
+                <b>{noteCourte(l.profile.rating_avg)}</b>
+                <span>({l.profile.rating_count})</span>
+              </span>
+            ) : (
+              <span className="vendeur-note">Voir la fiche →</span>
+            )}
+          </Link>
+        )}
 
         {attrs.length > 0 && (
           <div className="panel" style={{ marginBottom: 18, overflow: "hidden" }}>
