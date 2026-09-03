@@ -27,6 +27,7 @@ export default function MessagesClient() {
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [blocageBusy, setBlocageBusy] = useState(false);
   const basDuFil = useRef<HTMLDivElement>(null);
 
   useEffect(() => { recordView("/messages"); }, []);
@@ -99,6 +100,33 @@ export default function MessagesClient() {
     chargerConversations();
   }
 
+  /* Bloquer, c'est une action qu'on regrette rarement mais qu'on déclenche
+     parfois par accident : la confirmation dit exactement ce qui va se
+     passer, dans les deux sens, avant de la poser. */
+  async function basculerBlocage(conv: Conversation) {
+    if (!conv.autre_id) return;
+    const bloquer = !conv.jai_bloque;
+    if (bloquer && !confirm(
+      `Bloquer ${conv.autre_nom} ?\n\n`
+      + "Cette personne ne pourra plus vous écrire, sur aucune de vos annonces, "
+      + "et vous ne pourrez plus lui écrire non plus.\n"
+      + "La conversation reste lisible, et vous pouvez la débloquer à tout moment."
+    )) return;
+
+    setBlocageBusy(true);
+    setErreur(null);
+    const { error } = await supabase().rpc(
+      bloquer ? "bloquer_personne" : "debloquer_personne",
+      { p_user_id: conv.autre_id },
+    );
+    setBlocageBusy(false);
+    if (error) {
+      setErreur(messageErreur(error, "L’opération n’a pas abouti."));
+      return;
+    }
+    await chargerConversations();
+  }
+
   const conv = convs.find((c) => c.id === actif) ?? null;
 
   return (
@@ -124,7 +152,8 @@ export default function MessagesClient() {
           <p style={{ color: "var(--text-muted)" }}>Chargement…</p>
         ) : conv ? (
           <Fil conv={conv} fil={fil} userId={userId} basDuFil={basDuFil}
-            texte={texte} setTexte={setTexte} envoi={envoi} envoyer={envoyer} />
+            texte={texte} setTexte={setTexte} envoi={envoi} envoyer={envoyer}
+            blocageBusy={blocageBusy} basculerBlocage={basculerBlocage} />
         ) : convs.length === 0 ? (
           <div className="panel gold-frame" style={{ textAlign: "center", padding: "40px 20px" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
@@ -171,13 +200,16 @@ export default function MessagesClient() {
 
 function Fil({
   conv, fil, userId, basDuFil, texte, setTexte, envoi, envoyer,
+  blocageBusy, basculerBlocage,
 }: {
   conv: Conversation; fil: Message[]; userId: string | null;
   basDuFil: React.RefObject<HTMLDivElement | null>;
   texte: string; setTexte: (v: string) => void;
   envoi: boolean; envoyer: (e: React.FormEvent) => void;
+  blocageBusy: boolean; basculerBlocage: (c: Conversation) => void;
 }) {
   const retiree = conv.listing_status !== "active";
+  const bloque = conv.bloque === true;
   return (
     <>
       <Link href={`/annonce/${conv.listing_id}`} className="panel conv-entete">
@@ -197,6 +229,17 @@ function Fil({
         <span style={{ marginLeft: "auto", color: "var(--gold-deep)", fontSize: 18 }} aria-hidden="true">→</span>
       </Link>
 
+      {/* Le blocage vit hors du lien vers l'annonce : un bouton imbriqué dans
+          un lien se déclenche au mauvais endroit une fois sur deux. */}
+      {conv.autre_id && (
+        <div className="fil-actions">
+          <button type="button" className="link-quiet" disabled={blocageBusy}
+            onClick={() => basculerBlocage(conv)}>
+            {conv.jai_bloque ? `Débloquer ${conv.autre_nom}` : `Bloquer ${conv.autre_nom}`}
+          </button>
+        </div>
+      )}
+
       <div className="fil">
         {fil.map((m) => (
           <div key={m.id} className={`bulle${m.sender_id === userId ? " bulle-moi" : ""}`}>
@@ -207,7 +250,18 @@ function Fil({
         <div ref={basDuFil} />
       </div>
 
-      {retiree ? (
+      {bloque ? (
+        /* Deux formulations, parce que ce ne sont pas deux situations
+           identiques : celui qui a bloqué peut revenir en arrière, celui
+           qui l'est ne le peut pas et doit le comprendre sans ambiguïté. */
+        <p className="panel" style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>
+          {conv.jai_bloque
+            /* Un tiret plutôt qu'un point : beaucoup de noms affichés se
+                terminent déjà par une initiale ponctuée (« Marie L. »). */
+            ? `Vous avez bloqué ${conv.autre_nom} — personne ne peut plus écrire dans cette conversation, et l’historique reste consultable.`
+            : "Vous ne pouvez plus écrire dans cette conversation."}
+        </p>
+      ) : retiree ? (
         <p className="panel" style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>
           Cette annonce n&apos;est plus en ligne. La conversation reste consultable, mais on ne peut plus y répondre.
         </p>
