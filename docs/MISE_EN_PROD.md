@@ -101,6 +101,23 @@ remplacez l'objet et collez le contenu HTML du fichier correspondant.
 - **Authentication → Users** : supprimez les comptes de test
   (gardez votre compte admin).
 
+## 6 bis. Modération des photos (Sightengine)
+
+Le texte des annonces et des messages est filtré par la base (migrations
+0032 et 0033), sans rien à configurer. L'analyse des **photos** passe par un
+service externe, Sightengine, gratuit jusqu'à 500 images par mois :
+
+1. Compte sur **sightengine.com** → **API keys** : notez l'API user et
+   l'API secret.
+2. **Vercel → Settings → Environment Variables** (Production) :
+   `SIGHTENGINE_USER` et `SIGHTENGINE_SECRET`. Sans préfixe `NEXT_PUBLIC_`.
+3. **Redeploy**.
+
+Sans ces deux variables, la route `/api/moderer-photo` ne fait rien et la
+modération continue avec le texte seul. Les seuils (nudité, arme, drogue,
+violence, symbole haineux) se règlent dans Administration › Modération ›
+Réglages, et l'interrupteur « Analyse des photos » coupe le tout.
+
 ## 7. Après le lancement (non bloquant)
 
 - **Mentions légales** : remplir les champs entre [crochets] dans

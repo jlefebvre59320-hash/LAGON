@@ -8,7 +8,8 @@ import { SiteHeader, Mark } from "@/components/Brand";
 import { compressImage, thumbKey } from "@/lib/images";
 import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS } from "@/lib/featured";
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
-import { empreinteFichier } from "@/lib/moderation";
+import { empreinteFichier, MESSAGE_CONTENU_REFUSE } from "@/lib/moderation";
+import { modererPhoto } from "@/lib/modererPhoto";
 
 
 function Field({ f, v, set }: { f: FieldDef; v: string; set: (k: string, v: string) => void }) {
@@ -149,6 +150,8 @@ export default function Deposer() {
           .from("listing_photos")
           .insert({ listing_id: listing.id, storage_key: key, position: i, ...(hash ? { content_hash: hash } : {}) });
         if (photoError) throw photoError;
+        // L'analyse d'image part en tâche de fond ; la base réévaluera l'annonce.
+        void modererPhoto(listing.id, key);
         /* La vignette est une optimisation : si elle échoue, l'affichage se
            rabat sur l'original sans faire échouer toute la publication. */
         if (thumb) {
@@ -158,6 +161,15 @@ export default function Deposer() {
         }
       }
 
+      /* La base a évalué l'annonce à la volée. Retenue : on le dit ici,
+         sans les détails, et on ne renvoie pas vers une fiche invisible.
+         En attente : la fiche l'explique elle-même, on y va. */
+      const { data: etat } = await sb.from("listings").select("review_state").eq("id", listing.id).maybeSingle();
+      if ((etat as { review_state?: string } | null)?.review_state === "blocked") {
+        setError(`${MESSAGE_CONTENU_REFUSE} Elle a été transmise à la modération et n’est pas visible. Vous la retrouvez dans Mon espace.`);
+        setPublishing(false);
+        return;
+      }
       router.push(`/annonce/${listing.id}`);
     } catch (cause) {
       // Pas d'annonce incomplète : on nettoie les objets et la ligne créés

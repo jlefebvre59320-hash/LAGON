@@ -9,6 +9,8 @@ import { supabase } from "@/lib/supabase";
 import { fieldsFor, INTENT_LABEL, INTENT_ORDER, MODULES, type FieldDef, type Intent } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
+import { MESSAGE_CONTENU_REFUSE } from "@/lib/moderation";
+import { modererPhoto } from "@/lib/modererPhoto";
 
 type Photo = { id: string; storage_key: string; position: number };
 type EditableListing = Omit<Listing, "photos"> & { photos: Photo[] };
@@ -181,6 +183,7 @@ export default function ModifierAnnonce() {
         if (photoError || !photoRow) throw photoError ?? new Error("photo");
         insertedPhotoIds.push(photoRow.id);
         addedPhotos.push(photoRow as Photo);
+        void modererPhoto(listing.id, key);
         if (thumb) {
           const thumbnailKey = thumbKey(key);
           const { error: thumbError } = await sb.storage.from("photos").upload(thumbnailKey, thumb, { upsert: false });
@@ -209,7 +212,18 @@ export default function ModifierAnnonce() {
       photos: [...listing.photos, ...addedPhotos],
     });
     setFiles([]);
-    setNotice("Modifications enregistrées.");
+    /* Le texte a été réévalué par la base : si l'annonce est retenue ou
+       repasse en vérification, l'auteur doit le lire ici, pas le découvrir
+       en cherchant son annonce sur l'accueil. */
+    const { data: etat } = await sb.from("listings").select("review_state").eq("id", listing.id).maybeSingle();
+    const reviewState = (etat as { review_state?: string } | null)?.review_state;
+    if (reviewState === "blocked") {
+      setError(`Modifications enregistrées, mais ${MESSAGE_CONTENU_REFUSE.charAt(0).toLowerCase()}${MESSAGE_CONTENU_REFUSE.slice(1)} Elle reste invisible tant qu’elle n’est pas corrigée.`);
+    } else if (reviewState === "pending") {
+      setNotice("Modifications enregistrées. L’annonce passe par une courte vérification avant de réapparaître.");
+    } else {
+      setNotice("Modifications enregistrées.");
+    }
     setSaving(false);
   }
 
