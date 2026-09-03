@@ -1,564 +1,155 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { MODULES, MODULE_ORDER, INTENT_FILTER, type Intent, type ModuleKey } from "@/lib/taxonomy";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/Brand";
-import { SITES, type SiteKey } from "@/lib/sites";
+import { supabase } from "@/lib/supabase";
 import { connexionUrl, safeExternalUrl } from "@/lib/urls";
+import { MODULES, type Intent, type ModuleKey } from "@/lib/taxonomy";
+import { SITES, type SiteKey } from "@/lib/sites";
 import Dashboard from "@/components/admin/Dashboard";
+import styles from "./admin.module.css";
 
-type Daily = { day: string; visits: number; visitors?: number };
-type Top = { id: string; title: string; module: ModuleKey; views: number };
-
-type Claim = {
-  id: string;
-  restaurant_id: string;
-  kind: "claim" | "correction" | "removal";
-  message: string;
-  contact: string;
-  user_id: string | null;
-  created_at: string;
-  restaurant: { name: string } | null;
-};
-
-type Report = {
-  id: string; listing_id: string; reason: string; created_at: string;
-  listing: { title: string; status: string } | null;
-};
-type Feedback = {
-  id: string; kind: "idee" | "probleme" | "avis"; message: string;
-  contact: string | null; created_at: string;
-};
-type PendingEvent = {
-  id: string; title: string; category: string; venue: string; quartier: string;
-  starts_at: string; price: string; description: string; link: string | null;
-  organizer: string; contact: string; created_at: string;
-};
-type AdminUser = {
-  id: string; email: string; display_name: string; created_at: string;
-  last_sign_in: string | null; is_banned: boolean; is_admin: boolean; listings: number;
-};
-const FEEDBACK_KIND: Record<Feedback["kind"], string> = {
-  idee: "Idée", probleme: "Problème", avis: "Avis",
+type View = "overview" | "moderation" | "content" | "users" | "analytics" | "activity";
+type Kind = "listing" | "restaurant" | "place" | "event";
+type Claim = { id:string; restaurant_id:string; kind:"claim"|"correction"|"removal"; message:string; contact:string; user_id:string|null; created_at:string; restaurant:{name:string}|null };
+type Report = { id:string; listing_id:string; reason:string; created_at:string; listing:{title:string;status:string}|null };
+type Feedback = { id:string; kind:"idee"|"probleme"|"avis"; message:string; contact:string|null; created_at:string };
+type PendingEvent = { id:string; title:string; category:string; venue:string; quartier:string; starts_at:string; price:string; description:string; link:string|null; organizer:string; contact:string; created_at:string };
+type AdminUser = { id:string; email:string; display_name:string; created_at:string; last_sign_in:string|null; is_banned:boolean; is_admin:boolean; listings:number };
+type Content = { id:string; kind:Kind; title:string; detail:string; status:string; date:string|null; href:string };
+type Audit = { id:number; actor_email:string|null; action:string; target_type:string; details:Record<string,string|null>; created_at:string };
+type Stats = {
+  listings_total:number; listings_active:number; listings_30d:number; listings_7d:number; users_total:number; users_30d:number;
+  views_total:number; views_7d:number; visits_7d:number; visitors_7d:number; visits_30d?:number; visitors_30d?:number; visitors_total?:number;
+  by_site?:Partial<Record<SiteKey,{visits_7d:number;visitors_7d:number;visits_today?:number;visitors_today?:number}>>;
+  favorites_total:number; by_module:Partial<Record<ModuleKey,number>>; by_intent:Partial<Record<Intent,number>>;
+  daily:{day:string;visits:number}[]; top_listings:{id:string;title:string;module:ModuleKey;views:number}[];
 };
 
-const CLAIM_KIND: Record<Claim["kind"], string> = {
-  claim: "Revendication",
-  correction: "Correction",
-  removal: "Demande de retrait",
-};
+const VIEWS: {key:View;label:string}[] = [
+  {key:"overview",label:"Vue d’ensemble"},{key:"moderation",label:"Modération"},{key:"content",label:"Contenus"},
+  {key:"users",label:"Comptes"},{key:"analytics",label:"Statistiques"},{key:"activity",label:"Historique"},
+];
+const KIND:Record<Kind,string> = {listing:"Annonce",restaurant:"Restaurant",place:"Lieu",event:"Événement"};
+const CLAIM:Record<Claim["kind"],string> = {claim:"Revendication",correction:"Correction",removal:"Demande de retrait"};
+const FEEDBACK:Record<Feedback["kind"],string> = {idee:"Idée",probleme:"Problème",avis:"Avis"};
+const shortDate = (iso:string) => new Date(iso).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"});
 
-type SiteStats = {
-  listings_total: number; listings_active: number; listings_30d: number; listings_7d: number;
-  users_total: number; users_30d: number;
-  views_total: number; views_7d: number;
-  visits_7d: number; visitors_7d: number;
-  /* Ajoutés par la migration 0020 : optionnels pour que le tableau de bord
-     reste lisible si elle n'a pas encore été exécutée. */
-  visits_30d?: number; visitors_30d?: number; visitors_total?: number;
-  /* Ajoutés par la migration 0024 — le jour courant, compté à l'heure de
-     l'île. Optionnels pour la même raison : tant qu'elle n'est pas passée,
-     le tableau affiche des zéros plutôt que de casser. */
-  listings_today?: number; users_today?: number; views_today?: number;
-  visits_today?: number; visitors_today?: number;
-  visits_yesterday?: number; visitors_yesterday?: number;
-  by_site?: Partial<Record<SiteKey, {
-    visits_7d: number; visitors_7d: number;
-    visits_today?: number; visitors_today?: number;
-  }>>;
-  favorites_total: number;
-  by_module: Partial<Record<ModuleKey, number>>;
-  by_intent: Partial<Record<Intent, number>>;
-  daily: Daily[];
-  top_listings: Top[];
-};
-
-export default function Stats() {
+export default function AdminPage() {
   const router = useRouter();
-  const [s, setS] = useState<SiteStats | null>(null);
-  const [denied, setDenied] = useState(false);
-  const [claims, setClaims] = useState<Claim[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [feedback, setFeedback] = useState<Feedback[]>([]);
-  const [busyClaim, setBusyClaim] = useState<string | null>(null);
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [pendingEvents, setPendingEvents] = useState<PendingEvent[]>([]);
-  const [adminError, setAdminError] = useState<string | null>(null);
+  const [view,setView] = useState<View>("overview");
+  const [stats,setStats] = useState<Stats|null>(null);
+  const [denied,setDenied] = useState(false);
+  const [claims,setClaims] = useState<Claim[]>([]);
+  const [reports,setReports] = useState<Report[]>([]);
+  const [feedback,setFeedbackItems] = useState<Feedback[]>([]);
+  const [events,setEvents] = useState<PendingEvent[]>([]);
+  const [users,setUsers] = useState<AdminUser[]>([]);
+  const [content,setContent] = useState<Content[]>([]);
+  const [audit,setAudit] = useState<Audit[]>([]);
+  const [auditReady,setAuditReady] = useState(true);
+  const [busy,setBusy] = useState<string|null>(null);
+  const [error,setError] = useState<string|null>(null);
+  const [userSearch,setUserSearch] = useState("");
+  const [userFilter,setUserFilter] = useState<"all"|"admin"|"banned">("all");
+  const [contentSearch,setContentSearch] = useState("");
+  const [contentFilter,setContentFilter] = useState<"all"|Kind>("all");
 
-  const loadClaims = async () => {
-    setAdminError(null);
-    const sb = supabase();
-    const [claimsResult, reportsResult, feedbackResult, usersResult, eventsResult] = await Promise.all([
-      sb.from("restaurant_claims")
-        .select("*, restaurant:restaurants(name)")
-        .eq("handled", false)
-        .order("created_at", { ascending: true }),
-      sb.from("reports")
-        .select("id, listing_id, reason, created_at, listing:listings(title, status)")
-        .eq("handled", false).order("created_at", { ascending: true }),
-      sb.from("feedback").select("*").eq("handled", false).order("created_at", { ascending: true }),
-      sb.rpc("admin_users"),
-      sb.rpc("admin_pending_events"),
+  const load = async () => {
+    setError(null);
+    const sb=supabase();
+    const [c,r,f,u,e,l,rest,p,allE,a]=await Promise.all([
+      sb.from("restaurant_claims").select("*, restaurant:restaurants(name)").eq("handled",false).order("created_at"),
+      sb.from("reports").select("id,listing_id,reason,created_at,listing:listings(title,status)").eq("handled",false).order("created_at"),
+      sb.from("feedback").select("*").eq("handled",false).order("created_at"),sb.rpc("admin_users"),sb.rpc("admin_pending_events"),
+      sb.from("listings").select("id,title,status,module,created_at").order("created_at",{ascending:false}).limit(100),
+      sb.from("restaurants").select("id,name,status,cuisine,quartier,created_at").order("created_at",{ascending:false}).limit(100),
+      sb.from("places").select("id,name,status,category,quartier,created_at").order("created_at",{ascending:false}).limit(100),
+      sb.from("events").select("id,title,status,category,quartier,starts_at").order("starts_at",{ascending:false}).limit(100),
+      sb.rpc("admin_audit_recent",{p_limit:100}),
     ]);
-
-    const failed = [claimsResult, reportsResult, feedbackResult, usersResult, eventsResult]
-      .find((result) => result.error);
-    if (failed?.error) setAdminError(`Certaines données n’ont pas pu être chargées : ${failed.error.message}`);
-
-    setClaims((claimsResult.data as Claim[]) ?? []);
-    setReports((reportsResult.data as unknown as Report[]) ?? []);
-    setFeedback((feedbackResult.data as Feedback[]) ?? []);
-    setUsers((usersResult.data as AdminUser[]) ?? []);
-    setPendingEvents((eventsResult.data as PendingEvent[]) ?? []);
+    const failed=[c,r,f,u,e,l,rest,p,allE].find(x=>x.error)?.error;
+    if(failed)setError(`Certaines données n’ont pas pu être chargées : ${failed.message}`);
+    setClaims((c.data as Claim[])??[]); setReports((r.data as unknown as Report[])??[]); setFeedbackItems((f.data as Feedback[])??[]);
+    setUsers((u.data as AdminUser[])??[]); setEvents((e.data as PendingEvent[])??[]);
+    const items:Content[]=[];
+    for(const x of (l.data??[]) as {id:string;title:string;status:string;module:ModuleKey;created_at:string}[]) items.push({id:x.id,kind:"listing",title:x.title,detail:MODULES[x.module]?.label??x.module,status:x.status,date:x.created_at,href:`/annonce/${x.id}`});
+    for(const x of (rest.data??[]) as {id:string;name:string;status:string;cuisine:string;quartier:string;created_at:string}[]) items.push({id:x.id,kind:"restaurant",title:x.name,detail:[x.cuisine,x.quartier].filter(Boolean).join(" · "),status:x.status,date:x.created_at,href:`/food/resto/${x.id}`});
+    for(const x of (p.data??[]) as {id:string;name:string;status:string;category:string;quartier:string;created_at:string}[]) items.push({id:x.id,kind:"place",title:x.name,detail:[x.category.replaceAll("_"," "),x.quartier].filter(Boolean).join(" · "),status:x.status,date:x.created_at,href:`/guide/lieu/${x.id}`});
+    for(const x of (allE.data??[]) as {id:string;title:string;status:string;category:string;quartier:string;starts_at:string}[]) items.push({id:x.id,kind:"event",title:x.title,detail:[x.category,x.quartier].filter(Boolean).join(" · "),status:x.status,date:x.starts_at,href:"/event"});
+    setContent(items.sort((x,y)=>(y.date??"").localeCompare(x.date??"")));
+    setAuditReady(!a.error); setAudit((a.data as Audit[])??[]);
   };
 
-  async function resolveEvent(e: PendingEvent, status: "approved" | "rejected") {
-    setBusyClaim(e.id);
-    setAdminError(null);
-    const { error } = await supabase().rpc("admin_set_event_status", {
-      p_event_id: e.id,
-      p_status: status,
-    });
-    setBusyClaim(null);
-    if (error) setAdminError(`Événement non traité : ${error.message}`);
-    else await loadClaims();
-  }
+  useEffect(()=>{(async()=>{
+    const {data:session}=await supabase().auth.getSession();
+    if(!session.session){router.replace(connexionUrl("/stats"));return;}
+    const {data,error}=await supabase().rpc("site_stats");
+    if(error||!data){setDenied(true);return;} setStats(data as Stats); await load();
+  })();},[router]);
 
-  /* Nommer un administrateur, c'est donner accès aux emails de tous les
-     comptes, au bannissement et à la suppression de n'importe quelle annonce :
-     la confirmation le dit franchement. La base refuse de son côté qu'on se
-     retire ses propres droits, pour ne pas fermer la porte de l'intérieur. */
-  async function toggleAdmin(u: AdminUser) {
-    const message = u.is_admin
-      ? `Retirer les droits d'administration à ${u.email} ?`
-      : `Nommer ${u.email} administrateur ?\n\nIl pourra voir les emails de tous les comptes, bannir, supprimer n'importe quelle annonce et valider les événements.`;
-    if (!confirm(message)) return;
-    setBusyClaim(u.id);
-    const { error } = await supabase().rpc("set_admin", { target_id: u.id, value: !u.is_admin });
-    setBusyClaim(null);
-    if (error) { alert(`Modification impossible : ${error.message}`); return; }
-    loadClaims();
-  }
+  const queue=events.length+claims.length+reports.length+feedback.length;
+  const shownUsers=useMemo(()=>{const q=userSearch.trim().toLowerCase();return users.filter(x=>(userFilter==="all"||(userFilter==="admin"&&x.is_admin)||(userFilter==="banned"&&x.is_banned))&&(!q||`${x.email} ${x.display_name}`.toLowerCase().includes(q)));},[users,userSearch,userFilter]);
+  const shownContent=useMemo(()=>{const q=contentSearch.trim().toLowerCase();return content.filter(x=>(contentFilter==="all"||x.kind===contentFilter)&&(!q||`${x.title} ${x.detail}`.toLowerCase().includes(q)));},[content,contentSearch,contentFilter]);
 
-  async function toggleBan(u: AdminUser) {
-    if (!confirm(u.is_banned ? `Rétablir ${u.email} ?` : `Bannir ${u.email} ? Il ne pourra plus publier.`)) return;
-    setBusyClaim(u.id);
-    setAdminError(null);
-    const { error } = await supabase().rpc("admin_set_user_banned", {
-      p_user_id: u.id,
-      p_is_banned: !u.is_banned,
-    });
-    setBusyClaim(null);
-    if (error) setAdminError(`Compte non modifié : ${error.message}`);
-    else await loadClaims();
-  }
+  async function act(id:string,fn:()=>PromiseLike<{error:{message:string}|null}>,label:string){setBusy(id);setError(null);const {error}=await fn();setBusy(null);if(error)setError(`${label} : ${error.message}`);else await load();}
+  const setEvent=(x:PendingEvent,status:"approved"|"rejected")=>act(x.id,()=>supabase().rpc("admin_set_event_status",{p_event_id:x.id,p_status:status}),"Événement non traité");
+  const setClaim=(x:Claim,action:"grant"|"hide"|"done")=>act(x.id,()=>supabase().rpc("admin_resolve_claim",{p_claim_id:x.id,p_action:action}),"Demande non traitée");
+  const setReport=(x:Report,remove:boolean)=>act(x.id,()=>supabase().rpc("admin_resolve_report",{p_report_id:x.id,p_remove_listing:remove}),"Signalement non traité");
+  const resolveFeedback=(x:Feedback)=>act(x.id,()=>supabase().rpc("admin_resolve_feedback",{p_feedback_id:x.id}),"Retour non traité");
+  const toggleAdmin=(x:AdminUser)=>{if(confirm(x.is_admin?`Retirer les droits d’administration à ${x.email} ?`:`Nommer ${x.email} administrateur ?`))return act(x.id,()=>supabase().rpc("set_admin",{target_id:x.id,value:!x.is_admin}),"Droits non modifiés");};
+  const toggleBan=(x:AdminUser)=>{if(confirm(x.is_banned?`Rétablir ${x.email} ?`:`Bannir ${x.email} ? Il ne pourra plus publier.`))return act(x.id,()=>supabase().rpc("admin_set_user_banned",{p_user_id:x.id,p_is_banned:!x.is_banned}),"Compte non modifié");};
+  const toggleContent=(x:Content)=>{const table={listing:"listings",restaurant:"restaurants",place:"places",event:"events"}[x.kind];const visible=x.kind==="listing"?x.status==="active":x.kind==="event"?x.status==="approved":x.status==="active";const status=x.kind==="listing"?(visible?"removed":"active"):x.kind==="event"?(visible?"rejected":"approved"):(visible?"hidden":"active");if(confirm(`${visible?"Masquer":"Publier"} « ${x.title} » ?`))return act(x.id,()=>supabase().from(table).update({status}).eq("id",x.id),"Contenu non modifié");};
 
-  /* Signalement : retirer l'annonce (elle disparaît du site, l'auteur la voit
-     « retirée ») ou classer sans suite. Dans les deux cas le signalement est
-     traité et sort de la liste. */
-  async function resolveReport(rep: Report, action: "remove" | "dismiss") {
-    setBusyClaim(rep.id);
-    setAdminError(null);
-    const { error } = await supabase().rpc("admin_resolve_report", {
-      p_report_id: rep.id,
-      p_remove_listing: action === "remove",
-    });
-    setBusyClaim(null);
-    if (error) setAdminError(`Signalement non traité : ${error.message}`);
-    else await loadClaims();
-  }
+  if(denied)return <><SiteHeader/><main className="container" style={{maxWidth:520,paddingTop:40}}><Empty title="Réservé à l’administration" text="Ce tableau de bord n’est visible que par les comptes administrateurs."/><p style={{textAlign:"center"}}><Link className="btn" href="/mon-espace">Retour à mon espace</Link></p></main></>;
+  if(!stats)return <><SiteHeader/><div className="container" style={{padding:"40px 16px",color:"var(--text-muted)"}}>Chargement de l’administration…</div></>;
 
-  async function resolveFeedback(f: Feedback) {
-    setBusyClaim(f.id);
-    setAdminError(null);
-    const { error } = await supabase().rpc("admin_resolve_feedback", { p_feedback_id: f.id });
-    setBusyClaim(null);
-    if (error) setAdminError(`Retour non traité : ${error.message}`);
-    else await loadClaims();
-  }
-
-  useEffect(() => {
-    (async () => {
-      const { data: session } = await supabase().auth.getSession();
-      if (!session.session) { router.replace(connexionUrl("/stats")); return; }
-      const { data, error } = await supabase().rpc("site_stats");
-      if (error || !data) { setDenied(true); return; }
-      setS(data as SiteStats);
-      loadClaims();
-    })();
-  }, [router]);
-
-  /* Traitement d'une demande. Donner la main = un vrai transfert de droits :
-     à ne faire qu'après avoir vérifié le contact, jamais sur la seule foi du
-     formulaire. */
-  async function resolveClaim(c: Claim, action: "grant" | "hide" | "done") {
-    setBusyClaim(c.id);
-    setAdminError(null);
-    const { error } = await supabase().rpc("admin_resolve_claim", {
-      p_claim_id: c.id,
-      p_action: action,
-    });
-    setBusyClaim(null);
-    if (error) setAdminError(`Demande non traitée : ${error.message}`);
-    else await loadClaims();
-  }
-
-  if (denied) return (
-    <>
-      <SiteHeader />
-      <main className="container" style={{ maxWidth: 520, paddingTop: 40, paddingBottom: 56 }}>
-        <div className="panel gold-frame" style={{ padding: "26px 20px", textAlign: "center" }}>
-          <h1 style={{ fontSize: 21, margin: "0 0 8px" }}>Réservé à l&apos;administration</h1>
-          <p style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.55 }}>
-            Ce tableau de bord n&apos;est visible que par les comptes administrateurs.
-          </p>
-          <Link href="/mon-espace" className="btn" style={{ marginTop: 8 }}>Retour à mon espace</Link>
-        </div>
-      </main>
-    </>
-  );
-
-  if (!s) return (
-    <>
-      <SiteHeader />
-      <div className="container" style={{ padding: "40px 16px", color: "var(--text-muted)" }}>Chargement…</div>
-    </>
-  );
-
-  const maxModule = Math.max(1, ...MODULE_ORDER.map((k) => s.by_module[k] ?? 0));
-
-  return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <SiteHeader />
-
-      <main className="container" style={{ paddingTop: 24, paddingBottom: 56, flex: 1, maxWidth: 940 }}>
-        <h1 style={{ fontSize: 24, margin: "0 0 2px" }}>Statistiques du site</h1>
-        <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px" }}>
-          Fréquentation mesurée sur le site lui-même, visiteurs non connectés compris.
-        </p>
-
-        {adminError && (
-          <p role="alert" style={{ color: "var(--danger)", fontSize: 13, fontWeight: 600,
-            background: "rgba(176,58,46,.08)", border: "1px solid rgba(176,58,46,.24)",
-            padding: "10px 12px", borderRadius: 10 }}>
-            {adminError}
-          </p>
-        )}
-
-        {pendingEvents.length > 0 && (
-          <Section titre={`Événements à valider (${pendingEvents.length})`}
-            sousTitre="Proposés par leurs organisateurs — rien ne paraît sans votre accord">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {pendingEvents.map((e) => {
-                const eventLink = safeExternalUrl(e.link);
-                return (
-                <div key={e.id} className="panel" style={{ padding: "12px 14px" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
-                      color: "var(--gold-deep)", background: "var(--cream-dark)", padding: "4px 10px", borderRadius: 99 }}>
-                      {e.category}
-                    </span>
-                    <span style={{ fontWeight: 700, fontSize: 14.5 }}>{e.title}</span>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      {new Date(e.starts_at).toLocaleString("fr-FR", { timeZone: "America/St_Barthelemy", dateStyle: "medium", timeStyle: "short" })}
-                      {e.venue ? ` · ${e.venue}` : ""}{e.quartier ? ` · ${e.quartier}` : ""}{e.price ? ` · ${e.price}` : ""}
-                    </span>
-                  </div>
-                  {e.description && <p style={{ fontSize: 13.5, margin: "8px 0 4px", whiteSpace: "pre-wrap" }}>{e.description}</p>}
-                  <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
-                    Par <strong style={{ color: "var(--text)" }}>{e.organizer}</strong> · contact :{" "}
-                    <strong style={{ color: "var(--text)" }}>{e.contact}</strong>
-                    {eventLink && <> · <a href={eventLink} target="_blank" rel="noopener noreferrer">lien ↗</a></>}
-                  </p>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                    <button className="btn" disabled={busyClaim === e.id}
-                      onClick={() => resolveEvent(e, "approved")}
-                      style={{ fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
-                      Publier dans l&apos;agenda
-                    </button>
-                    <button className="link-quiet" disabled={busyClaim === e.id}
-                      onClick={() => { if (confirm("Refuser cet événement ? Il ne paraîtra pas.")) resolveEvent(e, "rejected"); }}
-                      style={{ color: "var(--danger)" }}>
-                      Refuser
-                    </button>
-                  </div>
-                </div>
-                );
-              })}
-            </div>
-          </Section>
-        )}
-
-        {claims.length > 0 && (
-          <Section titre={`Demandes des établissements (${claims.length})`}
-            sousTitre="Revendications, corrections et retraits envoyés depuis les fiches St Barth Food">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {claims.map((c) => (
-                <div key={c.id} className="panel" style={{ padding: "12px 14px" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-                    <span style={{
-                      fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
-                      color: c.kind === "removal" ? "#fff" : "var(--gold-deep)",
-                      background: c.kind === "removal" ? "var(--danger)" : "var(--cream-dark)",
-                      padding: "4px 10px", borderRadius: 99,
-                    }}>
-                      {CLAIM_KIND[c.kind]}
-                    </span>
-                    <Link href={`/food/resto/${c.restaurant_id}`} style={{ fontWeight: 700, fontSize: 14.5 }}>
-                      {c.restaurant?.name ?? "Fiche supprimée"}
-                    </Link>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      {new Date(c.created_at).toLocaleDateString("fr-FR")}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 13.5, margin: "8px 0 4px", whiteSpace: "pre-wrap" }}>{c.message}</p>
-                  <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
-                    Contact : <strong style={{ color: "var(--text)" }}>{c.contact}</strong>
-                    {c.kind === "claim" && !c.user_id && " · envoyé sans compte — la main ne peut pas être donnée automatiquement"}
-                  </p>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                    {c.kind === "claim" && c.user_id && (
-                      <button className="btn" disabled={busyClaim === c.id}
-                        onClick={() => { if (confirm("Donner la gestion de cette fiche à ce compte ? À faire après avoir vérifié le contact.")) resolveClaim(c, "grant"); }}
-                        style={{ fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
-                        Donner la main à ce compte
-                      </button>
-                    )}
-                    {c.kind === "removal" && (
-                      <button className="btn" disabled={busyClaim === c.id}
-                        onClick={() => { if (confirm("Masquer cette fiche du site ?")) resolveClaim(c, "hide"); }}
-                        style={{ background: "var(--danger)", fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
-                        Masquer la fiche
-                      </button>
-                    )}
-                    <button className="link-quiet" disabled={busyClaim === c.id} onClick={() => resolveClaim(c, "done")}>
-                      Marquer traité sans action
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {reports.length > 0 && (
-          <Section titre={`Signalements d'annonces (${reports.length})`}
-            sousTitre="Envoyés par les utilisateurs via « Signaler cette annonce »">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {reports.map((rep) => (
-                <div key={rep.id} className="panel" style={{ padding: "12px 14px" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-                    <Link href={`/annonce/${rep.listing_id}`} style={{ fontWeight: 700, fontSize: 14.5 }}>
-                      {rep.listing?.title ?? "Annonce supprimée"}
-                    </Link>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      {new Date(rep.created_at).toLocaleDateString("fr-FR")}
-                      {rep.listing?.status === "removed" ? " · déjà retirée" : ""}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 13.5, margin: "8px 0 10px", whiteSpace: "pre-wrap" }}>{rep.reason}</p>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                    <button className="btn" disabled={busyClaim === rep.id}
-                      onClick={() => { if (confirm("Retirer cette annonce du site ?")) resolveReport(rep, "remove"); }}
-                      style={{ background: "var(--danger)", fontSize: 12.5, padding: "9px 14px", minHeight: 36 }}>
-                      Retirer l&apos;annonce
-                    </button>
-                    <button className="link-quiet" disabled={busyClaim === rep.id} onClick={() => resolveReport(rep, "dismiss")}>
-                      Classer sans suite
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {feedback.length > 0 && (
-          <Section titre={`Retours des utilisateurs (${feedback.length})`}
-            sousTitre="Idées, problèmes et avis envoyés depuis « Votre avis compte »">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {feedback.map((f) => (
-                <div key={f.id} className="panel" style={{ padding: "12px 14px" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-                    <span style={{
-                      fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
-                      color: "var(--gold-deep)", background: "var(--cream-dark)", padding: "4px 10px", borderRadius: 99,
-                    }}>
-                      {FEEDBACK_KIND[f.kind]}
-                    </span>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      {new Date(f.created_at).toLocaleDateString("fr-FR")}
-                      {f.contact ? ` · contact : ${f.contact}` : " · sans contact"}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 13.5, margin: "8px 0 10px", whiteSpace: "pre-wrap" }}>{f.message}</p>
-                  <button className="link-quiet" disabled={busyClaim === f.id} onClick={() => resolveFeedback(f)}>
-                    Marquer lu
-                  </button>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {/* Le tableau de bord remplace les anciennes tuiles et l'histogramme
-            à quatorze barres : mêmes données, une période au choix, et des
-            questions auxquelles on peut répondre d'un coup d'œil. Les blocs
-            de modération qui suivent sont inchangés. */}
-        <div style={{ marginBottom: 26 }}>
-          <Dashboard />
-        </div>
-
-        <Section titre="Fréquentation par univers"
-          sousTitre="Visiteurs uniques et pages vues, aujourd'hui et sur 7 jours — une même personne peut compter dans plusieurs univers">
-          <div className="panel" style={{ padding: "6px 14px 10px", overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                  <th style={{ textAlign: "left", padding: "6px 8px 6px 0" }}>Univers</th>
-                  <th style={{ textAlign: "right", padding: "6px 10px" }}>Visiteurs auj.</th>
-                  <th style={{ textAlign: "right", padding: "6px 10px" }}>Pages auj.</th>
-                  <th style={{ textAlign: "right", padding: "6px 10px" }}>Visiteurs 7 j</th>
-                  <th style={{ textAlign: "right", padding: "6px 0 6px 10px" }}>Pages 7 j</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Tous les univers, y compris ceux fermés au public : leur
-                    fréquentation passée reste une donnée utile à l'admin. */}
-                {(Object.keys(SITES) as SiteKey[]).map((key) => {
-                  const d = s.by_site?.[key];
-                  const site = SITES[key];
-                  return (
-                    <tr key={key} style={{ borderTop: "1px solid var(--border)" }}>
-                      {/* Le nom ne se coupe pas : sur mobile le tableau défile
-                          latéralement, plutôt que d'empiler « St Barth Guide »
-                          sur trois lignes et de désaligner toute la colonne. */}
-                      <td style={{ padding: "9px 8px 9px 0", whiteSpace: "nowrap" }}>
-                        <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 99,
-                          background: site.dot, marginRight: 8 }} />
-                        <strong>{site.name}</strong>
-                        <span style={{ color: "var(--text-muted)", fontSize: 11.5 }}> · {site.path}</span>
-                      </td>
-                      <td style={{ textAlign: "right", padding: "9px 10px", fontWeight: 700 }}>{d?.visitors_today ?? 0}</td>
-                      <td style={{ textAlign: "right", padding: "9px 10px", color: "var(--text-muted)" }}>{d?.visits_today ?? 0}</td>
-                      <td style={{ textAlign: "right", padding: "9px 10px", fontWeight: 700 }}>{d?.visitors_7d ?? 0}</td>
-                      <td style={{ textAlign: "right", padding: "9px 0 9px 10px", color: "var(--text-muted)" }}>{d?.visits_7d ?? 0}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-
-        <Section titre="Annonces en ligne par univers">
-          <div className="panel" style={{ padding: "16px" }}>
-            {MODULE_ORDER.map((k) => {
-              const n = s.by_module[k] ?? 0;
-              return (
-                <div key={k} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 0" }}>
-                  <span style={{ flex: "0 0 42%", fontSize: 13, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {MODULES[k].label}
-                  </span>
-                  <span style={{ flex: 1, height: 10, background: "var(--cream-dark)", borderRadius: 999, overflow: "hidden" }}>
-                    <span style={{ display: "block", width: `${Math.round((n / maxModule) * 100)}%`, height: "100%", background: "var(--green)", borderRadius: 999 }} />
-                  </span>
-                  <strong style={{ flex: "0 0 auto", fontSize: 13, minWidth: 28, textAlign: "right" }}>{n}</strong>
-                </div>
-              );
-            })}
-            <div style={{ borderTop: "1px solid var(--border)", marginTop: 10, paddingTop: 10, display: "flex", gap: 18, fontSize: 13, color: "var(--text-muted)" }}>
-              {(["offer", "wanted"] as Intent[]).map((i) => (
-                <span key={i}>
-                  {INTENT_FILTER[i]} : <strong style={{ color: "var(--text)" }}>{s.by_intent[i] ?? 0}</strong>
-                </span>
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        <Section titre={`Comptes (${users.length})`} sousTitre="Email, inscription, dernière connexion — visibles de vous seul">
-          <div className="panel" style={{ padding: "6px 14px 10px", overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} style={{ borderTop: "1px solid var(--border)" }}>
-                    <td style={{ padding: "8px 8px 8px 0" }}>
-                      <strong>{u.email}</strong>
-                      <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
-                        {u.display_name} · inscrit le {new Date(u.created_at).toLocaleDateString("fr-FR")}
-                        {u.last_sign_in ? ` · vu le ${new Date(u.last_sign_in).toLocaleDateString("fr-FR")}` : ""}
-                        {" · "}{u.listings} annonce{u.listings > 1 ? "s" : ""}
-                        {u.is_banned ? " · BANNI" : ""}
-                      </div>
-                    </td>
-                    <td style={{ padding: "8px 0", textAlign: "right", whiteSpace: "nowrap" }}>
-                      {u.is_admin && (
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
-                          background: "var(--green)", color: "var(--gold-light)", padding: "3px 9px",
-                          borderRadius: 99, marginRight: 10 }}>
-                          Admin
-                        </span>
-                      )}
-                      <button className="link-quiet" disabled={busyClaim === u.id} onClick={() => toggleAdmin(u)}
-                        style={{ marginRight: 14 }}>
-                        {u.is_admin ? "Retirer l'admin" : "Nommer admin"}
-                      </button>
-                      <button className="link-quiet" disabled={busyClaim === u.id} onClick={() => toggleBan(u)}
-                        style={u.is_banned ? undefined : { color: "var(--danger)" }}>
-                        {u.is_banned ? "Rétablir" : "Bannir"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-
-        <Section titre="Annonces les plus consultées">
-          <div className="panel" style={{ padding: "6px 16px 10px" }}>
-            {s.top_listings.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: 13.5 }}>Pas encore de consultation enregistrée.</p>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
-                <tbody>
-                  {s.top_listings.map((t) => (
-                    <tr key={t.id} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td style={{ padding: "9px 0" }}>
-                        <Link href={`/annonce/${t.id}`} style={{ fontWeight: 600 }}>{t.title}</Link>
-                        <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{MODULES[t.module]?.label}</div>
-                      </td>
-                      <td style={{ padding: "9px 0", textAlign: "right", whiteSpace: "nowrap" }}>
-                        <strong>{t.views}</strong>{" "}
-                        <span style={{ color: "var(--text-muted)", fontSize: 12 }}>vue{t.views > 1 ? "s" : ""}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </Section>
-
-        <p style={{ marginTop: 24 }}>
-          <Link href="/mon-espace" style={{ fontSize: 13, color: "var(--text-muted)" }}>← Retour à mon espace</Link>
-        </p>
-      </main>
-    </div>
-  );
+  return <div className={styles.page}><SiteHeader/><main className={`container ${styles.shell}`}>
+    <header className={styles.heading}><div><span>Ti Kanal</span><h1>Administration</h1><p>Les urgences et les outils de pilotage au même endroit.</p></div><Link href="/mon-espace">Mon espace →</Link></header>
+    <nav className={styles.nav} aria-label="Sections de l’administration">{VIEWS.map(x=><button key={x.key} onClick={()=>setView(x.key)} className={view===x.key?styles.active:""} aria-current={view===x.key?"page":undefined}>{x.label}{x.key==="moderation"&&queue>0&&<b>{queue}</b>}</button>)}</nav>
+    {error&&<p className={styles.error} role="alert">{error}</p>}
+    {view==="overview"&&<Overview stats={stats} queue={[events.length,reports.length,claims.length,feedback.length]} users={users} go={setView}/>}
+    {view==="moderation"&&<Moderation events={events} reports={reports} claims={claims} feedback={feedback} busy={busy} setEvent={setEvent} setReport={setReport} setClaim={setClaim} setFeedback={resolveFeedback}/>}
+    {view==="content"&&<ContentPanel items={shownContent} total={content.length} search={contentSearch} setSearch={setContentSearch} filter={contentFilter} setFilter={setContentFilter} busy={busy} toggle={toggleContent}/>}
+    {view==="users"&&<UsersPanel users={shownUsers} total={users.length} search={userSearch} setSearch={setUserSearch} filter={userFilter} setFilter={setUserFilter} busy={busy} toggleAdmin={toggleAdmin} toggleBan={toggleBan}/>}
+    {view==="analytics"&&<Analytics stats={stats}/>}
+    {view==="activity"&&<Activity data={audit} ready={auditReady}/>}
+  </main></div>;
 }
 
-function Section({ titre, sousTitre, children }: { titre: string; sousTitre?: string; children: React.ReactNode }) {
-  return (
-    <section style={{ marginBottom: 26 }}>
-      <h2 style={{ fontSize: 16, margin: "0 0 2px" }}>{titre}</h2>
-      {sousTitre && <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>{sousTitre}</p>}
-      {!sousTitre && <div style={{ height: 10 }} />}
-      {children}
-    </section>
-  );
+function Overview({stats,queue,users,go}:{stats:Stats;queue:number[];users:AdminUser[];go:(v:View)=>void}){const labels=["Événements","Signalements","Établissements","Retours"];return <div className={styles.stack}><Head title="À traiter" text={queue.reduce((a,b)=>a+b,0)?"Les actions qui demandent votre attention.":"Tout est à jour."}/><div className={styles.actions}>{queue.map((n,i)=><button key={labels[i]} onClick={()=>go("moderation")} className={n?styles.attention:styles.ok}><span>{labels[i]}</span><strong>{n}</strong><small>{n?"en attente":"À jour"}</small></button>)}</div><Section title="Activité du site"><Tiles data={[["Annonces en ligne",stats.listings_active,`${stats.listings_7d} nouvelles sur 7 j`],["Visiteurs sur 7 j",stats.visitors_7d,`${stats.visits_7d} pages vues`],["Comptes",stats.users_total,`${stats.users_30d} nouveaux sur 30 j`],["Administrateurs",users.filter(x=>x.is_admin).length,`${users.filter(x=>x.is_banned).length} compte(s) banni(s)`]]}/></Section><div className={styles.quick}>{[["Gérer les contenus","Publier ou masquer une fiche","content"],["Rechercher un compte","Rôles et bannissement","users"],["Voir les statistiques","Fréquentation par univers","analytics"]].map(x=><button key={x[0]} onClick={()=>go(x[2] as View)}><strong>{x[0]}</strong><span>{x[1]} →</span></button>)}</div></div>}
+
+function Moderation({events,reports,claims,feedback,busy,setEvent,setReport,setClaim,setFeedback}:{events:PendingEvent[];reports:Report[];claims:Claim[];feedback:Feedback[];busy:string|null;setEvent:(x:PendingEvent,s:"approved"|"rejected")=>void;setReport:(x:Report,r:boolean)=>void;setClaim:(x:Claim,a:"grant"|"hide"|"done")=>void;setFeedback:(x:Feedback)=>void}){if(!events.length&&!reports.length&&!claims.length&&!feedback.length)return <div className={styles.stack}><Head title="Modération" text="Les demandes sont classées par type."/><Empty title="Rien à modérer" text="Aucun événement, signalement ou message n’attend votre intervention."/></div>;return <div className={styles.stack}><Head title="Modération" text="Les demandes sont classées par type pour décider plus vite."/>
+  {!!events.length&&<Section title={`Événements à valider (${events.length})`} text="Rien ne paraît sans votre accord.">{events.map(x=><Card key={x.id} badge={x.category} title={x.title} meta={`${new Date(x.starts_at).toLocaleString("fr-FR",{timeZone:"America/St_Barthelemy",dateStyle:"medium",timeStyle:"short"})}${x.venue?` · ${x.venue}`:""}`} body={x.description} extra={<>Par <strong>{x.organizer}</strong> · {x.contact}{safeExternalUrl(x.link)&&<> · <a href={safeExternalUrl(x.link)!} target="_blank" rel="noopener noreferrer">lien ↗</a></>}</>} actions={<><button className="btn" disabled={busy===x.id} onClick={()=>setEvent(x,"approved")}>Publier</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>confirm("Refuser cet événement ?")&&setEvent(x,"rejected")}>Refuser</button></>}/>)}</Section>}
+  {!!reports.length&&<Section title={`Signalements (${reports.length})`} text="Vérifiez l’annonce avant de la retirer.">{reports.map(x=><Card key={x.id} badge="Signalement" title={x.listing?.title??"Annonce supprimée"} href={`/annonce/${x.listing_id}`} meta={shortDate(x.created_at)} body={x.reason} actions={<><button className={`btn ${styles.danger}`} disabled={busy===x.id} onClick={()=>confirm("Retirer cette annonce ?")&&setReport(x,true)}>Retirer</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>setReport(x,false)}>Classer sans suite</button></>}/>)}</Section>}
+  {!!claims.length&&<Section title={`Demandes des établissements (${claims.length})`} text="Vérifiez le contact avant un transfert de gestion.">{claims.map(x=><Card key={x.id} badge={CLAIM[x.kind]} danger={x.kind==="removal"} title={x.restaurant?.name??"Fiche supprimée"} href={`/food/resto/${x.restaurant_id}`} meta={shortDate(x.created_at)} body={x.message} extra={<>Contact : <strong>{x.contact}</strong>{x.kind==="claim"&&!x.user_id&&" · demande sans compte"}</>} actions={<>{x.kind==="claim"&&x.user_id&&<button className="btn" disabled={busy===x.id} onClick={()=>confirm("Donner la gestion de cette fiche ?")&&setClaim(x,"grant")}>Donner la main</button>}{x.kind==="removal"&&<button className={`btn ${styles.danger}`} disabled={busy===x.id} onClick={()=>confirm("Masquer cette fiche ?")&&setClaim(x,"hide")}>Masquer</button>}<button className="link-quiet" disabled={busy===x.id} onClick={()=>setClaim(x,"done")}>Traité sans action</button></>}/>)}</Section>}
+  {!!feedback.length&&<Section title={`Retours (${feedback.length})`} text="Idées, problèmes et avis des utilisateurs.">{feedback.map(x=><Card key={x.id} badge={FEEDBACK[x.kind]} title={x.contact??"Sans contact"} meta={shortDate(x.created_at)} body={x.message} actions={<button className="link-quiet" disabled={busy===x.id} onClick={()=>setFeedback(x)}>Marquer lu</button>}/>)}</Section>}
+  </div>}
+
+function ContentPanel({items,total,search,setSearch,filter,setFilter,busy,toggle}:{items:Content[];total:number;search:string;setSearch:(s:string)=>void;filter:"all"|Kind;setFilter:(k:"all"|Kind)=>void;busy:string|null;toggle:(x:Content)=>void}){return <div className={styles.stack}><Head title={`Contenus (${total})`} text="Les 100 éléments les plus récents de chaque univers."/><Toolbar search={search} setSearch={setSearch} placeholder="Rechercher un titre, un lieu…">{(["all","listing","restaurant","place","event"] as const).map(k=><button key={k} className={filter===k?styles.selected:""} onClick={()=>setFilter(k)}>{k==="all"?"Tous":KIND[k]}</button>)}</Toolbar>{!items.length?<Empty title="Aucun résultat" text="Essayez un autre mot ou un autre type de contenu."/>:<div className={styles.rows}>{items.map(x=>{const visible=x.kind==="listing"?x.status==="active":x.kind==="event"?x.status==="approved":x.status==="active";return <div className={styles.row} key={`${x.kind}-${x.id}`}><div className={styles.main}><b className={styles.kind}>{KIND[x.kind]}</b><div><Link href={x.href}>{x.title}</Link><p>{x.detail}{x.date?` · ${shortDate(x.date)}`:""}</p></div></div><div className={styles.rowButtons}><Status visible={visible} pending={x.status==="pending"}/><button className="link-quiet" disabled={busy===x.id} onClick={()=>toggle(x)}>{visible?"Masquer":"Publier"}</button></div></div>})}</div>}</div>}
+
+function UsersPanel({users,total,search,setSearch,filter,setFilter,busy,toggleAdmin,toggleBan}:{users:AdminUser[];total:number;search:string;setSearch:(s:string)=>void;filter:"all"|"admin"|"banned";setFilter:(k:"all"|"admin"|"banned")=>void;busy:string|null;toggleAdmin:(x:AdminUser)=>void;toggleBan:(x:AdminUser)=>void}){return <div className={styles.stack}><Head title={`Comptes (${total})`} text="Recherche, droits d’administration et état du compte."/><Toolbar search={search} setSearch={setSearch} placeholder="Rechercher par nom ou email…">{(["all","admin","banned"] as const).map(k=><button key={k} className={filter===k?styles.selected:""} onClick={()=>setFilter(k)}>{k==="all"?"Tous":k==="admin"?"Administrateurs":"Bannis"}</button>)}</Toolbar>{!users.length?<Empty title="Aucun compte trouvé" text="Modifiez la recherche ou le filtre."/>:<div className={styles.rows}>{users.map(x=><div className={styles.row} key={x.id}><div className={styles.main}><div><strong>{x.display_name}</strong><p>{x.email} · inscrit le {shortDate(x.created_at)}{x.last_sign_in?` · vu le ${shortDate(x.last_sign_in)}`:""} · {x.listings} annonce{x.listings>1?"s":""}</p></div></div><div className={styles.rowButtons}>{x.is_admin&&<b className={styles.admin}>Admin</b>}{x.is_banned&&<b className={styles.banned}>Banni</b>}<button className="link-quiet" disabled={busy===x.id} onClick={()=>toggleAdmin(x)}>{x.is_admin?"Retirer l’admin":"Nommer admin"}</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>toggleBan(x)}>{x.is_banned?"Rétablir":"Bannir"}</button></div></div>)}</div>}</div>}
+
+function Analytics({stats}:{stats:Stats}){
+  return <div className={styles.stack}>
+    <Head title="Statistiques" text="Analyse détaillée de la fréquentation, avec comparaison par période."/>
+    <Dashboard/>
+    <Section title="Fréquentation par univers" text="Visiteurs uniques et pages vues, aujourd’hui et sur 7 jours.">
+      <div className={styles.table}><table><thead><tr><th>Univers</th><th>Visiteurs auj.</th><th>Pages auj.</th><th>Visiteurs 7 j</th><th>Pages 7 j</th></tr></thead><tbody>
+        {(Object.keys(SITES) as SiteKey[]).map(k=>{const d=stats.by_site?.[k],site=SITES[k];return <tr key={k}><td><i style={{background:site.dot}}/><strong>{site.name}</strong></td><td>{d?.visitors_today??0}</td><td>{d?.visits_today??0}</td><td>{d?.visitors_7d??0}</td><td>{d?.visits_7d??0}</td></tr>})}
+      </tbody></table></div>
+    </Section>
+  </div>
 }
 
+function Activity({data,ready}:{data:Audit[];ready:boolean}){return <div className={styles.stack}><Head title="Historique" text="Une trace des actions sensibles réalisées dans l’administration."/>{!ready?<Empty title="Historique à activer" text="Exécutez la migration 0030_admin_workspace.sql dans Supabase pour commencer à enregistrer les actions."/>:!data.length?<Empty title="Aucune action enregistrée" text="Les prochaines actions de modération apparaîtront ici."/>:<div className={styles.timeline}>{data.map(x=><div key={x.id}><i/><div><strong>{auditLabel(x)}</strong><p>{x.actor_email??"Administrateur"} · {new Date(x.created_at).toLocaleString("fr-FR")}</p>{x.details?.old_value!==undefined&&<small>{x.details.old_value||"—"} → {x.details.new_value||"—"}</small>}</div></div>)}</div>}</div>}
+function auditLabel(x:Audit){const map:Record<string,string>={listings:"Statut d’une annonce modifié",restaurants:"Statut d’un restaurant modifié",places:"Statut d’un lieu modifié",events:"Statut d’un événement modifié",profiles:x.action.includes("is_admin")?"Droits administrateur modifiés":"État d’un compte modifié",reports:"Signalement traité",feedback:"Retour traité",restaurant_claims:"Demande d’établissement traitée"};return map[x.target_type]??x.action}
+function Head({title,text}:{title:string;text:string}){return <header className={styles.sectionHead}><h2>{title}</h2><p>{text}</p></header>}
+function Section({title,text,children}:{title:string;text?:string;children:React.ReactNode}){return <section className={styles.section}><h3>{title}</h3>{text&&<p>{text}</p>}<div>{children}</div></section>}
+function Tiles({data}:{data:(string|number)[][]}){return <div className={styles.tiles}>{data.map(x=><div className="panel" key={x[0]}><strong>{Number(x[1]).toLocaleString("fr-FR")}</strong><span>{x[0]}</span><small>{x[2]}</small></div>)}</div>}
+function Toolbar({search,setSearch,placeholder,children}:{search:string;setSearch:(s:string)=>void;placeholder:string;children:React.ReactNode}){return <div className={styles.toolbar}><input className="input" value={search} onChange={e=>setSearch(e.target.value)} placeholder={placeholder}/><div>{children}</div></div>}
+function Status({visible,pending}:{visible:boolean;pending:boolean}){return <span className={visible?styles.visible:styles.hidden}>{visible?"Visible":pending?"En attente":"Masqué"}</span>}
+function Empty({title,text}:{title:string;text:string}){return <div className={styles.empty}><strong>{title}</strong><p>{text}</p></div>}
+function Card({badge,danger,title,href,meta,body,extra,actions}:{badge:string;danger?:boolean;title:string;href?:string;meta:string;body:string;extra?:React.ReactNode;actions:React.ReactNode}){return <article className={styles.card}><div className={styles.cardTop}><b className={danger?styles.banned:styles.kind}>{badge}</b><div>{href?<Link href={href}>{title}</Link>:<strong>{title}</strong>}<small>{meta}</small></div></div>{body&&<p className={styles.body}>{body}</p>}{extra&&<p className={styles.extra}>{extra}</p>}<footer>{actions}</footer></article>}
