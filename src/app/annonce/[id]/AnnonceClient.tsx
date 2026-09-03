@@ -15,6 +15,7 @@ import ShareButton from "@/components/ShareButton";
 import { connexionUrl } from "@/lib/urls";
 import { serializeJsonLd } from "@/lib/jsonLd";
 import { thumbKey } from "@/lib/images";
+import { MESSAGE_MAX, messageErreur } from "@/lib/messages";
 
 export default function AnnoncePage({ initialListing = null }: { initialListing?: Listing | null }) {
   return (
@@ -36,11 +37,17 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
   const [reportError, setReportError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [moi, setMoi] = useState<string | null>(null);
+  const [composer, setComposer] = useState(false);
+  const [messageTexte, setMessageTexte] = useState("");
+  const [envoiMessage, setEnvoiMessage] = useState(false);
+  const [messageErr, setMessageErr] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: s } = await supabase().auth.getSession();
       if (!s.session) return;
+      setMoi(s.session.user.id);
       // is_admin() ne répond que pour l'appelant : sans droits, false, point.
       const { data } = await supabase().rpc("is_admin");
       if (data === true) setIsAdmin(true);
@@ -60,7 +67,7 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
       const { data, error } = await supabase()
         .from("listings")
         .select(
-          "*, photos:listing_photos(storage_key, position), profile:profiles!listings_user_id_fkey(display_name, phone_wa)"
+          "*, photos:listing_photos(storage_key, position), profile:profiles!listings_user_id_fkey(display_name, phone_wa, allow_messages)"
         )
         .eq("id", id)
         .single();
@@ -119,6 +126,42 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
   const wa = l.profile?.phone_wa
     ? `https://wa.me/${l.profile.phone_wa.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour, je vous contacte au sujet de votre annonce "${l.title}" sur Ti Kanal.`)}`
     : null;
+  const monAnnonce = moi != null && moi === l.user_id;
+  /* allow_messages n'existe qu'à partir de la migration 0025. Tant qu'elle
+     n'est pas passée, la colonne est absente et la messagerie doit rester
+     proposée : c'est le comportement par défaut voulu. */
+  const messagerieOuverte = l.profile?.allow_messages !== false;
+
+  /* Ouvrir le composeur — ou renvoyer vers la connexion. On ne laisse pas
+     quelqu'un rédiger un message pour découvrir ensuite qu'il faut un compte :
+     le détour se fait avant d'écrire, pas après. */
+  async function ouvrirComposeur() {
+    const { data: session } = await supabase().auth.getSession();
+    if (!session.session) {
+      router.push(connexionUrl(`/annonce/${l!.id}`));
+      return;
+    }
+    setMessageErr(null);
+    setComposer(true);
+  }
+
+  async function envoyerMessage(e: React.FormEvent) {
+    e.preventDefault();
+    const corps = messageTexte.trim();
+    if (!corps || !l) return;
+    setEnvoiMessage(true);
+    setMessageErr(null);
+    const { data, error } = await supabase().rpc("envoyer_message", {
+      p_listing_id: l.id,
+      p_body: corps,
+    });
+    setEnvoiMessage(false);
+    if (error) {
+      setMessageErr(messageErreur(error, "Le message n’est pas parti. Réessayez."));
+      return;
+    }
+    router.push(`/messages?c=${data as string}`);
+  }
 
   async function report() {
     const { data: session } = await supabase().auth.getSession();
@@ -322,15 +365,56 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
             <p style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-muted)", textAlign: "center", margin: 0 }}>
               Vendu — le vendeur n&apos;attend plus de contact pour cette annonce.
             </p>
-          ) : wa ? (
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-block"
-              style={{ background: "var(--wa)", fontSize: 15.5, padding: "14px 0" }}>
-              Contacter sur WhatsApp
-            </a>
+          ) : monAnnonce ? (
+            <Link href="/messages" className="btn btn-block" style={{ fontSize: 15, padding: "13px 0" }}>
+              Voir les messages reçus
+            </Link>
+          ) : composer ? (
+            <form onSubmit={envoyerMessage} style={{ display: "grid", gap: 8 }}>
+              <textarea
+                className="input" rows={3} autoFocus
+                value={messageTexte}
+                onChange={(e) => setMessageTexte(e.target.value.slice(0, MESSAGE_MAX))}
+                placeholder={`Bonjour, je vous contacte au sujet de « ${l.title} »…`}
+                aria-label="Votre message"
+              />
+              {messageErr && (
+                <p style={{ color: "var(--danger)", fontSize: 13, fontWeight: 600, margin: 0 }}>{messageErr}</p>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="btn btn-outline-gold" style={{ flex: "0 0 auto", color: "var(--gold-deep)" }}
+                  onClick={() => setComposer(false)}>
+                  Annuler
+                </button>
+                <button className="btn btn-gold" style={{ flex: 1 }}
+                  disabled={envoiMessage || messageTexte.trim().length === 0}>
+                  {envoiMessage ? "Envoi…" : "Envoyer le message"}
+                </button>
+              </div>
+            </form>
           ) : (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", margin: 0 }}>
-              Le vendeur n&apos;a pas renseigné de numéro WhatsApp.
-            </p>
+            /* Les deux voies côte à côte : WhatsApp quand il est renseigné,
+               la messagerie toujours. Une annonce sans aucun contact possible
+               n'existe plus — c'était le cul-de-sac d'avant. */
+            <div style={{ display: "flex", gap: 8 }}>
+              {wa && (
+                <a href={wa} target="_blank" rel="noopener noreferrer" className="btn"
+                  style={{ flex: 1, background: "var(--wa)", fontSize: 15, padding: "13px 0" }}>
+                  WhatsApp
+                </a>
+              )}
+              {messagerieOuverte && (
+                <button onClick={ouvrirComposeur} className={wa ? "btn btn-outline-gold" : "btn btn-gold"}
+                  style={{ flex: 1, fontSize: 15, padding: "13px 0", ...(wa ? { color: "var(--gold-deep)" } : {}) }}>
+                  Envoyer un message
+                </button>
+              )}
+              {!wa && !messagerieOuverte && (
+                <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", margin: 0, flex: 1 }}>
+                  Cette personne n&apos;a laissé aucun moyen de contact.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

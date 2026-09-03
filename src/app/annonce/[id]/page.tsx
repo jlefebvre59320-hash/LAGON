@@ -10,7 +10,7 @@ const getListing = cache(async (id: string): Promise<Listing | null> => {
   if (!sb) return null;
   const { data } = await sb
     .from("listings")
-    .select("*, photos:listing_photos(storage_key, position), profile:profiles!listings_user_id_fkey(display_name, phone_wa)")
+    .select("*, photos:listing_photos(storage_key, position), profile:profiles!listings_user_id_fkey(display_name, phone_wa, allow_messages)")
     .eq("id", id)
     .maybeSingle();
   return (data as Listing | null) ?? null;

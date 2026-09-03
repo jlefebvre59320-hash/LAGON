@@ -869,6 +869,120 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   line-height: 1.15;
 }
 
+/* --- Messagerie ---------------------------------------------------------
+   Une ligne de conversation doit se lire d'un coup d'œil : qui, sur quelle
+   annonce, quand, et le début du dernier message. La pastille de non-lus
+   est le seul élément coloré — c'est la seule chose qui demande une action. */
+/* Colonne bornée : une grille à colonne « auto » se dimensionne sur le
+   contenu le plus large, or les lignes contiennent du texte en nowrap.
+   Sans minmax(0, 1fr), la liste déborde de l'écran au lieu de tronquer. */
+.conv-liste { display: grid; gap: 9px; grid-template-columns: minmax(0, 1fr); }
+.conv-row {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; text-align: left;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: inherit; font-size: 14px; color: var(--text);
+  transition: border-color .15s, transform .15s;
+}
+.conv-row:hover { border-color: var(--gold); transform: translateX(2px); }
+.conv-vignette {
+  flex: 0 0 auto;
+  width: 52px; height: 52px;
+  border-radius: 12px; overflow: hidden;
+  background: var(--cream-dark);
+  display: flex; align-items: center; justify-content: center;
+}
+.conv-vignette img { width: 100%; height: 100%; object-fit: cover; }
+.conv-corps { flex: 1; min-width: 0; display: block; }
+.conv-haut { display: flex; align-items: baseline; gap: 8px; }
+.conv-haut strong { font-size: 14.5px; }
+.conv-heure { margin-left: auto; flex: 0 0 auto; font-size: 11.5px; color: var(--text-muted); }
+.conv-annonce {
+  display: block; font-size: 12px; color: var(--text-muted); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conv-extrait {
+  display: block; font-size: 13px; color: var(--text); margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conv-pastille {
+  flex: 0 0 auto;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 99px;
+  background: var(--gold); color: var(--green);
+  font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.conv-entete {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 13px; margin-bottom: 12px;
+  text-decoration: none; color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.fil {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 4px 0 14px;
+}
+/* Le message reçu à gauche, le sien à droite : la convention est si répandue
+   qu'un fil aligné autrement se lit deux fois plus lentement. */
+.bulle {
+  max-width: min(78%, 460px);
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 14px 4px;
+  padding: 9px 12px 6px;
+}
+.bulle p { margin: 0; font-size: 14.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bulle span { display: block; margin-top: 3px; font-size: 10.5px; color: var(--text-muted); text-align: right; }
+.bulle-moi {
+  align-self: flex-end;
+  background: var(--green); border-color: var(--green);
+  color: var(--cream);
+  border-radius: 14px 14px 4px 14px;
+}
+.bulle-moi span { color: rgba(246, 242, 233, .68); }
+
+.fil-envoi {
+  position: sticky; bottom: 0;
+  display: flex; gap: 8px; align-items: flex-end;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--bg) 22%);
+}
+.fil-envoi textarea { flex: 1; resize: vertical; min-height: 46px; }
+.fil-envoi button { flex: 0 0 auto; }
+
+/* --- Champs de contact et de profil ------------------------------------- */
+.contact-bloc {
+  display: grid; gap: 10px;
+  padding: 13px 14px 14px;
+  border: 1px solid var(--border-input);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.contact-titre {
+  font-size: 11.5px; font-weight: 800;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--gold-deep);
+}
+.contact-case { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.contact-case input { width: 20px; height: 20px; margin-top: 2px; flex: 0 0 auto; accent-color: var(--green); }
+.contact-case strong { display: block; font-size: 14px; }
+.contact-case small { display: block; margin-top: 2px; font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+.contact-alerte {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  font-size: 12.5px; line-height: 1.45; color: var(--text);
+}
+.champ-label { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.champ-aide { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+
 .discovery-list { display: grid; gap: 8px; }
 .discovery-link {
   display: flex;
