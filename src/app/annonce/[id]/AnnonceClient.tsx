@@ -21,7 +21,7 @@ import { noteCourte } from "@/lib/membre";
 import { notifierParEmail } from "@/lib/notifierMessage";
 import SignalerPanel from "@/components/SignalerPanel";
 import AvertissementPaiement from "@/components/AvertissementPaiement";
-import { RAISON_LABEL, niveauRisque } from "@/lib/moderation";
+import { RAISON_LABEL, MESSAGE_CONTENU_REFUSE, niveauRisque } from "@/lib/moderation";
 
 export default function AnnoncePage({ initialListing = null }: { initialListing?: Listing | null }) {
   return (
@@ -241,15 +241,13 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
         {(enVerification || retenue) && (
           <div className={`verif-bandeau${retenue ? " retenue" : ""}`} role="status">
             <strong>
-              {retenue
-                ? "Cette annonce a été retenue et n’est pas visible du public."
-                : "Votre annonce est en cours de vérification."}
+              {retenue ? MESSAGE_CONTENU_REFUSE : "Votre annonce est en cours de vérification."}
             </strong>
             <span>
               {l.moderation_note
                 ? l.moderation_note
                 : retenue
-                  ? "Elle contient un élément que Ti Kanal n’accepte pas. Modifiez-la, ou contactez-nous depuis « Donner un avis » si vous pensez à une erreur."
+                  ? "Elle n’est pas visible du public et a été transmise à la modération. Si vous pensez à une erreur, écrivez-nous depuis « Donner un avis »."
                   : "Quelques éléments demandent un regard humain — c’est rapide, en général quelques heures. Elle paraîtra dès qu’un modérateur l’aura validée, sans que vous ayez rien à faire."}
             </span>
             {monAnnonce && !retenue && (
