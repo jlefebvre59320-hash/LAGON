@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { MODULES, INTENT_BADGE, eur, priceSuffix } from "@/lib/taxonomy";
+import { MODULES, intentBadge, eur, priceSuffix } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { Mark } from "@/components/Brand";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -37,16 +37,33 @@ function Vignette({ storageKey, alt }: { storageKey: string; alt: string }) {
   );
 }
 
+/* Une loupe pour la recherche, une étiquette pour l'offre. Le picto porte
+   le sens même quand la couleur ne passe pas — impression noir et blanc,
+   daltonisme, écran très lumineux au soleil. */
+function IntentGlyph({ sens }: { sens: "offer" | "wanted" }) {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {sens === "wanted"
+        ? <><circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4.5 4.5" /></>
+        : <><path d="M3 12.5V4a1 1 0 0 1 1-1h8.5L21 11.5 12.5 20z" /><path d="M7.5 7.5h.01" /></>}
+    </svg>
+  );
+}
+
 export default function ListingCard({ l }: { l: Listing }) {
   const m = MODULES[l.module];
   const photo = l.photos?.slice().sort((a, b) => a.position - b.position)[0];
   const price = eur(l.price_cents);
-  const badge = INTENT_BADGE[l.intent ?? "offer"];
   const wanted = l.intent === "wanted";
+  const badge = intentBadge(l.module, l.subcategory, l.intent ?? "offer");
   const enAvant = estEnAvant(l);
 
   return (
-    <article className={`card listing-card${enAvant ? " listing-featured" : ""}`} style={{ position: "relative" }}>
+    <article
+      className={`card listing-card${enAvant ? " listing-featured" : ""}${wanted ? " listing-wanted" : ""}`}
+      style={{ position: "relative" }}
+    >
       <Link
         href={`/annonce/${l.id}`}
         className="card-link-overlay"
@@ -101,16 +118,10 @@ export default function ListingCard({ l }: { l: Listing }) {
         <span style={{ position: "absolute", right: 8, bottom: 8, zIndex: 2 }}>
           <FavoriteButton targetId={l.id} />
         </span>
-        {badge && l.status !== "sold" && (
-          <span
-            style={{
-              position: "absolute", left: 8, bottom: 8,
-              background: "var(--green)", color: "var(--gold-light)",
-              fontSize: 10.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase",
-              padding: "4px 9px", borderRadius: 999,
-            }}
-          >
-            {badge}
+        {l.status !== "sold" && (
+          <span className={`intent-badge intent-${badge.sens}`}>
+            <IntentGlyph sens={badge.sens} />
+            {badge.texte}
           </span>
         )}
         {l.status === "sold" && (

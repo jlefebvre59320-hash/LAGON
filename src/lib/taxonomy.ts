@@ -25,12 +25,31 @@ export const INTENT_FILTER: Record<Intent, string> = {
   wanted: "Recherches",
 };
 
-/* Pastille sur la carte : rien pour une proposition (c'est la norme, l'afficher
-   ne dirait rien), une pastille nette pour une recherche. */
-export const INTENT_BADGE: Record<Intent, string | null> = {
-  offer: null,
-  wanted: "Recherche",
-};
+/* Pastille sur la carte. Les deux sens sont désormais annoncés, pas
+   seulement la recherche : dans un fil mélangé, l'absence de marque se lit
+   comme un oubli, pas comme « c'est la norme ». Deux couleurs pleines et
+   opposées, pour qu'un coup d'œil suffise.
+
+   Le libellé colle au métier : on ne « vend » pas un studio à l'année, on
+   ne « propose » pas un emploi, on recrute. Un mot juste vaut mieux qu'un
+   mot générique répété partout. */
+/* Les sous-catégories de l'immobilier qui relèvent d'une vente et non d'une
+   location : elles décident du libellé de la pastille comme du suffixe de prix. */
+const SALE_SUBS = ["Vente", "Terrains"];
+
+export type IntentBadge = { texte: string; sens: Intent };
+
+export function intentBadge(module: ModuleKey, sub: string, intent: Intent): IntentBadge {
+  if (intent === "wanted") return { texte: "Recherché", sens: "wanted" };
+  switch (module) {
+    case "housing":
+      return { texte: SALE_SUBS.includes(sub) ? "À vendre" : "À louer", sens: "offer" };
+    case "job":
+      return { texte: sub === "Offres d'emploi" ? "Recrute" : "Proposé", sens: "offer" };
+    default:
+      return { texte: "À vendre", sens: "offer" };
+  }
+}
 
 export type FieldDef = {
   k: string;                       // libellé = clé dans attrs (affichage direct)
@@ -99,7 +118,6 @@ export const MODULE_ORDER: ModuleKey[] = ["goods", "vehicle", "job", "housing"];
 
 const BOAT_SUBS = ["Bateaux à moteur", "Voiliers", "Jetskis"];
 const BIKE_SUBS = ["Vélos & Trottinettes"];
-const SALE_SUBS = ["Vente", "Terrains"];
 const ETAT: FieldDef = { k: "État", t: "select", o: ["Neuf", "Très bon", "Bon", "À réparer"] };
 
 export function fieldsFor(module: ModuleKey, sub: string): FieldDef[] {
