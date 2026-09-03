@@ -19,6 +19,7 @@ export default function ProfilForm() {
   const [nom, setNom] = useState("");
   const [phone, setPhone] = useState("");
   const [messagerie, setMessagerie] = useState(true);
+  const [emailNotif, setEmailNotif] = useState(true);
   const [enregistre, setEnregistre] = useState(false);
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -36,14 +37,18 @@ export default function ProfilForm() {
       setEmailActuel(session.session.user.email ?? "");
       const { data } = await sb
         .from("profiles")
-        .select("display_name, phone_wa, allow_messages")
+        .select("display_name, phone_wa, allow_messages, notify_email")
         .eq("id", session.session.user.id)
         .maybeSingle();
       if (data) {
-        const p = data as { display_name: string; phone_wa: string | null; allow_messages?: boolean };
+        const p = data as {
+          display_name: string; phone_wa: string | null;
+          allow_messages?: boolean; notify_email?: boolean;
+        };
         setNom(p.display_name ?? "");
         setPhone(p.phone_wa ?? "");
         setMessagerie(p.allow_messages !== false);
+        setEmailNotif(p.notify_email !== false);
       }
       setChargement(false);
     })();
@@ -89,7 +94,10 @@ export default function ProfilForm() {
        refusée par les privilèges passe pour un succès à zéro ligne. */
     const { data, error } = await sb
       .from("profiles")
-      .update({ display_name: nomPropre, phone_wa: numero, allow_messages: messagerie })
+      .update({
+        display_name: nomPropre, phone_wa: numero,
+        allow_messages: messagerie, notify_email: emailNotif,
+      })
       .eq("id", session.session.user.id)
       .select("id");
 
@@ -163,6 +171,21 @@ export default function ProfilForm() {
             </span>
           </span>
         </label>
+
+        {/* La case de notification ne s'offre que si la messagerie est ouverte :
+            sans messages à recevoir, il n'y a rien à notifier. */}
+        {messagerie && (
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+            <input type="checkbox" checked={emailNotif} onChange={(e) => setEmailNotif(e.target.checked)}
+              style={{ width: 20, height: 20, marginTop: 2, flex: "0 0 auto", accentColor: "var(--green)" }} />
+            <span>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>Recevoir un email quand on m’écrit</span>
+              <span className="champ-aide" style={{ display: "block" }}>
+                Un seul email par conversation et par quart d’heure : une discussion animée ne remplit pas votre boîte.
+              </span>
+            </span>
+          </label>
+        )}
 
         {erreur && <p style={{ color: "var(--danger)", fontWeight: 600, fontSize: 13.5, margin: 0 }}>{erreur}</p>}
         {enregistre && <p style={{ color: "var(--green)", fontWeight: 700, fontSize: 13.5, margin: 0 }}>Profil enregistré.</p>}

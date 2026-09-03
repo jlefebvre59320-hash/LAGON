@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { SITES, siteFromPath, type SiteKey } from "@/lib/sites";
 import SiteSwitcher from "@/components/SiteSwitcher";
 import { connexionUrl } from "@/lib/urls";
+import MessagesBadge, { useMessagesNonLus } from "@/components/MessagesBadge";
 
 /* Contour de Saint-Barthélemy, tracé vectoriel du logo.
    Deux niveaux de détail : le tracé complet pour le logo, une version
@@ -87,6 +88,9 @@ export function Brand({ compact = false, href, onClick, site = "tikanal" }: {
 export function AccountButton() {
   const { userId, ready } = useSession();
   const pathname = usePathname();
+  /* Le compteur s'abonne à la réplication : il est appelé à chaque rendu
+     du bouton, donc avant le retour anticipé — un hook ne se saute pas. */
+  const nonLus = useMessagesNonLus();
   if (!ready) return <span style={{ minWidth: 92, minHeight: 40 }} aria-hidden="true" />;
 
   // Depuis Food, l'espace s'ouvre aux couleurs de Food, sur ses restaurants.
@@ -96,9 +100,10 @@ export function AccountButton() {
     <Link
       href={userId ? espace : connexionUrl(pathname ?? "/")}
       className="btn btn-outline-gold acct-btn"
-      style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
+      style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap", position: "relative" }}
     >
       {userId ? "Mon espace" : "Connexion"}
+      {userId && <MessagesBadge n={nonLus} />}
     </Link>
   );
 }

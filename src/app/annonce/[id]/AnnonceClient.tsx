@@ -16,6 +16,7 @@ import { connexionUrl } from "@/lib/urls";
 import { serializeJsonLd } from "@/lib/jsonLd";
 import { thumbKey } from "@/lib/images";
 import { MESSAGE_MAX, messageErreur } from "@/lib/messages";
+import { notifierParEmail } from "@/lib/notifierMessage";
 
 export default function AnnoncePage({ initialListing = null }: { initialListing?: Listing | null }) {
   return (
@@ -160,6 +161,7 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
       setMessageErr(messageErreur(error, "Le message n’est pas parti. Réessayez."));
       return;
     }
+    void notifierParEmail(data as string);
     router.push(`/messages?c=${data as string}`);
   }
 
