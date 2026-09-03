@@ -1611,3 +1611,66 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .risque-raisons { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
 .risque-raisons li { display: flex; gap: 9px; align-items: baseline; font-size: 12.5px; line-height: 1.45; color: var(--text); }
 .risque-raisons li b { flex: 0 0 34px; text-align: right; font-variant-numeric: tabular-nums; color: var(--gold-deep); }
+
+/* --- À la une : les mises en avant, en tête de l'accueil -----------------
+   Une rangée qui glisse, avance seule lentement, et s'arrête dès qu'on
+   la touche. Les cartes sont celles de la grille, un peu plus larges. */
+.une-section {
+  margin: 0 0 26px;
+  padding: 14px 14px 12px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 16%, var(--surface)), var(--surface) 70%);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  box-shadow: var(--shadow);
+}
+.une-tete {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin-bottom: 10px;
+}
+.une-titre {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: 0; font-size: 17px; color: var(--green);
+}
+.une-etoile { color: var(--gold-deep); font-size: 15px; }
+.une-compte { font-size: 12px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.une-lien { font-size: 12.5px; font-weight: 700; color: var(--gold-deep); white-space: nowrap; }
+.une-cadre { position: relative; }
+.une-piste {
+  display: flex; gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 6px;
+  margin: 0 -2px;
+}
+.une-piste > * { flex: 0 0 min(82%, 340px); scroll-snap-align: start; }
+@media (min-width: 720px) { .une-piste > * { flex: 0 0 300px; } }
+/* Les flèches n'existent qu'avec une souris : au doigt, on glisse. */
+.une-fleche {
+  display: none;
+  position: absolute; top: 40%; z-index: 4;
+  width: 36px; height: 36px; border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+  background: rgba(255, 253, 248, .96); color: var(--green);
+  font-size: 24px; line-height: 1; font-family: inherit; cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.une-fleche:hover { background: var(--gold); color: var(--green-900); }
+.une-gauche { left: -14px; } .une-droite { right: -14px; }
+@media (hover: hover) and (min-width: 720px) { .une-fleche { display: grid; place-items: center; } }
+.une-points { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
+.une-points button {
+  width: 8px; height: 8px; padding: 0; border: 0; border-radius: 99px; cursor: pointer;
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  transition: width .25s, background .25s;
+}
+.une-points button.actif { width: 22px; background: var(--gold-deep); }
+@media (prefers-reduced-motion: reduce) {
+  .une-piste { scroll-behavior: auto; }
+  .une-points button { transition: none; }
+}
+/* Sur un petit écran, le titre ne se coupe pas : c'est le lien qui raccourcit. */
+.une-titre, .une-compte, .une-lien { white-space: nowrap; }
+.une-lien-long { display: none; }
+@media (min-width: 480px) { .une-lien-long { display: inline; } .une-lien-court { display: none; } }
