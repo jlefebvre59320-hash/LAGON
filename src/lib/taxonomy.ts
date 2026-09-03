@@ -3,7 +3,7 @@
    ici et se déploie. Passage en table de config seulement si le besoin
    d'édition sans déploiement se confirme. */
 
-export type ModuleKey = "vehicle" | "housing" | "job" | "goods";
+export type ModuleKey = "vehicle" | "housing" | "job" | "goods" | "service";
 
 /* Sens de l'annonce : 'offer' = je propose (le cas courant, valeur par défaut),
    'wanted' = je recherche. Le vocabulaire change selon l'univers — on ne « vend »
@@ -17,6 +17,7 @@ export const INTENT_LABEL: Record<ModuleKey, Record<Intent, string>> = {
   housing: { offer: "Je propose", wanted: "Je recherche" },
   job:     { offer: "Je propose", wanted: "Je recherche" },
   goods:   { offer: "Je vends", wanted: "Je recherche" },
+  service: { offer: "Je propose mes services", wanted: "Je cherche un pro" },
 };
 
 /* Filtre de l'accueil : on se place du côté du visiteur, pas de l'annonceur. */
@@ -46,6 +47,8 @@ export function intentBadge(module: ModuleKey, sub: string, intent: Intent): Int
       return { texte: SALE_SUBS.includes(sub) ? "À vendre" : "À louer", sens: "offer" };
     case "job":
       return { texte: sub === "Offres d'emploi" ? "Recrute" : "Proposé", sens: "offer" };
+    case "service":
+      return { texte: "Propose", sens: "offer" };
     default:
       return { texte: "À vendre", sens: "offer" };
   }
@@ -93,6 +96,28 @@ export const MODULES: Record<ModuleKey, {
       "Offres d'emploi", "Candidats", "Services entre particuliers", "Cours & Formations",
     ],
   },
+  /* Aubergine profonde : la cinquième teinte devait se distinguer du marine,
+     du bronze, de la palme et de la terre cuite sans quitter le registre
+     sourd de la charte. */
+  service: {
+    label: "Services & Artisans", short: "Services",
+    color: "#6a4568", soft: "#f2eaf1", dark: "#4f3350",
+    /* Ordonné par ce qu'on cherche le plus souvent sur l'île : le bâtiment
+       et l'entretien d'abord, la maison ensuite, la personne après. */
+    subs: [
+      "Bâtiment & Rénovation", "Plomberie", "Électricité", "Climatisation",
+      "Peinture & Décoration", "Menuiserie", "Maçonnerie & Terrassement",
+      "Piscine & Entretien", "Jardinage & Paysagisme",
+      "Ménage & Repassage", "Conciergerie & Gestion de villa",
+      "Déménagement & Manutention", "Mécanique & Dépannage auto",
+      "Entretien bateau & Mécanique marine", "Informatique & Dépannage",
+      "Photo & Vidéo", "Coiffure & Esthétique", "Massage & Bien-être",
+      "Coach sportif", "Garde d'enfants", "Aide aux personnes",
+      "Cours particuliers", "Traduction & Administratif",
+      "Événementiel & Traiteur", "Transport & Chauffeur",
+      "Couture & Retouches", "Garde d'animaux", "Autre service",
+    ],
+  },
   goods: {
     label: "Achats & Ventes", short: "Achats",
     color: "#a04e30", soft: "#f8ece6", dark: "#7a3a22",
@@ -114,7 +139,18 @@ export const MODULES: Record<ModuleKey, {
 
 /* Ordre voulu par l'éditeur du site, appliqué partout d'un seul endroit :
    filtres de l'accueil, choix de catégorie au dépôt, colonnes des stats. */
-export const MODULE_ORDER: ModuleKey[] = ["goods", "vehicle", "job", "housing"];
+export const MODULE_ORDER: ModuleKey[] = ["goods", "vehicle", "service", "job", "housing"];
+
+/* Les valeurs des trois critères filtrables des services. Elles vivent ici
+   et non dans la page d'accueil : le formulaire de dépôt et le filtre lisent
+   la même liste, donc une valeur saisie est toujours une valeur trouvable. */
+export const ZONES_SERVICE = [
+  "Toute l'île", "Gustavia", "Saint-Jean", "Lorient",
+  "Colombier & Flamands", "Grand Cul-de-Sac & Marigot",
+  "Toiny & Grand Fond", "Public & Corossol",
+];
+export const TARIFS_SERVICE = ["À l'heure", "Au forfait", "Sur devis", "Au m²", "À la journée"];
+export const DISPOS_SERVICE = ["En semaine", "Week-end", "Soirs", "7j/7", "Urgences"];
 
 const BOAT_SUBS = ["Bateaux à moteur", "Voiliers", "Jetskis"];
 const BIKE_SUBS = ["Vélos & Trottinettes"];
@@ -201,6 +237,22 @@ export function fieldsFor(module: ModuleKey, sub: string): FieldDef[] {
       { k: "Langues", t: "text", ph: "ex : français, anglais", adv: true },
       { k: "Nourri", t: "select", o: ["Oui", "Non"], adv: true },
     ];
+    /* Les trois premiers critères sont ceux sur lesquels on filtre : ils
+       répondent aux seules questions qui comptent avant d'appeler quelqu'un
+       — vient-il jusqu'à moi, combien ça coûte, et quand. Le reste rassure
+       une fois la fiche ouverte. */
+    case "service": return [
+      { k: "Zone d'intervention", t: "select", o: ZONES_SERVICE },
+      { k: "Tarification", t: "select", o: TARIFS_SERVICE },
+      { k: "Disponibilité", t: "select", o: DISPOS_SERVICE },
+      { k: "Statut", t: "select", o: ["Professionnel (SIRET)", "Auto-entrepreneur", "Particulier"] },
+      { k: "Expérience", t: "select", o: ["Moins d'un an", "1 à 5 ans", "5 à 10 ans", "Plus de 10 ans"], adv: true },
+      { k: "Devis gratuit", t: "select", o: ["Oui", "Non"], adv: true },
+      { k: "Déplacement inclus", t: "select", o: ["Oui", "Non", "Selon la zone"], adv: true },
+      { k: "Assurance professionnelle", t: "select", o: ["Oui", "Non"], adv: true },
+      { k: "Langues", t: "text", ph: "ex : français, anglais", adv: true },
+      { k: "Références", t: "text", ph: "ex : villas, hôtels, chantiers suivis", adv: true },
+    ];
     case "goods": {
       if (sub === "Matériaux & Chantier") return [
         ETAT,
@@ -229,4 +281,14 @@ export const priceSuffix = (module: ModuleKey, sub: string) => {
   if (sub === "Places de port") return " /mois";
   if (sub === "Services entre particuliers") return " /h";
   return "";
+};
+
+/* Ce qu'on écrit à la place du prix quand il n'y en a pas. « Prix à
+   discuter » sur une prestation sonne comme un marchandage ; un artisan
+   fait un devis. */
+export const prixAbsent = (module: ModuleKey, intent: Intent): string => {
+  if (intent === "wanted") return "Budget à discuter";
+  if (module === "service") return "Sur devis";
+  if (module === "job") return "Selon profil";
+  return "Prix à discuter";
 };
