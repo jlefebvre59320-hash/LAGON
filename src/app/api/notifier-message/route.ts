@@ -1,4 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import webpush from "web-push";
 import { SITE_URL } from "@/lib/siteUrl";
 
 /* Prévenir par email la personne qui vient de recevoir un message.
@@ -28,13 +29,18 @@ const CLE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const CLE_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const CLE_RESEND = process.env.RESEND_API_KEY;
 const EXPEDITEUR = process.env.MAIL_FROM || "Ti Kanal <notifications@tikanal.com>";
+const VAPID_PUBLIQUE = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const VAPID_PRIVEE = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUJET = process.env.VAPID_SUBJECT || "mailto:contact@tikanal.com";
 
 function ok(motif: string) {
   return Response.json({ ok: true, motif });
 }
 
 export async function POST(request: Request) {
-  if (!URL_SUPABASE || !CLE_ANON || !CLE_SERVICE || !CLE_RESEND) {
+  // Supabase est indispensable ; l'email et le push sont deux canaux
+  // indépendants, chacun actif dès que ses propres clés sont là.
+  if (!URL_SUPABASE || !CLE_ANON || !CLE_SERVICE) {
     return ok("configuration-incomplete");
   }
 
@@ -74,11 +80,25 @@ export async function POST(request: Request) {
   const cible = (cibles as { user_id: string; autre_nom: string; listing_title: string; listing_id: string }[] | null)?.[0];
   if (!cible) return ok("rien-a-envoyer");
 
+  // 4. Le push part en premier : c'est le canal le plus rapide, et il ne
+  //    doit pas attendre l'aller-retour avec le service d'emails. Il est
+  //    aussi le seul possible pour un compte sans adresse exploitable.
+  const pushEnvoye = await envoyerPush(service, cible);
+
+  const marquer = () => service.rpc("marquer_notifie", {
+    p_conversation_id: conversationId,
+    p_user_id: cible.user_id,
+  });
+
   const { data: destinataire } = await service.auth.admin.getUserById(cible.user_id);
   const email = destinataire?.user?.email;
-  if (!email) return ok("sans-adresse");
 
-  // 4. L'email ne contient pas le message. Une notification qui recopie
+  if (!CLE_RESEND || !email) {
+    if (pushEnvoye > 0) { await marquer(); return ok("push-seul"); }
+    return ok(email ? "email-non-configure" : "sans-adresse");
+  }
+
+  // 5. L'email ne contient pas le message. Une notification qui recopie
   //    le contenu se retrouve dans les aperçus d'écran verrouillé et dans
   //    les boîtes partagées — et elle enlève toute raison de revenir.
   const lien = `${SITE_URL}/messages`;
@@ -115,21 +135,63 @@ export async function POST(request: Request) {
     });
     if (!envoi.ok) {
       console.error("Notification message : Resend a refusé", envoi.status, await envoi.text());
-      return ok("envoi-refuse");
+      return ok(pushEnvoye > 0 ? "push-seul" : "envoi-refuse");
     }
   } catch (cause) {
     console.error("Notification message : envoi impossible", cause);
-    return ok("envoi-impossible");
+    return ok(pushEnvoye > 0 ? "push-seul" : "envoi-impossible");
   }
 
-  // 5. Marqué seulement après un envoi réussi : un échec doit pouvoir
+  // 6. Marqué seulement après un envoi réussi : un échec doit pouvoir
   //    être retenté au message suivant.
-  await service.rpc("marquer_notifie", {
-    p_conversation_id: conversationId,
-    p_user_id: cible.user_id,
+  await marquer();
+  return ok("envoye");
+}
+
+/* Pousse la notification sur les appareils inscrits. Renvoie le nombre
+   d'envois réussis.
+
+   Un endpoint refusé (410 ou 404) désigne un appareil qui n'existe plus :
+   application désinstallée, navigateur réinitialisé. Il est supprimé sur
+   place, sinon chaque message suivant repartirait pour rien. */
+async function envoyerPush(
+  service: SupabaseClient,
+  cible: { user_id: string; autre_nom: string; listing_title: string },
+): Promise<number> {
+  if (!VAPID_PUBLIQUE || !VAPID_PRIVEE) return 0;
+
+  const { data } = await service.rpc("appareils_a_notifier", { p_user_id: cible.user_id });
+  const appareils = (data as { id: string; endpoint: string; p256dh: string; auth: string }[] | null) ?? [];
+  if (appareils.length === 0) return 0;
+
+  webpush.setVapidDetails(VAPID_SUJET, VAPID_PUBLIQUE, VAPID_PRIVEE);
+
+  const charge = JSON.stringify({
+    titre: `Message de ${cible.autre_nom}`,
+    corps: `À propos de « ${cible.listing_title} »`,
+    url: `${SITE_URL}/messages`,
+    tag: `tikanal-${cible.user_id}`,
   });
 
-  return ok("envoye");
+  const resultats = await Promise.allSettled(appareils.map(async (a) => {
+    try {
+      await webpush.sendNotification(
+        { endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } },
+        charge,
+      );
+      return true;
+    } catch (cause) {
+      const code = (cause as { statusCode?: number }).statusCode;
+      if (code === 404 || code === 410) {
+        await service.rpc("oublier_appareil", { p_id: a.id });
+      } else {
+        console.error("Push refusé", code, cause);
+      }
+      return false;
+    }
+  }));
+
+  return resultats.filter((r) => r.status === "fulfilled" && r.value).length;
 }
 
 /* Le nom affiché et le titre d'annonce sont saisis par des utilisateurs :

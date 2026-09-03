@@ -995,6 +995,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
   font-size: 12.5px; line-height: 1.45; color: var(--text);
 }
+/* Les deux canaux de notification vivent ensemble dans un cadre : ce sont
+   deux réglages d'une même question, pas deux cases indépendantes perdues
+   au milieu du formulaire. */
+.notif-bloc {
+  display: grid; gap: 11px;
+  padding: 12px 13px 13px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--cream-dark) 40%, var(--surface));
+}
+
 .champ-label { font-size: 12.5px; font-weight: 700; color: var(--text); }
 .champ-aide { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
 
