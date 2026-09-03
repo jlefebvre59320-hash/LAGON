@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { safeReturnTo } from "@/lib/urls";
+import { RAPPEL_SPAM } from "@/lib/courriel";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
 
@@ -105,7 +106,7 @@ export default function Connexion() {
           router.replace(returnTo());
           return;
         }
-        setNotice(`Compte créé. Un email de confirmation part vers ${email.trim()} : ouvrez-le pour activer votre compte. Rien au bout de quelques minutes ? Regardez vos spams, puis utilisez « Renvoyer l'email de confirmation ».`);
+        setNotice(`Compte créé. Un email de confirmation part vers ${email.trim()} : ouvrez-le pour activer votre compte. ${RAPPEL_SPAM} Toujours rien ? Utilisez « Renvoyer l'email de confirmation ».`);
         setPassword("");
         setMode("login");
         return;
@@ -116,7 +117,7 @@ export default function Connexion() {
           redirectTo: origin ? `${origin}/connexion` : undefined,
         });
         if (error) throw error;
-        setNotice("Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé.");
+        setNotice(`Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé à ${email.trim()}. ${RAPPEL_SPAM}`);
         setMode("login");
         return;
       }
@@ -150,7 +151,7 @@ export default function Connexion() {
     });
     setLoading(false);
     if (error) setError(humanError(error.message));
-    else setNotice(`Si cette adresse attend une confirmation, un nouvel email vient de partir vers ${email.trim()}.`);
+    else setNotice(`Si cette adresse attend une confirmation, un nouvel email vient de partir vers ${email.trim()}. ${RAPPEL_SPAM}`);
   }
 
   async function magicLink() {
@@ -165,7 +166,7 @@ export default function Connexion() {
     });
     setLoading(false);
     if (error) setError(humanError(error.message));
-    else setNotice(`Un lien de connexion vient d'être envoyé à ${email.trim()}.`);
+    else setNotice(`Un lien de connexion vient d'être envoyé à ${email.trim()}. ${RAPPEL_SPAM}`);
   }
 
   const title =
@@ -284,6 +285,17 @@ export default function Connexion() {
             </div>
           )}
 
+          {/* Le rappel est là avant même d'appuyer : c'est au moment où l'on
+              attend l'email qu'on oublie de regarder les indésirables. */}
+          {(mode === "forgot" || mode === "signup") && (
+            <p style={{ fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 14, marginBottom: 0, textAlign: "center" }}>
+              {mode === "signup"
+                ? <>Un email de confirmation vous sera envoyé. </>
+                : <>Le lien arrive par email en quelques minutes. </>}
+              {RAPPEL_SPAM}
+            </p>
+          )}
+
           {mode === "forgot" && (
             <p style={{ textAlign: "center", marginTop: 14, marginBottom: 0 }}>
               <button className="link-quiet" onClick={() => { setMode("login"); setError(null); }}>
@@ -293,8 +305,8 @@ export default function Connexion() {
           )}
 
           {mode === "signup" && (
-            <p style={{ fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 14, marginBottom: 0, textAlign: "center" }}>
-              Votre email ne s&apos;affiche jamais sur le site : les acheteurs vous contactent par WhatsApp.
+            <p style={{ fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 8, marginBottom: 0, textAlign: "center" }}>
+              Votre email ne s&apos;affiche jamais sur le site : les acheteurs vous contactent par WhatsApp ou par la messagerie.
             </p>
           )}
         </div>

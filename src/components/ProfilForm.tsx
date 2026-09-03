@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { normalizePhoneNumber } from "@/lib/urls";
 import { messageErreur } from "@/lib/messages";
+import { RAPPEL_SPAM } from "@/lib/courriel";
 import { activerPush, desactiverPush, etatPush, type EtatPush } from "@/lib/push";
 
 /* Réglages du compte : nom affiché, numéro WhatsApp, messagerie interne,
@@ -164,7 +165,7 @@ export default function ProfilForm() {
       return;
     }
     setNouvelEmail("");
-    setEmailInfo(`Un lien de confirmation vient d’être envoyé à ${cible}. Votre adresse de connexion ne changera qu’une fois ce lien ouvert — pensez à regarder les indésirables.`);
+    setEmailInfo(`Un lien de confirmation vient d’être envoyé à ${cible}. Votre adresse de connexion ne changera qu’une fois ce lien ouvert. ${RAPPEL_SPAM}`);
   }
 
   if (chargement) return <p style={{ color: "var(--text-muted)" }}>Chargement…</p>;
