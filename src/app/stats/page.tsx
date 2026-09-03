@@ -7,6 +7,7 @@ import { MODULES, MODULE_ORDER, INTENT_FILTER, type Intent, type ModuleKey } fro
 import { SiteHeader } from "@/components/Brand";
 import { SITES, type SiteKey } from "@/lib/sites";
 import { connexionUrl, safeExternalUrl } from "@/lib/urls";
+import Dashboard from "@/components/admin/Dashboard";
 
 type Daily = { day: string; visits: number; visitors?: number };
 type Top = { id: string; title: string; module: ModuleKey; views: number };
@@ -73,9 +74,6 @@ type SiteStats = {
   daily: Daily[];
   top_listings: Top[];
 };
-
-const jour = (iso: string) =>
-  new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
 export default function Stats() {
   const router = useRouter();
@@ -229,13 +227,7 @@ export default function Stats() {
     </>
   );
 
-  const maxVisits = Math.max(1, ...s.daily.map((d) => d.visits));
   const maxModule = Math.max(1, ...MODULE_ORDER.map((k) => s.by_module[k] ?? 0));
-  /* La date affichée est celle de l'île, pas celle du navigateur : un admin
-     qui consulte depuis la métropole doit lire la même journée que le serveur. */
-  const aujourdhui = new Date().toLocaleDateString("fr-FR", {
-    weekday: "long", day: "numeric", month: "long", timeZone: "America/Port_of_Spain",
-  });
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
@@ -411,31 +403,13 @@ export default function Stats() {
           </Section>
         )}
 
-        <Section titre="Aujourd'hui"
-          sousTitre={`Journée en cours, à l'heure de Saint-Barthélemy — ${aujourdhui}`}>
-          <Tiles items={[
-            { k: "Visiteurs aujourd'hui", v: s.visitors_today ?? 0,
-              sub: `${s.visits_today ?? 0} page${(s.visits_today ?? 0) > 1 ? "s" : ""} vue${(s.visits_today ?? 0) > 1 ? "s" : ""}`,
-              delta: s.visitors_yesterday == null ? null : (s.visitors_today ?? 0) - s.visitors_yesterday },
-            { k: "Pages vues aujourd'hui", v: s.visits_today ?? 0,
-              sub: `${s.visits_yesterday ?? 0} hier sur la journée entière`,
-              delta: s.visits_yesterday == null ? null : (s.visits_today ?? 0) - s.visits_yesterday },
-            { k: "Annonces déposées aujourd'hui", v: s.listings_today ?? 0, sub: `${s.listings_7d} sur 7 jours` },
-            { k: "Comptes créés aujourd'hui", v: s.users_today ?? 0, sub: `${s.users_total} au total` },
-          ]} />
-        </Section>
-
-        <Section titre="Vue d'ensemble">
-          <Tiles items={[
-            { k: "Annonces en ligne", v: s.listings_active, sub: `${s.listings_total} au total` },
-            { k: "Déposées sur 7 j", v: s.listings_7d, sub: `${s.listings_today ?? 0} aujourd'hui` },
-            { k: "Comptes", v: s.users_total, sub: `${s.users_today ?? 0} aujourd'hui` },
-            { k: "Vues d'annonces", v: s.views_total, sub: `${s.views_today ?? 0} aujourd'hui` },
-            { k: "Visiteurs (7 j)", v: s.visitors_7d, sub: `${s.visits_7d} pages vues` },
-            { k: "Visiteurs au total", v: s.visitors_total ?? 0, sub: "depuis l'ouverture" },
-            { k: "Mises en favori", v: s.favorites_total, sub: "toutes annonces" },
-          ]} />
-        </Section>
+        {/* Le tableau de bord remplace les anciennes tuiles et l'histogramme
+            à quatorze barres : mêmes données, une période au choix, et des
+            questions auxquelles on peut répondre d'un coup d'œil. Les blocs
+            de modération qui suivent sont inchangés. */}
+        <div style={{ marginBottom: 26 }}>
+          <Dashboard />
+        </div>
 
         <Section titre="Fréquentation par univers"
           sousTitre="Visiteurs uniques et pages vues, aujourd'hui et sur 7 jours — une même personne peut compter dans plusieurs univers">
@@ -476,80 +450,6 @@ export default function Stats() {
                 })}
               </tbody>
             </table>
-          </div>
-        </Section>
-
-        <Section titre="Jour par jour, sur 14 jours"
-          sousTitre="Pages vues et visiteurs uniques par journée, découpées à l'heure de l'île — la dernière barre est la journée en cours">
-          <div className="panel" style={{ padding: "18px 16px 12px" }}>
-            <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 11.5, color: "var(--text-muted)" }}>
-              <span><i style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: "var(--green)", marginRight: 5 }} />Pages vues</span>
-              <span><i style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: "var(--gold)", marginRight: 5 }} />Visiteurs uniques</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 132 }}>
-              {s.daily.map((d, i) => {
-                const h = Math.round((d.visits / maxVisits) * 100);
-                const hv = Math.round(((d.visitors ?? 0) / maxVisits) * 100);
-                const enCours = i === s.daily.length - 1;
-                return (
-                  <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}
-                    title={`${jour(d.day)} · ${d.visits} page${d.visits > 1 ? "s" : ""} vue${d.visits > 1 ? "s" : ""}${d.visitors != null ? ` · ${d.visitors} visiteur${d.visitors > 1 ? "s" : ""}` : ""}${enCours ? " (journée en cours)" : ""}`}>
-                    {d.visits === maxVisits && d.visits > 0 && (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", textAlign: "center", marginBottom: 4 }}>
-                        {d.visits}
-                      </span>
-                    )}
-                    {/* Deux barres accolées plutôt qu'empilées : les visiteurs
-                        uniques sont un sous-ensemble des pages vues, un empilement
-                        les additionnerait à tort. Un jour sans visite garde un
-                        trait, sinon un zéro se lit comme une donnée manquante. */}
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 1, height: "100%" }}>
-                      <div style={{
-                        flex: 1, height: `${Math.max(h, 2)}%`, minHeight: 3,
-                        background: d.visits === 0 ? "var(--cream-dark)" : "var(--green)",
-                        borderRadius: "3px 3px 0 0",
-                        opacity: enCours ? 0.72 : 1,
-                      }} />
-                      <div style={{
-                        flex: 1, height: `${Math.max(hv, 2)}%`, minHeight: 3,
-                        background: (d.visitors ?? 0) === 0 ? "var(--cream-dark)" : "var(--gold)",
-                        borderRadius: "3px 3px 0 0",
-                        opacity: enCours ? 0.72 : 1,
-                      }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 6, marginTop: 2, fontSize: 11.5, color: "var(--text-muted)" }}>
-              <span>{s.daily.length > 0 ? jour(s.daily[0].day) : ""}</span>
-              <span>{s.daily.length > 0 ? `${jour(s.daily[s.daily.length - 1].day)} · en cours` : ""}</span>
-            </div>
-
-            <details style={{ marginTop: 12 }}>
-              <summary style={{ fontSize: 12.5, color: "var(--text-muted)", cursor: "pointer" }}>Voir les chiffres</summary>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginTop: 8 }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: "left", padding: "6px 0", color: "var(--text-muted)", fontWeight: 600 }}>Jour</th>
-                    <th style={{ textAlign: "right", padding: "6px 0", color: "var(--text-muted)", fontWeight: 600 }}>Pages vues</th>
-                    <th style={{ textAlign: "right", padding: "6px 0", color: "var(--text-muted)", fontWeight: 600 }}>Visiteurs</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.daily.slice().reverse().map((d, i) => (
-                    <tr key={d.day} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td style={{ padding: "6px 0" }}>
-                        {jour(d.day)}
-                        {i === 0 && <span style={{ color: "var(--text-muted)", fontSize: 11.5 }}> · en cours</span>}
-                      </td>
-                      <td style={{ padding: "6px 0", textAlign: "right", fontWeight: 600 }}>{d.visits}</td>
-                      <td style={{ padding: "6px 0", textAlign: "right", fontWeight: 600 }}>{d.visitors ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </details>
           </div>
         </Section>
 
@@ -662,32 +562,3 @@ function Section({ titre, sousTitre, children }: { titre: string; sousTitre?: st
   );
 }
 
-function Tiles({ items }: { items: { k: string; v: number; sub: string; delta?: number | null }[] }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-      {items.map((t) => (
-        <div key={t.k} className="panel" style={{ padding: "14px 16px" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
-            <span className="price" style={{ fontSize: 26, lineHeight: 1.1 }}>{t.v.toLocaleString("fr-FR")}</span>
-            {t.delta != null && <Delta value={t.delta} />}
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 600, marginTop: 3 }}>{t.k}</div>
-          <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t.sub}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* Écart avec la veille. Une journée en cours est toujours en retard sur une
-   journée pleine : l'écart se lit comme une tendance du matin, pas comme un
-   bilan. D'où le libellé « vs hier » plutôt qu'une flèche seule. */
-function Delta({ value }: { value: number }) {
-  if (value === 0) return <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>= hier</span>;
-  const hausse = value > 0;
-  return (
-    <span style={{ fontSize: 11.5, fontWeight: 700, color: hausse ? "var(--green)" : "var(--text-muted)" }}>
-      {hausse ? "▲" : "▼"} {Math.abs(value)} vs hier
-    </span>
-  );
-}

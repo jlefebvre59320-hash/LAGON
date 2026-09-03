@@ -7,7 +7,6 @@ import { SiteHeader, Mark } from "@/components/Brand";
 import { photoUrl } from "@/components/ListingCard";
 import { thumbKey } from "@/lib/images";
 import { connexionUrl } from "@/lib/urls";
-import { recordView } from "@/lib/analytics";
 import { notifierParEmail } from "@/lib/notifierMessage";
 import {
   MESSAGE_MAX, heureMessage, messageErreur,
@@ -29,8 +28,6 @@ export default function MessagesClient() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [blocageBusy, setBlocageBusy] = useState(false);
   const basDuFil = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { recordView("/messages"); }, []);
 
   const chargerConversations = useCallback(async () => {
     const { data, error } = await supabase().rpc("mes_conversations");
