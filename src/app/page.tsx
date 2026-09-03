@@ -9,7 +9,8 @@ import { AccountButton, Brand, Mark } from "@/components/Brand";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
 import { SITES, SITE_ORDER } from "@/lib/sites";
-import { trierEnAvantDabord } from "@/lib/featured";
+import { trierEnAvantDabord, estEnAvant } from "@/lib/featured";
+import ALaUne from "@/components/ALaUne";
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import InstallBanner from "@/components/InstallBanner";
 import { eventDay, islandDayStartIso } from "@/lib/event";
@@ -207,6 +208,18 @@ function Home() {
   }, [activeModule, sub, intent, query, minP, maxP, zone, tarif, dispo]);
 
   const subs = useMemo(() => (m ? m.subs : []), [m]);
+
+  /* « À la une » ne vit que sur l'accueil, hors recherche, et seulement à
+     partir de trois annonces en avant. Ce qu'elle montre sort de la grille :
+     la mise en avant se voit une fois, en grand, pas deux fois. Dans une
+     catégorie ou une recherche, le fil unique reprend, mises en avant en
+     tête comme avant. */
+  const enAvantListe = useMemo(() => listings.filter(estEnAvant), [listings]);
+  const montrerUne = tab === "home" && !query.trim() && enAvantListe.length >= 3;
+  const grille = useMemo(
+    () => (montrerUne ? listings.filter((l) => !estEnAvant(l)) : listings),
+    [listings, montrerUne],
+  );
 
   /* Recherche globale : depuis l'accueil, la même barre fouille aussi les
      restaurants et le guide — trois univers, un seul champ. Les caractères
@@ -428,13 +441,15 @@ function Home() {
       </div>
 
       <main className="container" style={{ paddingTop: 16, paddingBottom: 90, flex: 1 }}>
+        {!loading && montrerUne && <ALaUne annonces={enAvantListe} />}
+
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <h1 className="section-title">
             {m ? m.label : "Dernières annonces"}
           </h1>
-          {!loading && listings.length > 0 && (
+          {!loading && grille.length > 0 && (
             <span style={{ fontSize: 12.5, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-              {listings.length} annonce{listings.length > 1 ? "s" : ""}
+              {grille.length} annonce{grille.length > 1 ? "s" : ""}
             </span>
           )}
         </div>
@@ -531,14 +546,11 @@ function Home() {
             </section>
           </div>
         ) : (
-          /* Un seul fil, du plus utile au plus ancien. La bande « à la une »
-             qui doublait la grille a disparu : elle défilait à l'horizontale,
-             cachait la moitié de son contenu hors écran, et faisait passer
-             deux fois les mêmes annonces sous les yeux. La mise en avant se
-             lit désormais dans le fil lui-même — bordure dorée, badge, et la
-             première place. C'est ce pour quoi elle est payée. */
+          /* Le fil, du plus utile au plus ancien. Quand « À la une » est
+             affichée au-dessus, les mises en avant en sont retirées ; sinon
+             elles ouvrent le fil, bordure dorée et première place. */
           <div className="grid">
-            {listings.map((l) => <ListingCard key={l.id} l={l} />)}
+            {grille.map((l) => <ListingCard key={l.id} l={l} />)}
           </div>
         )}
         {tab === "home" && <div style={{ marginTop: 24 }}><InstallBanner /></div>}
