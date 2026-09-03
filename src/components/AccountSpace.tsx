@@ -14,8 +14,9 @@ import RestaurantCard from "@/components/food/RestaurantCard";
 import { SITES } from "@/lib/sites";
 import { estEnAvant, joursRestants, finDeMiseEnAvant } from "@/lib/featured";
 import { connexionUrl } from "@/lib/urls";
+import ProfilForm from "@/components/ProfilForm";
 
-type Tab = "listings" | "favorites" | "resto_favs" | "restaurants";
+type Tab = "listings" | "favorites" | "resto_favs" | "restaurants" | "profil";
 
 type Stats = { listing_id: string; views: number; unique_viewers: number; favorites: number };
 
@@ -58,6 +59,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
   const [restoFavs, setRestoFavs] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [nonLus, setNonLus] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -86,6 +88,11 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
           .from("restaurants").select("*").in("id", rfIds).order("name");
         setRestoFavs((rfRestos as Restaurant[]) ?? []);
       }
+      /* Le compteur est optionnel : tant que la migration 0025 n'est pas
+         passée, la fonction n'existe pas et la pastille reste simplement
+         absente, sans rien casser autour. */
+      const { data: unread } = await supabase().rpc("mes_messages_non_lus");
+      if (typeof unread === "number") setNonLus(unread);
       setChecked(true);
     })();
   }, [router, site]);
@@ -203,6 +210,19 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
             <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{email}</p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {/* Les messages ne sont pas un onglet : ils vivent sur leur propre
+                page, où le fil occupe tout l'écran. La pastille rend l'attente
+                visible sans qu'on ait à y aller pour vérifier. */}
+            <Link href="/messages" className="btn" style={{ fontSize: 13, padding: "10px 16px", position: "relative" }}>
+              Mes messages
+              {nonLus > 0 && (
+                <span aria-label={`${nonLus} message${nonLus > 1 ? "s" : ""} non lu${nonLus > 1 ? "s" : ""}`}
+                  style={{ marginLeft: 7, background: "var(--gold)", color: "var(--green)", borderRadius: 99,
+                    fontSize: 11.5, fontWeight: 800, padding: "1px 7px" }}>
+                  {nonLus}
+                </span>
+              )}
+            </Link>
             {isAdmin && (
               <Link href="/stats" className="btn" style={{ fontSize: 13, padding: "10px 16px" }}>
                 Statistiques du site
@@ -249,6 +269,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                déjà une fiche : lui doit garder l'accès à son établissement. */
             ...(SITES.food.ready ? [["resto_favs", `Favoris · restos (${restoFavs.length})`]] as const : []),
             ...(restos.length > 0 ? [["restaurants", `Mes établissements (${restos.length})`]] as const : []),
+            ["profil", "Mon profil"],
           ] as [Tab, string][]).map(([k, label]) => (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
               style={{
@@ -415,6 +436,8 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
             </div>
           )
         )}
+
+        {tab === "profil" && <ProfilForm />}
       </main>
     </div>
   );

@@ -43,6 +43,7 @@ export default function Deposer() {
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [phoneWa, setPhoneWa] = useState("");
+  const [messagerie, setMessagerie] = useState(true);
   const [attrs, setAttrs] = useState<Record<string, string>>({});
   const [showMore, setShowMore] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -58,8 +59,9 @@ export default function Deposer() {
       if (!data.session) { router.replace(connexionUrl("/deposer")); return; }
       setUserId(data.session.user.id);
       const { data: profile } = await supabase()
-        .from("profiles").select("phone_wa").eq("id", data.session.user.id).single();
+        .from("profiles").select("phone_wa, allow_messages").eq("id", data.session.user.id).single();
       if (profile?.phone_wa) setPhoneWa(profile.phone_wa);
+      if (profile && "allow_messages" in profile) setMessagerie(profile.allow_messages !== false);
       setChecked(true);
     })();
   }, [router]);
@@ -87,14 +89,16 @@ export default function Deposer() {
     let createdListingId: string | null = null;
     const uploadedKeys: string[] = [];
     try {
-      // 1. Mettre à jour le numéro WhatsApp du profil si renseigné
-      if (phoneWa.trim()) {
-        const normalizedPhone = normalizePhoneNumber(phoneWa);
-        if (!normalizedPhone) throw new Error("phone");
-        const { error: profileError } = await sb
-          .from("profiles").update({ phone_wa: normalizedPhone }).eq("id", userId);
-        if (profileError) throw profileError;
-      }
+      // 1. Le contact : au moins une voie ouverte, puis on enregistre le choix
+      //    sur le profil — il vaut pour toutes les annonces de la personne.
+      if (!phoneWa.trim() && !messagerie) throw new Error("contact");
+      const normalizedPhone = phoneWa.trim() ? normalizePhoneNumber(phoneWa) : null;
+      if (phoneWa.trim() && !normalizedPhone) throw new Error("phone");
+      const { error: profileError } = await sb
+        .from("profiles")
+        .update({ phone_wa: normalizedPhone, allow_messages: messagerie })
+        .eq("id", userId);
+      if (profileError) throw profileError;
 
       // 2. Créer l'annonce
       const cleanAttrs = Object.fromEntries(Object.entries(attrs).filter(([, v]) => v !== ""));
@@ -167,9 +171,11 @@ export default function Deposer() {
          renvoyer « vérifiez les champs » sur une colonne manquante envoie
          l'utilisateur relire un formulaire pourtant correct. On distingue
          donc nos propres motifs de validation du message de la base. */
-      const nôtre = ["phone", "price", "photo"].includes(message);
+      const nôtre = ["phone", "price", "photo", "contact"].includes(message);
       if (!nôtre) console.error("Publication :", cause);
-      setError(message === "phone"
+      setError(message === "contact"
+        ? "Indiquez un numéro WhatsApp ou laissez la messagerie du site active : votre annonce doit rester joignable."
+        : message === "phone"
         ? "Le numéro WhatsApp doit être au format international, par exemple +590690XXXXXX."
         : message === "price"
           ? "Le prix indiqué n’est pas valide."
@@ -308,8 +314,27 @@ export default function Deposer() {
               <input className="input" value={location} onChange={(e) => setLocation(e.target.value)}
                 placeholder="Quartier (ex. Lorient)" />
             </div>
-            <input className="input" value={phoneWa} onChange={(e) => setPhoneWa(e.target.value)}
-              placeholder="Numéro WhatsApp (ex. +590690XXXXXX)" inputMode="tel" />
+            {/* Être joignable n'est pas une option : une annonce que personne
+                ne peut contacter ne sert à rien, ni à son auteur ni au site.
+                Deux voies, au moins une des deux. */}
+            <div className="contact-bloc">
+              <span className="contact-titre">Comment vous joindre</span>
+              <input className="input" value={phoneWa} onChange={(e) => setPhoneWa(e.target.value)}
+                placeholder="Numéro WhatsApp (ex. +590690XXXXXX)" inputMode="tel" />
+              <label className="contact-case">
+                <input type="checkbox" checked={messagerie} onChange={(e) => setMessagerie(e.target.checked)} />
+                <span>
+                  <strong>Recevoir des messages sur Ti Kanal</strong>
+                  <small>Les intéressés vous écrivent sans avoir votre numéro ; vous répondez depuis « Mes messages ».</small>
+                </span>
+              </label>
+              {!phoneWa.trim() && !messagerie && (
+                <p className="contact-alerte">
+                  Renseignez un numéro WhatsApp ou laissez la messagerie active : sinon personne ne pourra
+                  répondre à votre annonce.
+                </p>
+              )}
+            </div>
 
             {fields.length > 0 && (
               <div style={{ border: `1px solid ${m.color}33`, background: m.soft + "66", borderRadius: 14, padding: "14px 14px 16px" }}>

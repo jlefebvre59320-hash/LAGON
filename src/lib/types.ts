@@ -16,5 +16,7 @@ export type Listing = {
   featured_until: string | null;
   created_at: string;
   photos?: { storage_key: string; position: number }[];
-  profile?: { display_name: string; phone_wa: string | null };
+  /* allow_messages arrive avec la migration 0025 : optionnel pour que la
+     fiche reste lisible tant qu'elle n'est pas passée. */
+  profile?: { display_name: string; phone_wa: string | null; allow_messages?: boolean };
 };
