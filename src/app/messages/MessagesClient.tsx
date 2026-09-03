@@ -8,6 +8,7 @@ import { photoUrl } from "@/components/ListingCard";
 import { thumbKey } from "@/lib/images";
 import { connexionUrl } from "@/lib/urls";
 import { recordView } from "@/lib/analytics";
+import { notifierParEmail } from "@/lib/notifierMessage";
 import {
   MESSAGE_MAX, heureMessage, messageErreur,
   type Conversation, type Message,
@@ -89,6 +90,7 @@ export default function MessagesClient() {
       return;
     }
     setTexte("");
+    void notifierParEmail(actif);
     // Relecture plutôt qu'ajout optimiste : l'horodatage vient du serveur,
     // et un message affiché qui n'existe pas en base est pire qu'une demi-seconde.
     const { data } = await supabase()
