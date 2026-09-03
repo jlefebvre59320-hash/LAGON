@@ -189,7 +189,11 @@ function Home() {
 
       if (cancelled) return;
       if (ordinaires.error) {
-        setError("Impossible de charger les annonces. Réessayez.");
+        /* Le détail technique est affiché, en petit : « Réessayez » seul ne
+           dit pas si c'est le réseau ou une migration qui manque — et c'est
+           presque toujours la seconde. Une valeur d'enum inconnue, par
+           exemple, se lit en clair dans le message de PostgREST. */
+        setError(`Impossible de charger les annonces. Réessayez.\n${ordinaires.error.message}`);
       } else {
         const vus = new Set<string>();
         const fusion = [...((enAvant.data as Listing[]) ?? []), ...((ordinaires.data as Listing[]) ?? [])]
@@ -435,7 +439,16 @@ function Home() {
           )}
         </div>
 
-        {error && <p style={{ color: "var(--danger)", fontWeight: 600 }}>{error}</p>}
+        {error && (
+          <p style={{ color: "var(--danger)", fontWeight: 600, whiteSpace: "pre-line" }}>
+            {error.split("\n")[0]}
+            {error.includes("\n") && (
+              <span style={{ display: "block", marginTop: 4, fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>
+                Détail technique : {error.split("\n").slice(1).join(" ")}
+              </span>
+            )}
+          </p>
+        )}
 
         {(foodHits.length > 0 || guideHits.length > 0) && (
           <div style={{ display: "grid", gap: 8, marginBottom: 18 }}>
