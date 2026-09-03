@@ -12,6 +12,7 @@ import {
   MESSAGE_MAX, heureMessage, messageErreur,
   type Conversation, type Message,
 } from "@/lib/messages";
+import NoterPanel from "@/components/NoterPanel";
 
 export default function MessagesClient() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function MessagesClient() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [blocageBusy, setBlocageBusy] = useState(false);
+  const [noter, setNoter] = useState(false);
   const basDuFil = useRef<HTMLDivElement>(null);
 
   const chargerConversations = useCallback(async () => {
@@ -150,7 +152,8 @@ export default function MessagesClient() {
         ) : conv ? (
           <Fil conv={conv} fil={fil} userId={userId} basDuFil={basDuFil}
             texte={texte} setTexte={setTexte} envoi={envoi} envoyer={envoyer}
-            blocageBusy={blocageBusy} basculerBlocage={basculerBlocage} />
+            blocageBusy={blocageBusy} basculerBlocage={basculerBlocage}
+            noter={noter} setNoter={setNoter} />
         ) : convs.length === 0 ? (
           <div className="panel gold-frame" style={{ textAlign: "center", padding: "40px 20px" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
@@ -197,16 +200,20 @@ export default function MessagesClient() {
 
 function Fil({
   conv, fil, userId, basDuFil, texte, setTexte, envoi, envoyer,
-  blocageBusy, basculerBlocage,
+  blocageBusy, basculerBlocage, noter, setNoter,
 }: {
   conv: Conversation; fil: Message[]; userId: string | null;
   basDuFil: React.RefObject<HTMLDivElement | null>;
   texte: string; setTexte: (v: string) => void;
   envoi: boolean; envoyer: (e: React.FormEvent) => void;
   blocageBusy: boolean; basculerBlocage: (c: Conversation) => void;
+  noter: boolean; setNoter: (v: boolean) => void;
 }) {
   const retiree = conv.listing_status !== "active";
   const bloque = conv.bloque === true;
+  /* On ne propose de noter que si l'autre a écrit au moins une fois : c'est
+     la règle de la base, autant ne pas afficher un bouton qui échouera. */
+  const autreARepondu = userId != null && fil.some((m) => m.sender_id !== userId);
   return (
     <>
       <Link href={`/annonce/${conv.listing_id}`} className="panel conv-entete">
@@ -229,11 +236,33 @@ function Fil({
       {/* Le blocage vit hors du lien vers l'annonce : un bouton imbriqué dans
           un lien se déclenche au mauvais endroit une fois sur deux. */}
       {conv.autre_id && (
-        <div className="fil-actions">
+        <div className="fil-actions" style={{ justifyContent: "space-between" }}>
+          <span style={{ display: "flex", gap: 14 }}>
+            <Link href={`/membre/${conv.autre_id}`} className="link-quiet" style={{ fontSize: 12.5 }}>
+              Voir la fiche
+            </Link>
+            {autreARepondu && !bloque && (
+              <button type="button" className="link-quiet" style={{ fontSize: 12.5, color: "var(--gold-deep)" }}
+                onClick={() => setNoter(!noter)}>
+                {noter ? "Fermer" : `Noter ${conv.autre_nom}`}
+              </button>
+            )}
+          </span>
           <button type="button" className="link-quiet" disabled={blocageBusy}
             onClick={() => basculerBlocage(conv)}>
             {conv.jai_bloque ? `Débloquer ${conv.autre_nom}` : `Bloquer ${conv.autre_nom}`}
           </button>
+        </div>
+      )}
+
+      {noter && (
+        <div className="panel" style={{ padding: "14px 16px", marginBottom: 12 }}>
+          <NoterPanel
+            conversationId={conv.id}
+            nom={conv.autre_nom}
+            onFait={() => setNoter(false)}
+            onAnnuler={() => setNoter(false)}
+          />
         </div>
       )}
 

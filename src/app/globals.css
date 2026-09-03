@@ -1211,6 +1211,116 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .bar-list-barre { animation: none; }
 }
 
+/* --- Étoiles ---------------------------------------------------------------
+   L'or de la charte, et rien d'autre : une note n'a pas besoin de jaune
+   criard pour se lire, et l'or est déjà la couleur de ce qui vaut sur ce
+   site. */
+.etoiles { display: inline-flex; gap: 1px; color: var(--gold-deep); vertical-align: -2px; }
+.etoiles.inline { vertical-align: -3px; margin: 0 2px; }
+.etoiles-saisie { display: grid; gap: 4px; justify-items: start; }
+.etoile-btn {
+  background: none; border: none; padding: 2px; cursor: pointer;
+  color: var(--border-input); line-height: 0;
+  transition: color .12s, transform .12s;
+}
+.etoile-btn.pleine { color: var(--gold-deep); }
+.etoile-btn:hover { transform: scale(1.08); }
+.etoile-btn:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 2px; border-radius: 6px; }
+.etoiles-libelle { font-size: 12.5px; font-weight: 700; color: var(--text-muted); min-height: 18px; }
+
+.noter-panel { display: grid; gap: 10px; }
+.noter-titre { margin: 0; font-size: 15px; font-weight: 700; }
+
+/* --- Le vendeur sur une annonce ------------------------------------------ */
+.vendeur-lien {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 11px 7px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text); text-decoration: none;
+  transition: border-color .15s;
+}
+.vendeur-lien:hover { border-color: var(--gold); }
+.vendeur-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--green); color: var(--gold-light);
+  font-size: 13px; font-weight: 800;
+  flex: 0 0 auto;
+}
+.vendeur-nom { font-size: 13.5px; font-weight: 700; }
+.vendeur-note { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--text-muted); }
+.vendeur-note b { color: var(--text); }
+
+/* --- Fiche d'un membre ------------------------------------------------- */
+.membre-tete {
+  display: flex; gap: 14px; align-items: center;
+  margin: 16px 0 14px;
+}
+.membre-avatar {
+  width: 64px; height: 64px; border-radius: 50%; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--green); color: var(--gold-light);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 28px; font-weight: 700;
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.membre-nom {
+  margin: 0; font-size: clamp(22px, 5vw, 28px); line-height: 1.15;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.membre-pro {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--gold); color: var(--green-900);
+  padding: 3px 8px; border-radius: 999px;
+}
+.membre-meta { margin: 2px 0 6px; font-size: 13px; color: var(--text-muted); }
+.membre-note { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+
+.membre-chiffres {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;
+}
+.membre-chiffre {
+  padding: 11px 12px; border-radius: 13px;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 1px;
+}
+.membre-chiffre strong {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 22px; line-height: 1.1; color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+.membre-chiffre span { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+
+.membre-h2 { font-size: 17px; margin: 0 0 10px; }
+.membre-h2 span { color: var(--text-muted); font-weight: 600; font-size: 14px; }
+
+.membre-avis-grille { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) {
+  .membre-avis-grille { grid-template-columns: 220px minmax(0, 1fr); align-items: start; }
+}
+.membre-repartition { padding: 14px 14px 12px; display: grid; gap: 6px; }
+.membre-grande-note { display: flex; align-items: baseline; gap: 5px; margin-bottom: 6px; }
+.membre-grande-note strong {
+  font-family: "Playfair Display", Georgia, serif; font-size: 34px; line-height: 1; color: var(--green);
+}
+.membre-grande-note span { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.membre-rep-ligne { display: grid; grid-template-columns: 12px 1fr 24px; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; }
+.membre-rep-piste { height: 7px; background: var(--cream-dark); border-radius: 99px; overflow: hidden; display: block; }
+.membre-rep-piste span { display: block; height: 100%; background: var(--gold-deep); border-radius: 99px; }
+.membre-rep-n { text-align: right; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+.membre-avis-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.membre-avis-liste li { padding: 12px 14px; }
+.membre-avis-tete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.membre-avis-auteur { font-size: 13.5px; font-weight: 700; color: var(--text); text-decoration: none; }
+.membre-avis-auteur:hover { color: var(--gold-deep); }
+.membre-avis-date { margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
+.membre-avis-texte { margin: 8px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.membre-avis-annonce { margin: 6px 0 0; font-size: 12px; color: var(--text-muted); }
+
 .discovery-list { display: grid; gap: 8px; }
 .discovery-link {
   display: flex;
