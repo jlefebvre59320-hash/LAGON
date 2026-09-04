@@ -13,6 +13,8 @@ export type Alerte = {
   min_cents: number | null;
   max_cents: number | null;
   quartier: string | null;
+  /* Critères d'un univers (zone d'intervention, tarification…), migration 0036. */
+  attrs?: Record<string, string> | null;
   created_at: string;
   last_hit_at: string | null;
 };
@@ -33,6 +35,7 @@ export function decrireAlerte(a: CriteresAlerte): string {
   else if (a.min_cents != null) parts.push(`à partir de ${a.min_cents / 100} €`);
   else if (a.max_cents != null) parts.push(`jusqu’à ${a.max_cents / 100} €`);
   if (a.quartier) parts.push(a.quartier);
+  if (a.attrs) parts.push(...Object.values(a.attrs).filter(Boolean));
   return parts.join(" · ") || "Toutes les annonces";
 }
 
@@ -40,7 +43,12 @@ export async function creerAlerte(c: CriteresAlerte): Promise<{ error: string | 
   const sb = supabase();
   const { data: s } = await sb.auth.getSession();
   if (!s.session) return { error: "connexion" };
-  const { error } = await sb.from("search_alerts").insert({ user_id: s.session.user.id, ...c });
+  /* attrs n'existe qu'à partir de 0036 : on ne l'envoie que s'il y a
+     quelque chose dedans, pour ne pas faire échouer une base pas encore
+     migrée sur une alerte sans critère de service. */
+  const { attrs, ...reste } = c;
+  const ligne = { user_id: s.session.user.id, ...reste, ...(attrs && Object.keys(attrs).length > 0 ? { attrs } : {}) };
+  const { error } = await sb.from("search_alerts").insert(ligne);
   return { error: error ? error.message : null };
 }
 

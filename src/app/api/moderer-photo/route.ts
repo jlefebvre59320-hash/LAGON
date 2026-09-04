@@ -96,13 +96,16 @@ export async function POST(request: Request) {
   // La photo existe, sur cette annonce, et l'annonce est à l'appelant.
   const { data: photo } = await service
     .from("listing_photos")
-    .select("id, listing_id, storage_key, listing:listings!inner(user_id)")
+    .select("id, listing_id, storage_key, moderation, listing:listings!inner(user_id)")
     .eq("listing_id", listingId)
     .eq("storage_key", storageKey)
     .maybeSingle();
   const proprietaire = (photo as { listing?: { user_id?: string } | { user_id?: string }[] } | null)?.listing;
   const userId = Array.isArray(proprietaire) ? proprietaire[0]?.user_id : proprietaire?.user_id;
   if (!photo || userId !== appelant) return ok("photo-inconnue");
+  /* Une photo ne s'analyse qu'une fois : le quota du service n'est pas fait
+     pour absorber un rappel en boucle, et le résultat ne changerait pas. */
+  if ((photo as { moderation?: unknown }).moderation != null) return ok("deja-analysee");
 
   // L'interrupteur et les seuils vivent dans les réglages de modération.
   const { data: reglages } = await service.from("moderation_settings").select("key, value").in("key", ["regles", "images"]);

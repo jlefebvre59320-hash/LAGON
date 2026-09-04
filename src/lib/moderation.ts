@@ -173,6 +173,8 @@ export const CATEGORIES_LEXIQUE = ["sexuel", "insulte", "menace", "haine", "ille
 /* Un message signalé par le filtre, vu de l'administration. */
 export type MessageSignale = {
   id: string; message_id: string | null; body: string; score: number;
+  /* 0036 : un avis d'évaluation peut aussi arriver ici, détecté ou signalé. */
+  kind?: "message" | "avis"; source?: "auto" | "signalement"; rating_id?: string | null;
   reasons: RaisonRisque[]; details: DetailModeration[]; created_at: string;
   conversation_id: string; listing_id: string | null; listing_title: string | null;
   expediteur: { id: string; display_name: string | null; email: string | null; is_banned: boolean | null; suspended_until: string | null; nb_signales: number };
