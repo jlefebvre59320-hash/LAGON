@@ -186,6 +186,11 @@ function Membre() {
                     </div>
                     {a.comment && <p className="membre-avis-texte">{a.comment}</p>}
                     {a.annonce && <p className="membre-avis-annonce">À propos de « {a.annonce} »</p>}
+                    {/* Un avis se signale comme une annonce : discret, réservé
+                        aux membres connectés, jamais sur son propre avis. */}
+                    {moi && moi !== a.auteur_id && (
+                      <SignalerAvis id={a.id} />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -220,6 +225,25 @@ function Membre() {
         )}
       </main>
     </div>
+  );
+}
+
+function SignalerAvis({ id }: { id: string }) {
+  const [etat, setEtat] = useState<"idle" | "busy" | "fait" | "err">("idle");
+  async function signaler() {
+    if (!confirm("Signaler cet avis à la modération ?")) return;
+    setEtat("busy");
+    const { error } = await supabase().rpc("signaler_avis", { p_rating_id: id, p_motif: "signalé depuis la fiche" });
+    setEtat(error ? "err" : "fait");
+  }
+  if (etat === "fait") return <p style={{ margin: "6px 0 0", fontSize: 11.5, color: "var(--text-muted)" }}>✓ Avis signalé, merci.</p>;
+  return (
+    <p style={{ margin: "6px 0 0" }}>
+      <button type="button" className="link-quiet" style={{ fontSize: 11.5 }} disabled={etat === "busy"} onClick={signaler}>
+        Signaler cet avis
+      </button>
+      {etat === "err" && <span style={{ fontSize: 11.5, color: "var(--danger)", marginLeft: 8 }}>Le signalement n’a pas abouti.</span>}
+    </p>
   );
 }
 

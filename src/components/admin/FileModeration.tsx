@@ -373,12 +373,16 @@ function Message({ m, busy, decider }: { m: MessageSignale; busy: boolean; decid
   const [jours, setJours] = useState(7);
   const n = niveauRisque(m.score);
   const e = m.expediteur;
+  const avis = m.kind === "avis";
   return (
     <article className={styles.card} aria-busy={busy}>
       <div className={styles.cardTop}>
         <span className={`risque-pastille risque-${n.cle}`}>{m.score} · {n.label}</span>
         <div style={{ flex: 1 }}>
-          <strong>{e.display_name ?? "Membre"} → {m.destinataire ?? "?"}</strong>
+          <strong>
+            <b className={styles.kind} style={{ marginRight: 8 }}>{avis ? "Avis" : "Message"}{m.source === "signalement" ? " signalé" : ""}</b>
+            {e.display_name ?? "Membre"} → {m.destinataire ?? "?"}
+          </strong>
           <small>
             {m.listing_title ? <>Sur <Link href={`/annonce/${m.listing_id}`} style={{ display: "inline", fontSize: "inherit", fontWeight: 700 }}>{m.listing_title}</Link> · </> : null}
             {quand(m.created_at)}
@@ -390,11 +394,14 @@ function Message({ m, busy, decider }: { m: MessageSignale; busy: boolean; decid
       <p className={styles.body} style={{ borderLeft: "3px solid var(--border-input)", paddingLeft: 10 }}>{m.body}</p>
       <Raisons raisons={m.reasons} />
       <Details details={m.details} />
-      <p className={styles.extra} style={{ marginTop: 8 }}>{e.email ?? "email inconnu"} · <Link href={`/membre/${e.id}`}>fiche</Link> · <Link href={`/messages?c=${m.conversation_id}`}>conversation</Link></p>
+      <p className={styles.extra} style={{ marginTop: 8 }}>{e.email ?? "email inconnu"} · <Link href={`/membre/${e.id}`}>fiche</Link>{!avis && <> · <Link href={`/messages?c=${m.conversation_id}`}>conversation</Link></>}</p>
       <footer style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 12 }}>
         <button type="button" className="btn" disabled={busy} onClick={() => decider(m, "ignorer", jours)} title="Rien à redire : le message reste.">Rien à signaler</button>
         <button type="button" className="btn btn-outline-gold" style={{ color: "var(--gold-deep)" }} disabled={busy} onClick={() => decider(m, "erreur", jours)} title="Le filtre s’est trompé ; noté pour corriger le lexique.">Erreur de détection</button>
-        <button type="button" className={`btn ${styles.danger}`} disabled={busy} onClick={() => decider(m, "supprimer", jours)}>Supprimer le message</button>
+        <button type="button" className={`btn ${styles.danger}`} disabled={busy} onClick={() => decider(m, "supprimer", jours)}
+          title={avis ? "Le commentaire est retiré, la note reste." : undefined}>
+          {avis ? "Retirer le commentaire" : "Supprimer le message"}
+        </button>
         <button type="button" className={`btn ${styles.danger}`} disabled={busy} onClick={() => decider(m, "suspendre", jours)}>Suspendre {jours} j</button>
         <button type="button" className={`btn ${styles.danger}`} disabled={busy} onClick={() => decider(m, "bannir", jours)}>Bannir</button>
         <label style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", gap: 6, alignItems: "center" }}>

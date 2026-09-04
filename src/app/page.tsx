@@ -108,6 +108,9 @@ function Home() {
   const [sub, setSub] = useState<string | null>(null);
   const [intent, setIntent] = useState<Intent | null>(null);
   const [query, setQuery] = useState("");
+  /* Ce qui part vraiment à la base : la saisie, avec 300 ms de retard. On
+     ne lance pas une requête par lettre tapée. */
+  const [requete, setRequete] = useState("");
   const [minP, setMinP] = useState("");
   const [maxP, setMaxP] = useState("");
   /* Critères propres aux services : ils ne s'affichent que dans cet univers,
@@ -123,12 +126,29 @@ function Home() {
   const [error, setError] = useState<string | null>(null);
   /* Fil sans fin : la date de la dernière annonce ordinaire chargée sert de
      curseur ; « fin » quand une page revient incomplète. */
-  const curseur = useRef<string | null>(null);
+  const curseur = useRef<{ created_at: string; id: string } | null>(null);
   const [fin, setFin] = useState(false);
   const [chargementPlus, setChargementPlus] = useState(false);
   const sentinelle = useRef<HTMLDivElement>(null);
   /* Nombre d'annonces en ligne par univers, pour les onglets. */
   const [compteurs, setCompteurs] = useState<Record<string, number>>({});
+  /* Le détail technique d'une erreur ne s'affiche qu'aux administrateurs :
+     un visiteur n'en fait rien, et il en dit trop sur la base. */
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setRequete(query.trim()), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: s } = await supabase().auth.getSession();
+      if (!s.session) return;
+      const { data } = await supabase().rpc("is_admin");
+      if (data === true) setIsAdmin(true);
+    })();
+  }, []);
   const [foodHits, setFoodHits] = useState<{ id: string; name: string; cuisine: string; quartier: string }[]>([]);
   const [guideHits, setGuideHits] = useState<{ id: string; name: string; category: string; quartier: string }[]>([]);
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
@@ -236,9 +256,20 @@ function Home() {
       if (dispo) critere["Disponibilité"] = dispo;
     }
     if (Object.keys(critere).length > 0) r = r.contains("attrs", critere);
-    if (query.trim()) r = r.textSearch("search_tsv", query.trim(), { type: "websearch", config: "french" });
+    if (requete) r = r.textSearch("search_tsv", requete, { type: "websearch", config: "french" });
     return r;
-  }, [activeModule, sub, intent, minP, maxP, quartier, zone, tarif, dispo, query]);
+  }, [activeModule, sub, intent, minP, maxP, quartier, zone, tarif, dispo, requete]);
+
+  /* Les critères de service, tels qu'une alerte les mémorise. */
+  const critereService = useMemo(() => {
+    const c: Record<string, string> = {};
+    if (activeModule === "service") {
+      if (zone) c["Zone d'intervention"] = zone;
+      if (tarif) c["Tarification"] = tarif;
+      if (dispo) c["Disponibilité"] = dispo;
+    }
+    return Object.keys(c).length > 0 ? c : null;
+  }, [activeModule, zone, tarif, dispo]);
 
   useEffect(() => {
     let cancelled = false;
@@ -252,7 +283,7 @@ function Home() {
          mais ancienne tomberait hors de la première page et ne remonterait
          jamais — ce pour quoi la mise en avant est justement payée. */
       const [ordinaires, enAvant] = await Promise.all([
-        requeteFiltree().order("created_at", { ascending: false }).limit(PAGE),
+        requeteFiltree().order("created_at", { ascending: false }).order("id", { ascending: false }).limit(PAGE),
         requeteFiltree()
           .gt("featured_until", new Date().toISOString())
           .order("featured_until", { ascending: false })
@@ -271,7 +302,8 @@ function Home() {
         const fusion = [...((enAvant.data as Listing[]) ?? []), ...page]
           .filter((l) => !vus.has(l.id) && vus.add(l.id));
         setListings(trierEnAvantDabord(fusion));
-        curseur.current = page.length > 0 ? page[page.length - 1].created_at : null;
+        const dernier = page[page.length - 1];
+        curseur.current = dernier ? { created_at: dernier.created_at, id: dernier.id } : null;
         setFin(page.length < PAGE);
       }
       setLoading(false);
@@ -286,14 +318,19 @@ function Home() {
   const chargerPlus = useCallback(async () => {
     if (fin || chargementPlus || loading || !curseur.current) return;
     setChargementPlus(true);
+    /* Curseur date + identifiant : deux annonces déposées à la même seconde
+       ne font ni doublon ni trou entre deux pages. */
+    const c = curseur.current;
     const { data, error: err } = await requeteFiltree()
-      .lt("created_at", curseur.current)
+      .or(`created_at.lt.${c.created_at},and(created_at.eq.${c.created_at},id.lt.${c.id})`)
       .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(PAGE);
     setChargementPlus(false);
     if (err || !Array.isArray(data)) { setFin(true); return; }
     const page = data as Listing[];
-    curseur.current = page.length > 0 ? page[page.length - 1].created_at : curseur.current;
+    const dernier = page[page.length - 1];
+    curseur.current = dernier ? { created_at: dernier.created_at, id: dernier.id } : curseur.current;
     setFin(page.length < PAGE);
     setListings((prev) => {
       const vus = new Set(prev.map((l) => l.id));
@@ -570,6 +607,7 @@ function Home() {
                 min_cents: minP !== "" ? parseInt(minP, 10) * 100 : null,
                 max_cents: maxP !== "" ? parseInt(maxP, 10) * 100 : null,
                 quartier: quartier || null,
+                attrs: critereService,
               }} />
             )}
           </span>
@@ -578,9 +616,9 @@ function Home() {
         {error && (
           <p style={{ color: "var(--danger)", fontWeight: 600, whiteSpace: "pre-line" }}>
             {error.split("\n")[0]}
-            {error.includes("\n") && (
+            {isAdmin && error.includes("\n") && (
               <span style={{ display: "block", marginTop: 4, fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>
-                Détail technique : {error.split("\n").slice(1).join(" ")}
+                Détail technique (visible par les administrateurs) : {error.split("\n").slice(1).join(" ")}
               </span>
             )}
           </p>
