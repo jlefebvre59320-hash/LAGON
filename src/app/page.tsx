@@ -113,8 +113,10 @@ function Home() {
           ? supabase().from("restaurants").select("id,name,cuisine,quartier")
               .eq("status", "active").order("name").limit(2)
           : Promise.resolve({ data: [] }),
-        supabase().from("places").select("id,name,category,quartier")
-          .eq("status", "active").order("name").limit(3),
+        SITES.guide.ready
+          ? supabase().from("places").select("id,name,category,quartier")
+              .eq("status", "active").order("name").limit(3)
+          : Promise.resolve({ data: [] }),
         SITES.event.ready
           ? supabase().from("events").select("id,title,category,quartier,starts_at")
               .eq("status", "approved").gte("starts_at", islandDayStartIso()).order("starts_at").limit(2)
@@ -237,8 +239,10 @@ function Home() {
           ? supabase().from("restaurants").select("id, name, cuisine, quartier").eq("status", "active")
               .or(`name.ilike.${like},cuisine.ilike.${like},quartier.ilike.${like}`).limit(5)
           : Promise.resolve({ data: [] as typeof foodHits }),
-        supabase().from("places").select("id, name, category, quartier").eq("status", "active")
-          .or(`name.ilike.${like},quartier.ilike.${like},description.ilike.${like}`).limit(5),
+        SITES.guide.ready
+          ? supabase().from("places").select("id, name, category, quartier").eq("status", "active")
+              .or(`name.ilike.${like},quartier.ilike.${like},description.ilike.${like}`).limit(5)
+          : Promise.resolve({ data: [] as typeof guideHits }),
       ]);
       if (cancelled) return;
       setFoodHits((fr.data as typeof foodHits) ?? []);
@@ -308,16 +312,11 @@ function Home() {
         <div className="header-accent" style={{ background: accent }} />
       </header>
 
-      {/* Les tuiles des autres sections : SITE_ORDER fait foi, une section
-          retirée de la liste disparaît d'ici sans autre changement, et celles
-          qui ne sont pas encore ouvertes portent la mention « bientôt ». */}
-      {tab === "home" && (
+      {/* Les tuiles des autres sections de la famille : elles n'apparaissent
+          que si une autre section que Ti Kanal est ouverte (SITE_ORDER).
+          Aujourd'hui l'accueil va droit aux annonces. */}
+      {tab === "home" && SITE_ORDER.length > 1 && (
         <div className="container">
-          {/* Rappel animé : la famille de sites vit derrière les ••• du bandeau. */}
-          <p className="famille-hint">
-            Un seul site, <em>plusieurs univers</em> — basculez à tout moment avec les{" "}
-            <span className="dots-hint" aria-hidden="true"><i /><i /><i /></span> en haut.
-          </p>
           <div className="universe-strip" aria-label="Explorer les univers de l'île">
             {SITE_ORDER.filter((k) => k !== "tikanal").map((k) => SITES[k]).map((s) => (
               <Link
@@ -332,9 +331,6 @@ function Home() {
                 <Mark size={36} color="var(--gold)" />
                 <span style={{ minWidth: 0, flex: 1 }}>
                   <strong>{s.name}</strong>
-                  {/* Pastille plutôt que texte accolé : dans une tuile compacte,
-                      une baseline longue mange la mention par ellipse — or c'est
-                      justement l'information à ne pas manquer. */}
                   {s.ready ? (
                     <small>{s.baseline}</small>
                   ) : (
@@ -523,27 +519,24 @@ function Home() {
               )}
               {!query && !intent && !m && <Link href="/deposer" className="btn btn-gold">Déposer gratuitement</Link>}
             </section>
-            <section>
-              <p style={{ margin: "0 0 9px", fontSize: 13, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold-deep)" }}>
-                À découvrir sur l&apos;île
-              </p>
-              <div className="discovery-list">
-                {discoveries.slice(0, 5).map((item) => (
-                  <Link key={`${item.site}-${item.href}`} href={item.href} className="discovery-link">
-                    <span className="discovery-dot" style={{ background: SITES[item.site].dot }} />
-                    <span><strong>{item.title}</strong><small>{item.meta}</small></span>
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                ))}
-                {discoveries.length === 0 && (
-                  <Link href="/guide" className="discovery-link">
-                    <span className="discovery-dot" style={{ background: SITES.guide.dot }} />
-                    <span><strong>Que faire sur l&apos;île ?</strong><small>Plages, points de vue et bons plans</small></span>
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                )}
-              </div>
-            </section>
+            {/* Les portes vers les autres sections n'existent que si l'une
+                d'elles est ouverte : pas de lien vers une page d'attente. */}
+            {discoveries.length > 0 && (
+              <section>
+                <p style={{ margin: "0 0 9px", fontSize: 13, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold-deep)" }}>
+                  À découvrir sur l&apos;île
+                </p>
+                <div className="discovery-list">
+                  {discoveries.slice(0, 5).map((item) => (
+                    <Link key={`${item.site}-${item.href}`} href={item.href} className="discovery-link">
+                      <span className="discovery-dot" style={{ background: SITES[item.site].dot }} />
+                      <span><strong>{item.title}</strong><small>{item.meta}</small></span>
+                      <span aria-hidden="true">→</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         ) : (
           /* Le fil, du plus utile au plus ancien. Quand « À la une » est
@@ -563,15 +556,19 @@ function Home() {
           <Mark size={72} />
           <span className="overline">{SITE.name} · {SITE.overline}</span>
           <p style={{ fontSize: 12.5, margin: 0, maxWidth: 420 }}>{SITE.description}</p>
-          <span style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 12.5 }}>
-            <Link href="/retours" style={{ color: "var(--gold)" }}>Une idée ?</Link>
-            <Link href="/soutenir" style={{ color: "var(--gold)" }}>Soutenir ♥</Link>
-            <Link href="/mentions-legales" style={{ color: "rgba(246,242,233,.6)" }}>Mentions légales</Link>
-            <Link href="/confidentialite" style={{ color: "rgba(246,242,233,.6)" }}>Confidentialité</Link>
+          <span style={{ display: "flex", gap: "6px 14px", marginTop: 4, fontSize: 12.5, flexWrap: "wrap", justifyContent: "center" }}>
+            <Link href="/retours" style={{ color: "var(--gold)", whiteSpace: "nowrap" }}>Une idée ?</Link>
+            <Link href="/soutenir" style={{ color: "var(--gold)", whiteSpace: "nowrap" }}>Soutenir ♥</Link>
+            <Link href="/mentions-legales" style={{ color: "rgba(246,242,233,.6)", whiteSpace: "nowrap" }}>Mentions légales</Link>
+            <Link href="/confidentialite" style={{ color: "rgba(246,242,233,.6)", whiteSpace: "nowrap" }}>Confidentialité</Link>
           </span>
-          <div style={{ marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(201,168,106,.25)", width: "100%", maxWidth: 460 }}>
-            <SiteFamilyFooter />
-          </div>
+          {/* Le rappel de la famille de sites n'a de sens qu'avec au moins
+              deux sections ouvertes ; sinon, pas même le filet qui l'encadre. */}
+          {SITE_ORDER.length > 1 && (
+            <div style={{ marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(201,168,106,.25)", width: "100%", maxWidth: 460 }}>
+              <SiteFamilyFooter />
+            </div>
+          )}
         </div>
       </footer>
     </div>

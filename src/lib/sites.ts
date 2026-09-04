@@ -73,17 +73,21 @@ export const SITES: Record<SiteKey, SiteDef> = {
     dot: "#7ec8dd",
     themeColor: "#0a3a4a",
     path: "/guide",
-    ready: true,
+    /* Mis de côté pour le lancement : le code reste, la section sert une
+       page d'attente et disparaît de toute la navigation. Repasser à true
+       et remettre "guide" dans SITE_ORDER la rouvre. */
+    ready: false,
   },
 };
 
 /* Sections proposées dans le sélecteur et les tuiles, dans l'ordre.
    Retirer une clé d'ici la fait disparaître de toute la navigation sans
-   toucher à son code : c'est le cas d'Event et de Food, mis de côté le
-   temps du lancement.
+   toucher à son code : c'est le cas d'Event, de Food et du Guide, mis de
+   côté le temps du lancement. Avec Ti Kanal seul, le sélecteur de sites et
+   le rappel de la famille en pied de page ne s'affichent pas.
    Une section présente ici mais dont ready vaut false s'affiche « bientôt »
    et sert une page d'attente — voir ComingSoon. */
-export const SITE_ORDER: SiteKey[] = ["tikanal", "guide"];
+export const SITE_ORDER: SiteKey[] = ["tikanal"];
 
 /* Section correspondant à un chemin — pour marquer « Vous êtes ici ». */
 export function siteFromPath(pathname: string): SiteKey {

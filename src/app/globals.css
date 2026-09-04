@@ -477,13 +477,16 @@ h1, h2, h3 {
   .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 }
 
+/* Deux colonnes dès le téléphone : une annonce par écran obligeait à
+   dérouler longtemps pour se faire une idée du fil. À deux, on balaie
+   six annonces d'un regard, et la photo reste assez grande pour juger. */
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 @media (min-width: 480px) {
-  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid { gap: 12px; }
 }
 @media (min-width: 720px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
