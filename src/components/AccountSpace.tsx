@@ -12,11 +12,13 @@ import { FavoritesProvider, useFavorites } from "@/lib/favorites";
 import type { Restaurant } from "@/lib/food";
 import RestaurantCard from "@/components/food/RestaurantCard";
 import { SITES } from "@/lib/sites";
-import { estEnAvant, joursRestants, finDeMiseEnAvant } from "@/lib/featured";
+import { estEnAvant, joursRestants, finDeMiseEnAvant, autreEnAvant, MESSAGE_UNE_SEULE } from "@/lib/featured";
 import { connexionUrl } from "@/lib/urls";
 import ProfilForm from "@/components/ProfilForm";
+import { lireRecents } from "@/lib/recents";
+import { mesAlertes, supprimerAlerte, decrireAlerte, type Alerte } from "@/lib/alertes";
 
-type Tab = "listings" | "favorites" | "resto_favs" | "restaurants" | "profil";
+type Tab = "listings" | "favorites" | "alertes" | "resto_favs" | "restaurants" | "profil";
 
 type Stats = { listing_id: string; views: number; unique_viewers: number; favorites: number };
 
@@ -60,6 +62,8 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [nonLus, setNonLus] = useState(0);
+  const [recents, setRecents] = useState<Listing[]>([]);
+  const [alertes, setAlertes] = useState<Alerte[] | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -94,8 +98,25 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
       const { data: unread } = await supabase().rpc("mes_messages_non_lus");
       if (typeof unread === "number") setNonLus(unread);
       setChecked(true);
+      /* Les alertes (migration 0034) : null tant que la table n'existe pas,
+         et l'onglet reste discret. */
+      setAlertes(await mesAlertes());
+      /* Vues récemment : les identifiants viennent du navigateur, la base
+         ne rend que celles encore visibles, dans l'ordre de consultation. */
+      const ids = lireRecents();
+      if (ids.length > 0) {
+        const { data: vues } = await supabase()
+          .from("listings").select("*, photos:listing_photos(storage_key, position)").in("id", ids);
+        const parId = new Map(((vues as Listing[]) ?? []).map((l) => [l.id, l]));
+        setRecents(ids.map((id) => parId.get(id)).filter((l): l is Listing => !!l && l.user_id !== data.session!.user.id));
+      }
     })();
   }, [router, site]);
+
+  async function retirerAlerte(a: Alerte) {
+    if (!confirm(`Supprimer l’alerte « ${decrireAlerte(a)} » ?`)) return;
+    if (await supprimerAlerte(a.id)) setAlertes((liste) => (liste ?? []).filter((x) => x.id !== a.id));
+  }
 
   const loadMine = useCallback(async () => {
     if (!userId) return;
@@ -264,6 +285,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
           {([
             ["listings", `Mes annonces (${mine.length})`],
             ["favorites", `Favoris · annonces (${favIds.size})`],
+            ...(alertes !== null && site === "tikanal" ? [["alertes", `Mes alertes (${alertes.length})`]] as const : []),
             /* Les onglets liés aux restaurants ne s'affichent que si la
                section Food est ouverte — sauf pour un restaurateur qui gère
                déjà une fiche : lui doit garder l'accès à son établissement. */
@@ -386,13 +408,23 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                             Retirée par la modération
                           </span>
                         )}
+                        {/* Une seule annonce en avant pendant le test : si une
+                            autre l'est déjà, on le dit à la place du bouton. */}
                         {l.status !== "removed" && (
-                          <button className="link-quiet" disabled={busy === l.id} onClick={() => toggleEnAvant(l)}
-                            style={estEnAvant(l) ? undefined : { color: "var(--gold-deep)", fontWeight: 700 }}>
-                            {estEnAvant(l)
-                              ? `Retirer de la une (${joursRestants(l)} j restants)`
-                              : "★ Mettre en avant"}
-                          </button>
+                          estEnAvant(l) ? (
+                            <button className="link-quiet" disabled={busy === l.id} onClick={() => toggleEnAvant(l)}>
+                              Retirer de la une ({joursRestants(l)} j restants)
+                            </button>
+                          ) : autreEnAvant(mine, l.id) ? (
+                            <span style={{ fontSize: 12, color: "var(--text-muted)" }} title={MESSAGE_UNE_SEULE}>
+                              ★ Une seule annonce en avant (phase de test)
+                            </span>
+                          ) : (
+                            <button className="link-quiet" disabled={busy === l.id} onClick={() => toggleEnAvant(l)}
+                              style={{ color: "var(--gold-deep)", fontWeight: 700 }}>
+                              ★ Mettre en avant
+                            </button>
+                          )
                         )}
                         <button className="link-quiet" disabled={busy === l.id} onClick={() => remove(l)} style={{ color: "var(--danger)" }}>
                           Supprimer
@@ -463,7 +495,48 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
           )
         )}
 
+        {tab === "alertes" && (
+          (alertes ?? []).length === 0 ? (
+            <Empty
+              titre="Aucune alerte pour l'instant."
+              texte="Depuis une catégorie ou une recherche sur l'accueil, appuyez sur « M'alerter » : vous serez prévenu dès qu'une annonce correspond."
+              lien="/"
+              bouton="Parcourir les annonces"
+            />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
+                Vous êtes prévenu par notification et par email, selon vos réglages dans Mon profil, dès qu&apos;une nouvelle annonce correspond.
+              </p>
+              {(alertes ?? []).map((a) => (
+                <div key={a.id} className="panel" style={{ padding: "12px 14px", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <span aria-hidden="true" style={{ fontSize: 18 }}>🔔</span>
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{decrireAlerte(a)}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      Créée le {new Date(a.created_at).toLocaleDateString("fr-FR")}
+                      {a.last_hit_at && <> · dernière annonce le {new Date(a.last_hit_at).toLocaleDateString("fr-FR")}</>}
+                    </div>
+                  </div>
+                  <button className="link-quiet" style={{ color: "var(--danger)" }} onClick={() => retirerAlerte(a)}>Supprimer</button>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
         {tab === "profil" && <ProfilForm />}
+
+        {/* Vues récemment : sous l'onglet courant, discret, seulement s'il y a
+            quelque chose à retrouver. Ses propres annonces n'y sont pas. */}
+        {site === "tikanal" && recents.length > 0 && tab !== "profil" && (
+          <section style={{ marginTop: 28 }}>
+            <h2 className="membre-h2">Vues récemment <span>· {recents.length}</span></h2>
+            <div className="une-piste no-scrollbar" style={{ margin: 0 }}>
+              {recents.map((l) => <ListingCard key={l.id} l={l} />)}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

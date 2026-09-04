@@ -22,7 +22,7 @@ export default function SoutenirPage() {
         <h1 className="section-title" style={{ textAlign: "center" }}>Soutenir le projet</h1>
         <div style={{ height: 10 }} />
         <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "var(--text)" }}>
-          Ti Kanal, St Barth Food et St Barth Guide sont gratuits, sans publicité
+          Ti Kanal est gratuit, sans publicité
           et sans commission : le site vit sur son temps libre et ses frais
           d&apos;hébergement. Si le projet vous rend service et que vous voulez
           l&apos;aider à durer, un petit coup de pouce fait toute la différence.

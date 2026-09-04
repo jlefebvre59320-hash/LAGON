@@ -24,17 +24,18 @@ async function ids(table: string, status = "active"): Promise<string[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const foodOuvert = SITES.food.ready;
   const eventOuvert = SITES.event.ready;
+  const guideOuvert = SITES.guide.ready;
 
   const [listings, restos, places, events] = await Promise.all([
     ids("listings"),
     foodOuvert ? ids("restaurants") : Promise.resolve([]),
-    ids("places"),
+    guideOuvert ? ids("places") : Promise.resolve([]),
     eventOuvert ? ids("events", "approved") : Promise.resolve([]),
   ]);
 
   return [
     { url: BASE, changeFrequency: "hourly", priority: 1 },
-    { url: `${BASE}/guide`, changeFrequency: "weekly", priority: 0.8 },
+    ...(guideOuvert ? [{ url: `${BASE}/guide`, changeFrequency: "weekly" as const, priority: 0.8 }] : []),
     { url: `${BASE}/soutenir`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${BASE}/mentions-legales`, changeFrequency: "yearly", priority: 0.1 },
     { url: `${BASE}/confidentialite`, changeFrequency: "yearly", priority: 0.1 },

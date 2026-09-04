@@ -22,6 +22,7 @@ import { notifierParEmail } from "@/lib/notifierMessage";
 import SignalerPanel from "@/components/SignalerPanel";
 import AvertissementPaiement from "@/components/AvertissementPaiement";
 import { RAISON_LABEL, MESSAGE_CONTENU_REFUSE, niveauRisque } from "@/lib/moderation";
+import { noterRecent } from "@/lib/recents";
 
 export default function AnnoncePage({ initialListing = null }: { initialListing?: Listing | null }) {
   return (
@@ -61,6 +62,9 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
   }, []);
 
   useEffect(() => {
+    /* Mémorisée localement pour la rangée « Vues récemment » de Mon espace :
+       on note la visite, pas le contenu. */
+    noterRecent(id);
     if (initialListing) {
       recordView(`/annonce/${id}`, id);
       return;

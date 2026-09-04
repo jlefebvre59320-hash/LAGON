@@ -39,6 +39,7 @@ const ITEMS: DockItem[] = [
     href: "/guide",
     label: "Découvrir",
     paths: ["/guide"],
+    site: "guide",
     icon: <Icon><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" /></Icon>,
   },
   {
@@ -47,6 +48,21 @@ const ITEMS: DockItem[] = [
     paths: ["/event"],
     site: "event",
     icon: <Icon><path d="M5 4v3M19 4v3M4 9h16M5 6h14a1 1 0 0 1 1 1v13H4V7a1 1 0 0 1 1-1Z" /><path d="M8 13h3M13 13h3M8 17h3" /></Icon>,
+  },
+  /* Les deux entrées qui restent utiles quand Ti Kanal est seul : les
+     messages, qu'on vient vérifier plusieurs fois par jour, et l'espace
+     personnel. Toujours visibles, sections ouvertes ou non. */
+  {
+    href: "/messages",
+    label: "Messages",
+    paths: ["/messages"],
+    icon: <Icon><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1Z" /><path d="M8 9h8M8 12.5h5" /></Icon>,
+  },
+  {
+    href: "/mon-espace",
+    label: "Mon espace",
+    paths: ["/mon-espace"],
+    icon: <Icon><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></Icon>,
   },
 ];
 

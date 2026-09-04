@@ -6,10 +6,11 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
 import { SiteHeader, Mark } from "@/components/Brand";
 import { compressImage, thumbKey } from "@/lib/images";
-import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS } from "@/lib/featured";
+import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS, MESSAGE_UNE_SEULE } from "@/lib/featured";
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
 import { empreinteFichier, MESSAGE_CONTENU_REFUSE } from "@/lib/moderation";
 import { modererPhoto } from "@/lib/modererPhoto";
+import { notifierAlertes } from "@/lib/alertes";
 
 
 function Field({ f, v, set }: { f: FieldDef; v: string; set: (k: string, v: string) => void }) {
@@ -39,6 +40,9 @@ export default function Deposer() {
   const [sub, setSub] = useState<string | null>(null);
   const [subQuery, setSubQuery] = useState("");
   const [enAvant, setEnAvant] = useState(false);
+  /* Le titre de l'annonce déjà en avant, s'il y en a une : la case est
+     alors grisée et on explique pourquoi, plutôt que d'échouer au dépôt. */
+  const [dejaEnAvant, setDejaEnAvant] = useState<string | null>(null);
   const [intent, setIntent] = useState<Intent>("offer");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -64,6 +68,10 @@ export default function Deposer() {
         .from("profiles").select("phone_wa, allow_messages").eq("id", data.session.user.id).single();
       if (profile?.phone_wa) setPhoneWa(profile.phone_wa);
       if (profile && "allow_messages" in profile) setMessagerie(profile.allow_messages !== false);
+      const { data: enUne } = await supabase()
+        .from("listings").select("title").eq("user_id", data.session.user.id)
+        .eq("status", "active").gt("featured_until", new Date().toISOString()).limit(1);
+      if (Array.isArray(enUne) && enUne.length > 0) setDejaEnAvant((enUne[0] as { title: string }).title);
       setChecked(true);
     })();
   }, [router]);
@@ -165,11 +173,15 @@ export default function Deposer() {
          sans les détails, et on ne renvoie pas vers une fiche invisible.
          En attente : la fiche l'explique elle-même, on y va. */
       const { data: etat } = await sb.from("listings").select("review_state").eq("id", listing.id).maybeSingle();
-      if ((etat as { review_state?: string } | null)?.review_state === "blocked") {
+      const reviewState = (etat as { review_state?: string } | null)?.review_state;
+      if (reviewState === "blocked") {
         setError(`${MESSAGE_CONTENU_REFUSE} Elle a été transmise à la modération et n’est pas visible. Vous la retrouvez dans Mon espace.`);
         setPublishing(false);
         return;
       }
+      /* Publiée : ceux qui ont une alerte pour cette recherche sont prévenus.
+         En attente : la passe quotidienne s'en chargera après validation. */
+      if (reviewState !== "pending") void notifierAlertes(listing.id);
       router.push(`/annonce/${listing.id}`);
     } catch (cause) {
       // Pas d'annonce incomplète : on nettoie les objets et la ligne créés
@@ -382,9 +394,9 @@ export default function Deposer() {
 
             {/* Mise en avant : gratuite pendant la phase de test. L'option est
                 posée avant les photos parce qu'elle en change le nombre permis. */}
-            <div className="panel gold-frame" style={{ padding: "14px 16px" }}>
-              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-                <input type="checkbox" checked={enAvant} style={{ marginTop: 3 }}
+            <div className="panel gold-frame" style={{ padding: "14px 16px", opacity: dejaEnAvant ? 0.85 : 1 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: dejaEnAvant ? "not-allowed" : "pointer" }}>
+                <input type="checkbox" checked={enAvant} style={{ marginTop: 3 }} disabled={!!dejaEnAvant}
                   onChange={(e) => {
                     const on = e.target.checked;
                     setEnAvant(on);
@@ -402,8 +414,14 @@ export default function Deposer() {
                   <span style={{ display: "inline-block", marginTop: 6, fontSize: 10.5, fontWeight: 800,
                     letterSpacing: ".07em", textTransform: "uppercase", background: "var(--gold)",
                     color: "var(--green-900)", padding: "3px 10px", borderRadius: 99 }}>
-                    Gratuit pendant la phase de test
+                    Gratuit pendant la phase de test · une annonce par personne
                   </span>
+                  {dejaEnAvant && (
+                    <span style={{ display: "block", fontSize: 12.5, color: "var(--gold-deep)", lineHeight: 1.5, marginTop: 8, fontWeight: 600 }}>
+                      « {dejaEnAvant} » est déjà en avant. {MESSAGE_UNE_SEULE.replace("Pendant la phase de test, une seule annonce en avant par personne. ", "")}
+                      {" "}Cela se fait depuis <Link href="/mon-espace" style={{ color: "inherit", textDecoration: "underline" }}>Mon espace</Link>.
+                    </span>
+                  )}
                 </span>
               </label>
             </div>

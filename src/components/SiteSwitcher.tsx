@@ -54,6 +54,10 @@ export default function SiteSwitcher() {
     };
   }, [open]);
 
+  /* Un sélecteur à une seule entrée n'est qu'un bouton qui ne mène nulle
+     part : tant que Ti Kanal est seul ouvert, il n'apparaît pas. */
+  if (SITE_ORDER.length < 2) return null;
+
   return (
     <div ref={box} style={{ position: "relative", flex: "0 0 auto" }}>
       <button
@@ -151,6 +155,7 @@ export default function SiteSwitcher() {
 export function SiteFamilyFooter() {
   const pathname = usePathname();
   const currentKey = siteFromPath(pathname ?? "/");
+  if (SITE_ORDER.length < 2) return null;
   return (
     <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", fontSize: 12 }}>
       {SITE_ORDER.map((k) => {

@@ -16,6 +16,17 @@ export const PHOTOS_EN_AVANT = 10;
 /* Durée d'une mise en avant, en jours. */
 export const DUREE_JOURS = 30;
 
+/* Pendant la phase de test, une seule annonce en avant par personne : la
+   base l'impose (migration 0035), l'interface l'explique avant le refus. */
+export const EN_AVANT_MAX = 1;
+export const MESSAGE_UNE_SEULE =
+  "Pendant la phase de test, une seule annonce en avant par personne. Retirez l’autre de la une pour changer.";
+
+/* L'annonce de la personne déjà en avant, s'il y en a une autre que celle-ci. */
+export function autreEnAvant<T extends Pick<Listing, "id" | "status" | "featured_until">>(mine: T[], sauf?: string): T | null {
+  return mine.find((l) => l.id !== sauf && l.status === "active" && estEnAvant(l)) ?? null;
+}
+
 export function estEnAvant(l: Pick<Listing, "featured_until">): boolean {
   if (!l.featured_until) return false;
   return new Date(l.featured_until).getTime() > Date.now();
