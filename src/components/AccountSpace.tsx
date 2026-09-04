@@ -12,7 +12,7 @@ import { FavoritesProvider, useFavorites } from "@/lib/favorites";
 import type { Restaurant } from "@/lib/food";
 import RestaurantCard from "@/components/food/RestaurantCard";
 import { SITES } from "@/lib/sites";
-import { estEnAvant, joursRestants, finDeMiseEnAvant } from "@/lib/featured";
+import { estEnAvant, joursRestants, finDeMiseEnAvant, autreEnAvant, MESSAGE_UNE_SEULE } from "@/lib/featured";
 import { connexionUrl } from "@/lib/urls";
 import ProfilForm from "@/components/ProfilForm";
 import { lireRecents } from "@/lib/recents";
@@ -408,13 +408,23 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                             Retirée par la modération
                           </span>
                         )}
+                        {/* Une seule annonce en avant pendant le test : si une
+                            autre l'est déjà, on le dit à la place du bouton. */}
                         {l.status !== "removed" && (
-                          <button className="link-quiet" disabled={busy === l.id} onClick={() => toggleEnAvant(l)}
-                            style={estEnAvant(l) ? undefined : { color: "var(--gold-deep)", fontWeight: 700 }}>
-                            {estEnAvant(l)
-                              ? `Retirer de la une (${joursRestants(l)} j restants)`
-                              : "★ Mettre en avant"}
-                          </button>
+                          estEnAvant(l) ? (
+                            <button className="link-quiet" disabled={busy === l.id} onClick={() => toggleEnAvant(l)}>
+                              Retirer de la une ({joursRestants(l)} j restants)
+                            </button>
+                          ) : autreEnAvant(mine, l.id) ? (
+                            <span style={{ fontSize: 12, color: "var(--text-muted)" }} title={MESSAGE_UNE_SEULE}>
+                              ★ Une seule annonce en avant (phase de test)
+                            </span>
+                          ) : (
+                            <button className="link-quiet" disabled={busy === l.id} onClick={() => toggleEnAvant(l)}
+                              style={{ color: "var(--gold-deep)", fontWeight: 700 }}>
+                              ★ Mettre en avant
+                            </button>
+                          )
                         )}
                         <button className="link-quiet" disabled={busy === l.id} onClick={() => remove(l)} style={{ color: "var(--danger)" }}>
                           Supprimer
