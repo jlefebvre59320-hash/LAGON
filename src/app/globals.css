@@ -124,8 +124,12 @@ html, body {
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  overflow-x: hidden;
 }
+
+/* Le débordement horizontal se coupe sur html seul : posé aussi sur body,
+   body devient un conteneur de défilement et tout position: sticky en
+   dessous cesse de coller (la barre de recherche de l'accueil, par ex.). */
+html { overflow-x: hidden; }
 
 body {
   padding-bottom: env(safe-area-inset-bottom);
@@ -1677,3 +1681,44 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .une-titre, .une-compte, .une-lien { white-space: nowrap; }
 .une-lien-long { display: none; }
 @media (min-width: 480px) { .une-lien-long { display: inline; } .une-lien-court { display: none; } }
+
+/* --- Accueil : recherche collante, onglets chiffrés, en-tête plus court ---- */
+/* Le bandeau ne garde que la marque et le slogan ; recherche et univers
+   vivent dans un bloc collant qui suit le lecteur dans le fil. */
+.home-header { border-bottom: 0; }
+.home-header .home-header-inner { padding-top: 12px; padding-bottom: 6px; }
+.home-header .hero-tagline { margin: 10px 0 0; }
+.search-dock {
+  position: sticky; top: 0; z-index: 35;
+  background: linear-gradient(180deg, var(--green) 0%, var(--green-900) 100%);
+  color: var(--cream);
+  padding-top: calc(8px + env(safe-area-inset-top));
+  box-shadow: 0 6px 18px rgba(5, 40, 44, 0.18);
+}
+.search-dock .search-shell { margin: 0 0 10px; }
+.search-dock .tabs { padding-bottom: 10px; }
+/* Le compteur d'un onglet : un chiffre discret, jamais un badge qui crie. */
+.tab-compte {
+  margin-left: 6px;
+  font-size: 11px; font-weight: 700;
+  opacity: .72;
+  font-variant-numeric: tabular-nums;
+}
+.tab-active .tab-compte { opacity: .85; }
+
+/* --- Carte sans photo : dire le manque, pas le maquiller ---------------- */
+.sans-photo {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  opacity: .8;
+}
+
+/* --- Badge « À la une » : présent, pas dominant --------------------------
+   Dans la rangée « À la une », il est redondant avec le titre de la
+   section : on le retire, et la pastille de catégorie reprend sa place. */
+.featured-badge { font-size: 9.5px; padding: 3px 8px; box-shadow: none; }
+.une-piste .featured-badge { display: none; }
+.une-piste .listing-featured .subcat-pill { top: 8px !important; }
+/* Le libellé « aucune photo » se tient dans le haut de la vignette : la pastille de sens occupe le bas. */
+.sans-photo { padding-bottom: 28px; }

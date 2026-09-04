@@ -10,6 +10,7 @@ import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS } from "@/
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
 import { empreinteFichier, MESSAGE_CONTENU_REFUSE } from "@/lib/moderation";
 import { modererPhoto } from "@/lib/modererPhoto";
+import { notifierAlertes } from "@/lib/alertes";
 
 
 function Field({ f, v, set }: { f: FieldDef; v: string; set: (k: string, v: string) => void }) {
@@ -165,11 +166,15 @@ export default function Deposer() {
          sans les détails, et on ne renvoie pas vers une fiche invisible.
          En attente : la fiche l'explique elle-même, on y va. */
       const { data: etat } = await sb.from("listings").select("review_state").eq("id", listing.id).maybeSingle();
-      if ((etat as { review_state?: string } | null)?.review_state === "blocked") {
+      const reviewState = (etat as { review_state?: string } | null)?.review_state;
+      if (reviewState === "blocked") {
         setError(`${MESSAGE_CONTENU_REFUSE} Elle a été transmise à la modération et n’est pas visible. Vous la retrouvez dans Mon espace.`);
         setPublishing(false);
         return;
       }
+      /* Publiée : ceux qui ont une alerte pour cette recherche sont prévenus.
+         En attente : la passe quotidienne s'en chargera après validation. */
+      if (reviewState !== "pending") void notifierAlertes(listing.id);
       router.push(`/annonce/${listing.id}`);
     } catch (cause) {
       // Pas d'annonce incomplète : on nettoie les objets et la ligne créés

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_FILTER, ZONES_SERVICE, TARIFS_SERVICE, DISPOS_SERVICE, type Intent, type ModuleKey } from "@/lib/taxonomy";
@@ -11,6 +11,15 @@ import { recordView } from "@/lib/analytics";
 import { SITES, SITE_ORDER } from "@/lib/sites";
 import { trierEnAvantDabord, estEnAvant } from "@/lib/featured";
 import ALaUne from "@/components/ALaUne";
+import { QUARTIERS } from "@/lib/quartiers";
+import { creerAlerte, decrireAlerte, type CriteresAlerte } from "@/lib/alertes";
+import { connexionUrl } from "@/lib/urls";
+import { useRouter } from "next/navigation";
+
+/* Taille d'une page du fil : assez pour remplir l'écran d'un ordinateur,
+   assez peu pour arriver vite sur un téléphone. La suite se charge en
+   descendant. */
+const PAGE = 30;
 import SiteSwitcher, { SiteFamilyFooter } from "@/components/SiteSwitcher";
 import InstallBanner from "@/components/InstallBanner";
 import { eventDay, islandDayStartIso } from "@/lib/event";
@@ -54,6 +63,46 @@ function SelectFiltre({
   );
 }
 
+/* « M'alerter » : crée une alerte à partir des critères courants. Sans
+   compte, on passe par la connexion et on revient. Une fois créée, le
+   bouton le dit et renvoie vers Mon espace pour la gérer. */
+function BoutonAlerte({ criteres }: { criteres: CriteresAlerte }) {
+  const router = useRouter();
+  const [etat, setEtat] = useState<"idle" | "busy" | "ok" | "err">("idle");
+  const [msg, setMsg] = useState<string | null>(null);
+  const cle = JSON.stringify(criteres);
+  /* Les critères ont changé : le bouton redevient disponible. */
+  useEffect(() => { setEtat("idle"); setMsg(null); }, [cle]);
+
+  async function creer() {
+    setEtat("busy");
+    const { error } = await creerAlerte(criteres);
+    if (error === "connexion") { router.push(connexionUrl("/")); return; }
+    if (error) {
+      setEtat("err");
+      setMsg(error.includes("dix") ? "Vous avez déjà dix alertes : supprimez-en une dans Mon espace." : "L’alerte n’a pas pu être créée.");
+      return;
+    }
+    setEtat("ok");
+  }
+
+  if (etat === "ok") return (
+    <span style={{ fontSize: 12.5, color: "var(--green)", fontWeight: 600, whiteSpace: "nowrap" }}>
+      ✓ Alerte créée · <Link href="/mon-espace" style={{ color: "var(--gold-deep)" }}>gérer</Link>
+    </span>
+  );
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <button type="button" className="btn btn-outline-gold" onClick={creer} disabled={etat === "busy"}
+        title={`Être prévenu des prochaines annonces : ${decrireAlerte(criteres)}`}
+        style={{ color: "var(--gold-deep)", fontSize: 12.5, padding: "7px 13px", minHeight: 34, whiteSpace: "nowrap" }}>
+        🔔 M’alerter
+      </button>
+      {msg && <span style={{ fontSize: 12, color: "var(--danger)" }}>{msg}</span>}
+    </span>
+  );
+}
+
 function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<string | null>(null);
@@ -67,9 +116,19 @@ function Home() {
   const [zone, setZone] = useState("");
   const [tarif, setTarif] = useState("");
   const [dispo, setDispo] = useState("");
+  /* Le quartier : l'île se lit par quartier plus que par distance. */
+  const [quartier, setQuartier] = useState("");
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /* Fil sans fin : la date de la dernière annonce ordinaire chargée sert de
+     curseur ; « fin » quand une page revient incomplète. */
+  const curseur = useRef<string | null>(null);
+  const [fin, setFin] = useState(false);
+  const [chargementPlus, setChargementPlus] = useState(false);
+  const sentinelle = useRef<HTMLDivElement>(null);
+  /* Nombre d'annonces en ligne par univers, pour les onglets. */
+  const [compteurs, setCompteurs] = useState<Record<string, number>>({});
   const [foodHits, setFoodHits] = useState<{ id: string; name: string; cuisine: string; quartier: string }[]>([]);
   const [guideHits, setGuideHits] = useState<{ id: string; name: string; category: string; quartier: string }[]>([]);
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
@@ -89,6 +148,7 @@ function Home() {
     setIntent(null);
     setMinP("");
     setMaxP("");
+    setQuartier("");
     viderCriteresService();
   }
 
@@ -99,6 +159,16 @@ function Home() {
   }
 
   useEffect(() => { recordView("/"); }, []);
+
+  /* Les compteurs des onglets : une requête, au chargement. Absents tant
+     que la migration 0034 n'est pas passée — l'onglet reste alors sans
+     chiffre, rien d'autre ne change. */
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase().rpc("annonces_par_univers");
+      if (data && typeof data === "object") setCompteurs(data as Record<string, number>);
+    })();
+  }, []);
 
   /* L'accueil reste vivant même avant les premières annonces : l'écosystème
      Food, Guide et Event fournit des portes d'entrée utiles plutôt qu'un
@@ -140,51 +210,50 @@ function Home() {
     return () => { cancelled = true; };
   }, []);
 
+  /* La requête du fil avec tous les filtres courants. Partagée entre le
+     premier chargement, les mises en avant et les pages suivantes. */
+  const requeteFiltree = useCallback(() => {
+    let r = supabase()
+      .from("listings")
+      .select("*, photos:listing_photos(storage_key, position)")
+      /* Les vendues récentes restent visibles avec leur bandeau : la RLS
+         limite d'elle-même aux 7 jours suivant la vente. */
+      .in("status", ["active", "sold"]);
+    if (activeModule) r = r.eq("module", activeModule);
+    if (activeModule && sub) r = r.eq("subcategory", sub);
+    if (intent) r = r.eq("intent", intent);
+    if (minP !== "") r = r.gte("price_cents", parseInt(minP, 10) * 100);
+    if (maxP !== "") r = r.lte("price_cents", parseInt(maxP, 10) * 100);
+    if (quartier) r = r.ilike("location", `%${quartier}%`);
+    /* contains plutôt qu'une comparaison sur attrs->>clé : les libellés
+       contiennent espaces et apostrophes, que la syntaxe de chemin de
+       PostgREST digère mal. L'index GIN de la migration 0030 sert
+       justement cet opérateur. */
+    const critere: Record<string, string> = {};
+    if (activeModule === "service") {
+      if (zone) critere["Zone d'intervention"] = zone;
+      if (tarif) critere["Tarification"] = tarif;
+      if (dispo) critere["Disponibilité"] = dispo;
+    }
+    if (Object.keys(critere).length > 0) r = r.contains("attrs", critere);
+    if (query.trim()) r = r.textSearch("search_tsv", query.trim(), { type: "websearch", config: "french" });
+    return r;
+  }, [activeModule, sub, intent, minP, maxP, quartier, zone, tarif, dispo, query]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setFin(false);
+    curseur.current = null;
 
     (async () => {
-      /* Les mêmes filtres pour les deux requêtes : celle des annonces
-         ordinaires et celle des mises en avant. */
-      const filtrer = <T extends ReturnType<typeof baseQuery>>(q: T) => {
-        let r = q;
-        if (activeModule) r = r.eq("module", activeModule) as T;
-        if (activeModule && sub) r = r.eq("subcategory", sub) as T;
-        if (intent) r = r.eq("intent", intent) as T;
-        if (minP !== "") r = r.gte("price_cents", parseInt(minP, 10) * 100) as T;
-        if (maxP !== "") r = r.lte("price_cents", parseInt(maxP, 10) * 100) as T;
-        /* contains plutôt qu'une comparaison sur attrs->>clé : les libellés
-           contiennent espaces et apostrophes, que la syntaxe de chemin de
-           PostgREST digère mal. L'index GIN de la migration 0030 sert
-           justement cet opérateur. */
-        const critere: Record<string, string> = {};
-        if (activeModule === "service") {
-          if (zone) critere["Zone d'intervention"] = zone;
-          if (tarif) critere["Tarification"] = tarif;
-          if (dispo) critere["Disponibilité"] = dispo;
-        }
-        if (Object.keys(critere).length > 0) r = r.contains("attrs", critere) as T;
-        if (query.trim()) r = r.textSearch("search_tsv", query.trim(), { type: "websearch", config: "french" }) as T;
-        return r;
-      };
-
-      function baseQuery() {
-        return supabase()
-          .from("listings")
-          .select("*, photos:listing_photos(storage_key, position)")
-          /* Les vendues récentes restent visibles avec leur bandeau : la RLS
-             limite d'elle-même aux 7 jours suivant la vente. */
-          .in("status", ["active", "sold"]);
-      }
-
       /* Deux requêtes plutôt qu'une : sans cela, une annonce mise en avant
-         mais ancienne tomberait hors des 60 dernières et ne remonterait
+         mais ancienne tomberait hors de la première page et ne remonterait
          jamais — ce pour quoi la mise en avant est justement payée. */
       const [ordinaires, enAvant] = await Promise.all([
-        filtrer(baseQuery()).order("created_at", { ascending: false }).limit(60),
-        filtrer(baseQuery())
+        requeteFiltree().order("created_at", { ascending: false }).limit(PAGE),
+        requeteFiltree()
           .gt("featured_until", new Date().toISOString())
           .order("featured_until", { ascending: false })
           .limit(12),
@@ -194,20 +263,53 @@ function Home() {
       if (ordinaires.error) {
         /* Le détail technique est affiché, en petit : « Réessayez » seul ne
            dit pas si c'est le réseau ou une migration qui manque — et c'est
-           presque toujours la seconde. Une valeur d'enum inconnue, par
-           exemple, se lit en clair dans le message de PostgREST. */
+           presque toujours la seconde. */
         setError(`Impossible de charger les annonces. Réessayez.\n${ordinaires.error.message}`);
       } else {
+        const page = Array.isArray(ordinaires.data) ? (ordinaires.data as Listing[]) : [];
         const vus = new Set<string>();
-        const fusion = [...((enAvant.data as Listing[]) ?? []), ...((ordinaires.data as Listing[]) ?? [])]
+        const fusion = [...((enAvant.data as Listing[]) ?? []), ...page]
           .filter((l) => !vus.has(l.id) && vus.add(l.id));
         setListings(trierEnAvantDabord(fusion));
+        curseur.current = page.length > 0 ? page[page.length - 1].created_at : null;
+        setFin(page.length < PAGE);
       }
       setLoading(false);
     })();
 
     return () => { cancelled = true; };
-  }, [activeModule, sub, intent, query, minP, maxP, zone, tarif, dispo]);
+  }, [requeteFiltree]);
+
+  /* La page suivante : tout ce qui est plus ancien que la dernière annonce
+     chargée, mêmes filtres. Les doublons (une mise en avant déjà en tête)
+     sont écartés. */
+  const chargerPlus = useCallback(async () => {
+    if (fin || chargementPlus || loading || !curseur.current) return;
+    setChargementPlus(true);
+    const { data, error: err } = await requeteFiltree()
+      .lt("created_at", curseur.current)
+      .order("created_at", { ascending: false })
+      .limit(PAGE);
+    setChargementPlus(false);
+    if (err || !Array.isArray(data)) { setFin(true); return; }
+    const page = data as Listing[];
+    curseur.current = page.length > 0 ? page[page.length - 1].created_at : curseur.current;
+    setFin(page.length < PAGE);
+    setListings((prev) => {
+      const vus = new Set(prev.map((l) => l.id));
+      return [...prev, ...page.filter((l) => !vus.has(l.id))];
+    });
+  }, [fin, chargementPlus, loading, requeteFiltree]);
+
+  useEffect(() => {
+    const s = sentinelle.current;
+    if (!s || fin) return;
+    const obs = new IntersectionObserver((entrees) => {
+      if (entrees.some((e) => e.isIntersecting)) chargerPlus();
+    }, { rootMargin: "600px 0px" });
+    obs.observe(s);
+    return () => obs.disconnect();
+  }, [chargerPlus, fin, loading]);
 
   const subs = useMemo(() => (m ? m.subs : []), [m]);
 
@@ -270,6 +372,13 @@ function Home() {
           {tab === "home" && (
             <p className="hero-tagline">Le canal des <em>bonnes affaires</em> de l&apos;île.</p>
           )}
+        </div>
+      </header>
+
+      {/* Recherche et univers restent collés en haut quand on descend dans le
+          fil : chercher ou changer d'univers ne demande jamais de remonter. */}
+      <div className="search-dock">
+        <div className="container">
           <div className="search-shell">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -305,12 +414,13 @@ function Home() {
                 style={tab === key ? { background: MODULES[key].color, borderColor: MODULES[key].color, color: "#fff" } : undefined}
               >
                 {MODULES[key].short}
+                {(compteurs[key] ?? 0) > 0 && <span className="tab-compte">{compteurs[key]}</span>}
               </button>
             ))}
           </nav>
         </div>
         <div className="header-accent" style={{ background: accent }} />
-      </header>
+      </div>
 
       {/* Les tuiles des autres sections de la famille : elles n'apparaissent
           que si une autre section que Ti Kanal est ouverte (SITE_ORDER).
@@ -397,6 +507,8 @@ function Home() {
           ))}
 
             <span style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 4px", flex: "0 0 auto" }} />
+            <SelectFiltre valeur={quartier} set={setQuartier} defaut="Toute l'île" options={QUARTIERS} aria="Quartier" />
+            <span style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 4px", flex: "0 0 auto" }} />
             <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               Prix
             </span>
@@ -439,15 +551,28 @@ function Home() {
       <main className="container" style={{ paddingTop: 16, paddingBottom: 90, flex: 1 }}>
         {!loading && montrerUne && <ALaUne annonces={enAvantListe} />}
 
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
           <h1 className="section-title">
             {m ? m.label : "Dernières annonces"}
           </h1>
-          {!loading && grille.length > 0 && (
-            <span style={{ fontSize: 12.5, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-              {grille.length} annonce{grille.length > 1 ? "s" : ""}
-            </span>
-          )}
+          <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {!loading && grille.length > 0 && (
+              <span style={{ fontSize: 12.5, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                {grille.length}{!fin ? "+" : ""} annonce{grille.length > 1 ? "s" : ""}
+              </span>
+            )}
+            {/* Une recherche qu'on garde : dès qu'il y a un critère, on peut
+                demander à être prévenu des prochaines annonces qui y répondent. */}
+            {(m || query.trim() || quartier) && (
+              <BoutonAlerte criteres={{
+                module: activeModule, subcategory: activeModule && sub ? sub : null, intent,
+                query: query.trim() || null,
+                min_cents: minP !== "" ? parseInt(minP, 10) * 100 : null,
+                max_cents: maxP !== "" ? parseInt(maxP, 10) * 100 : null,
+                quartier: quartier || null,
+              }} />
+            )}
+          </span>
         </div>
 
         {error && (
@@ -542,9 +667,27 @@ function Home() {
           /* Le fil, du plus utile au plus ancien. Quand « À la une » est
              affichée au-dessus, les mises en avant en sont retirées ; sinon
              elles ouvrent le fil, bordure dorée et première place. */
-          <div className="grid">
-            {grille.map((l) => <ListingCard key={l.id} l={l} />)}
-          </div>
+          <>
+            <div className="grid">
+              {grille.map((l) => <ListingCard key={l.id} l={l} />)}
+            </div>
+            {/* La sentinelle : quand elle approche de l'écran, la page suivante
+                arrive. Un bouton la double, pour qui préfère décider. */}
+            <div ref={sentinelle} style={{ height: 1 }} />
+            {!fin && (
+              <p style={{ textAlign: "center", margin: "18px 0 0" }}>
+                <button className="btn btn-outline-gold" style={{ color: "var(--gold-deep)" }}
+                  disabled={chargementPlus} onClick={chargerPlus}>
+                  {chargementPlus ? "Chargement…" : "Voir plus d’annonces"}
+                </button>
+              </p>
+            )}
+            {fin && grille.length >= PAGE && (
+              <p style={{ textAlign: "center", margin: "18px 0 0", fontSize: 12.5, color: "var(--text-muted)" }}>
+                Vous avez tout vu.
+              </p>
+            )}
+          </>
         )}
         {tab === "home" && <div style={{ marginTop: 24 }}><InstallBanner /></div>}
       </main>

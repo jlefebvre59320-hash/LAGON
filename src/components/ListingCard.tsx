@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { MODULES, intentBadge, eur, priceSuffix, prixAbsent } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
-import { Mark } from "@/components/Brand";
 import FavoriteButton from "@/components/FavoriteButton";
 import { thumbKey } from "@/lib/images";
 import { estEnAvant } from "@/lib/featured";
@@ -75,14 +74,17 @@ export default function ListingCard({ l }: { l: Listing }) {
         {photo ? (
           <Vignette storageKey={photo.storage_key} alt={l.title} />
         ) : (
-          <div
-            style={{
-              position: "absolute", inset: 0,
-              background: `linear-gradient(140deg, ${m.soft}, ${m.color}26)`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <Mark size={64} color={m.color} />
+          /* Pas de photo : on le dit, sobrement, dans la teinte de l'univers.
+             Le logo de l'île à la place faisait passer un manque pour un
+             visuel — et neuf cartes identiques dans une grille, c'est un
+             mur. */
+          <div className="sans-photo" style={{ color: m.dark, background: `linear-gradient(140deg, ${m.soft}, ${m.color}1f)` }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.5-2h5L16 7h2.5A1.5 1.5 0 0 1 20 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z" />
+              <circle cx="12" cy="13" r="3.2" />
+            </svg>
+            <span>Aucune photo</span>
           </div>
         )}
         {enAvant && (
