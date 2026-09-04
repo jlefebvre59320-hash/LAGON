@@ -1651,7 +1651,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   padding: 2px 2px 6px;
   margin: 0 -2px;
 }
-.une-piste > * { flex: 0 0 min(82%, 340px); scroll-snap-align: start; }
+/* Des cartes plus étroites qu'un écran : la suivante se devine, on comprend
+   que ça glisse, et une carte sans photo n'occupe pas tout l'écran. */
+.une-piste > * { flex: 0 0 min(68%, 300px); scroll-snap-align: start; }
 @media (min-width: 720px) { .une-piste > * { flex: 0 0 300px; } }
 /* Les flèches n'existent qu'avec une souris : au doigt, on glisse. */
 .une-fleche {
@@ -1686,14 +1688,27 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* Le bandeau ne garde que la marque et le slogan ; recherche et univers
    vivent dans un bloc collant qui suit le lecteur dans le fil. */
 .home-header { border-bottom: 0; }
-.home-header .home-header-inner { padding-top: 12px; padding-bottom: 6px; }
-.home-header .hero-tagline { margin: 10px 0 0; }
+.home-header .home-header-inner { padding-top: 10px; padding-bottom: 4px; }
+.home-header .hero-tagline { margin: 8px 0 0; font-size: clamp(18px, 4.4vw, 26px); }
+.une-section { padding: 12px 12px 10px; margin-bottom: 20px; }
 .search-dock {
-  position: sticky; top: 0; z-index: 35;
+  /* Collé sous la barre d'état du téléphone, pas dessous : en application
+     installée, l'encoche est couverte par le bandeau fixe ci-dessous. Le
+     rembourrage, lui, reste petit — l'encoche ne se paie pas deux fois. */
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 35;
   background: linear-gradient(180deg, var(--green) 0%, var(--green-900) 100%);
   color: var(--cream);
-  padding-top: calc(8px + env(safe-area-inset-top));
+  padding-top: 6px;
   box-shadow: 0 6px 18px rgba(5, 40, 44, 0.18);
+}
+/* Un bandeau fixe de la hauteur de l'encoche, dans la couleur du site : le
+   contenu qui défile ne passe jamais sous l'heure et la batterie. */
+body::before {
+  content: "";
+  position: fixed; top: 0; left: 0; right: 0; z-index: 34;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--green);
+  pointer-events: none;
 }
 .search-dock .search-shell { margin: 0 0 10px; }
 .search-dock .tabs { padding-bottom: 10px; }
@@ -1710,8 +1725,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .sans-photo {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  opacity: .8;
+  padding-bottom: 30px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  opacity: .7;
+  /* Un fond neutre et léger : la teinte de l'univers ne reste qu'en filigrane,
+     un grand aplat coloré vide attire l'œil pour rien. */
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.35) 0 6px, transparent 6px 14px) !important;
+  background-color: color-mix(in srgb, currentColor 6%, var(--surface)) !important;
 }
 
 /* --- Badge « À la une » : présent, pas dominant --------------------------
