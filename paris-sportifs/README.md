@@ -28,6 +28,7 @@ Objet : estimer des probabilités d'issues sportives à partir de sources recoup
 - Chaque famille de variables doit démontrer son utilité hors échantillon avant d'être conservée.
 - Les combinés ne sont pas évalués tant que les paris simples n'ont pas prouvé quelque chose.
 - Le moteur statistique calcule les probabilités. Une IA peut extraire, rapprocher, expliquer ; elle ne modifie pas une probabilité.
+- Usage strictement personnel, déploiement local (PostgreSQL et interface web sur le poste). Aucun service hébergé, aucune donnée hors du poste et de sa sauvegarde.
 
 ## Arborescence
 

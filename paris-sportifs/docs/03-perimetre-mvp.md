@@ -58,7 +58,7 @@ Hors périmètre, sans exception jusqu'au verdict de P0 puis du paper trading :
 | Portefeuille fictif | Mises simulées, limites de budget et d'exposition, journal immuable | MVP |
 | Extraction assistée par Claude | Structuration d'annonces officielles et d'articles en événements horodatés, étiquetés officiel/presse/rumeur | MVP, dégradable |
 
-### 4.2 Interface (Next.js, français)
+### 4.2 Interface (web locale, Python, français)
 
 | Écran | Contenu minimal | Priorité |
 |---|---|---|
@@ -93,7 +93,7 @@ Toute information stockée porte : source, URL ou fichier, date de publication, 
 | Jalon | Contenu | Critère de passage |
 |---|---|---|
 | P0 | Moteur et backtest sur données gratuites, sans interface | Verdict poursuivre / corriger / abandonner selon les seuils du livrable 1 §6.2 |
-| M1 | Base de données, pipeline prospectif quotidien, prédictions horodatées, interface tableau de bord et fiche | 4 semaines de prédictions prospectives sans incident de fuite |
+| M1 | PostgreSQL local, pipeline prospectif planifié, prédictions horodatées, interface locale tableau de bord et fiche, sauvegarde | 4 semaines de prédictions prospectives sans incident de fuite ni exécution manquée non signalée |
 | M2 | Simulateur, portefeuille fictif, suivi des performances, collecte des cotes françaises | 3 mois de paper trading, au moins 200 paris fictifs, CLV mesurée |
 | M3 | Extraction assistée par Claude, compositions et absences, score de complétude enrichi | Gain hors échantillon démontré ou retrait de la famille |
 | Décision | Rapport de viabilité | Critères du livrable 10 |
@@ -101,6 +101,6 @@ Toute information stockée porte : source, URL ou fichier, date de publication, 
 ## 8. Hypothèses et décisions en suspens
 
 - Usage strictement personnel (décision du 2026-09-05), utilisateur résidant en France (hypothèse maintenue).
-- La pile Next.js et Supabase déjà présente dans le dépôt est retenue pour l'interface et la base, avec un **projet Supabase distinct** de Ti Kanal (données et droits sans rapport). Le moteur est en Python.
+- Déploiement local sur un seul poste (décision du 2026-09-05) : moteur Python, PostgreSQL local, interface web servie en local par FastAPI. Ni Supabase ni Vercel ; le code Next.js de Ti Kanal n'est pas réutilisé.
 - Les trois opérateurs agréés à suivre en paper trading restent à nommer par l'utilisateur ; par défaut, les trois plus gros par part de marché.
 - Budget de données plafonné à 50 $/mois jusqu'au verdict M2.

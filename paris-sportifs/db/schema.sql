@@ -1,6 +1,6 @@
 -- ============================================================
 -- Paris sportifs : analyse et simulation
--- Schéma PostgreSQL (Supabase, projet distinct de Ti Kanal)
+-- Schéma PostgreSQL local (aucune extension ni service requis ; psql -f db/schema.sql)
 -- Livrable 4. Version 0.1, 2026-09-05.
 --
 -- Conventions :

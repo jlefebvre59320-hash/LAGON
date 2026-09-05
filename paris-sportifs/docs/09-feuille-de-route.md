@@ -7,7 +7,7 @@ Livrable 9 sur 10. Rédigé le 2026-09-05. Hypothèse : une personne à temps pa
 | Phase | Durée | Contenu | Livrables | Condition d'entrée | Condition de sortie |
 |---|---|---|---|---|---|
 | **P0 : preuve statistique** | 3 à 4 semaines | Téléchargement Football-Data 2000-2026 ; xG Understat 2014-2026 ; validation manuelle des 328 alias ; backtest walk-forward 2019/20 à 2024/25 ; rapport | Rapport de backtest, registre d'hypothèses renseigné | Code P0 (livré), accès réseau non filtré | Verdict poursuivre / corriger / abandonner (livrable 10) |
-| **M1 : pipeline prospectif** | 4 à 6 semaines | Projet Supabase, schéma `bet`, moteur en cron, prédictions J-3/J-1/H-2 horodatées, tableau de bord et fiche rencontre | Base en production, 2 écrans | Verdict P0 ≠ abandonner | 4 semaines de prédictions sans incident de fuite ni trou de données |
+| **M1 : pipeline prospectif** | 4 à 6 semaines | PostgreSQL local et schéma `bet`, minuteries systemd, prédictions J-3/J-1/H-2 horodatées, interface locale (tableau de bord, fiche), sauvegarde quotidienne testée | Base locale en service, 2 écrans, script de sauvegarde | Verdict P0 ≠ abandonner | 4 semaines de prédictions sans incident de fuite ni trou de données |
 | **M2 : simulation et paper trading** | 8 à 12 semaines (calendrier sportif) | Simulateur, portefeuille fictif, collecte des cotes de 3 opérateurs agréés, suivi des performances, CLV | 5 écrans, ≥ 200 paris fictifs | M1 stable | Rapport de paper trading avec CLV et IC |
 | **M3 : information contextuelle** | 6 à 8 semaines | API-Football (compositions, absences), extraction assistée par Claude, score de complétude enrichi, tests d'ablation en prospectif | Module IA, journal des données | M2 en cours | Gain hors échantillon démontré, ou retrait de la famille |
 | **Décision** | 1 semaine | Rapport de viabilité selon le livrable 10 | Rapport | Fin de M2 et M3 | Continuer, réduire, arrêter |
@@ -24,10 +24,9 @@ Durée totale avant décision : 6 à 8 mois, dictée par le calendrier des match
 | The Odds API | 0 | 0 (500 crédits) | 30 $ | 30 $ | 3 relevés/jour × 2 marchés × 1 région dépassent le gratuit dès M2 |
 | API-Football | 0 | 0 | 0 | 19 $ | 100 req/jour insuffisantes pour compositions H-1 sur 5 ligues |
 | Claude (extraction, explication) | 0 | 0 | 0 | 10 à 30 $ | Plafond fixé dans `ai_calls` ; coupure automatique |
-| Supabase | 0 | 0 à 25 $ | 25 $ | 25 $ | Le palier gratuit suffit probablement jusqu'à M2 |
-| Vercel | 0 | 0 | 0 | 0 | Palier gratuit |
-| Hébergement du cron (petit serveur ou machine locale) | 0 | 0 à 5 $ | 5 $ | 5 $ | |
-| **Total** | **0** | **0 à 30 $** | **~60 $** | **~110 $** | Sous le plafond de 50 $ jusqu'à M2 si Supabase reste gratuit |
+| Hébergement | 0 | 0 | 0 | 0 | Déploiement local sur le poste (décision du 2026-09-05) ; aucun service hébergé |
+| Support de sauvegarde externe | 0 | achat unique ~30 $ | 0 | 0 | Disque ou clé chiffrée si absent |
+| **Total** | **0** | **0 (+ support)** | **~30 $** | **~80 $** | Sous le plafond de 50 $ jusqu'à M2 inclus |
 
 Aucun achat de données payantes (Opta, StatsBomb, historique de cotes horodatées) n'est prévu avant la décision. Si le verdict de P0 est « corriger » après ablation des familles 1 à 4, la première dépense à envisager est l'historique The Odds API (plan à 59 $/mois, coût ×10 par requête historique) pour mesurer la CLV à J-2 sur 2020-2026 ; budget estimé 100 à 200 $ ponctuels.
 
@@ -59,4 +58,4 @@ Aucun achat de données payantes (Opta, StatsBomb, historique de cotes horodaté
 2. `p0 download`, `p0 build --accept-unvalidated`, corriger les alias, valider la table (`validated=true`), relancer `p0 build` en mode strict.
 3. `p0 xg`, puis `p0 backtest --test-seasons 2019 2024`.
 4. Renseigner `hypotheses.yaml` avec les résultats et rédiger le verdict.
-5. Si « poursuivre » ou « corriger » : créer le projet Supabase, appliquer `db/schema.sql`, brancher le moteur.
+5. Si « poursuivre » ou « corriger » : installer PostgreSQL en local, appliquer `db/schema.sql`, brancher le moteur, mettre en place les minuteries et la sauvegarde.
