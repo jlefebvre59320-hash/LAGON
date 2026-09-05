@@ -12,6 +12,8 @@ Chaque fait porte un **statut de vérification** :
 
 **Contrainte de l'environnement de rédaction** : le proxy de sortie réseau bloque la quasi-totalité des sites de données sportives, de bookmakers et d'organismes publics (liste en §G). Seuls github.com, raw.githubusercontent.com et pypi.org répondaient. Tout ce qui est V1 ci-dessous a donc été lu sur GitHub ou dans des fichiers de données. Les items V3 doivent être revérifiés depuis un poste non filtré avant le démarrage du prototype.
 
+Cadre d'usage confirmé le 2026-09-05 : strictement personnel, sans distribution. Les sources à licence non commerciale sont donc utilisables ; les interdictions d'accès automatisé restent applicables quel que soit l'usage.
+
 Règle appliquée : une donnée visible sur un site n'est pas une donnée réutilisable. La colonne « Réutilisation » distingue : *licence ouverte* (CC0, CC BY, ODbL, domaine public), *usage non commercial* (CC BY-NC, conditions du service), *téléchargement toléré sans licence explicite*, *interdit ou à autorisation*.
 
 Aucune source ci-dessous n'a été inventée. Quand une capacité d'API n'a pas pu être confirmée, elle est indiquée « non confirmée ».

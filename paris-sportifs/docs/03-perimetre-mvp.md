@@ -100,7 +100,7 @@ Toute information stockée porte : source, URL ou fichier, date de publication, 
 
 ## 8. Hypothèses et décisions en suspens
 
-- Usage personnel, utilisateur résidant en France (hypothèse du livrable 1).
+- Usage strictement personnel (décision du 2026-09-05), utilisateur résidant en France (hypothèse maintenue).
 - La pile Next.js et Supabase déjà présente dans le dépôt est retenue pour l'interface et la base, avec un **projet Supabase distinct** de Ti Kanal (données et droits sans rapport). Le moteur est en Python.
 - Les trois opérateurs agréés à suivre en paper trading restent à nommer par l'utilisateur ; par défaut, les trois plus gros par part de marché.
 - Budget de données plafonné à 50 $/mois jusqu'au verdict M2.

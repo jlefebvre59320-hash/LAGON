@@ -194,12 +194,12 @@ Interface, base de données de production, intégration de Claude, tennis, combi
 
 1. L'utilisateur final est un particulier résidant en France, qui n'a légalement accès qu'aux opérateurs agréés ANJ. Si l'utilisateur a accès à Pinnacle ou à un exchange, la conclusion sur la viabilité change fortement.
 2. Le projet accepte un résultat négatif comme livrable valable.
-3. Les données à usage non commercial (Sackmann, StatsBomb Open Data) sont utilisables parce que l'application est un outil personnel non commercialisé. Si l'application devait être vendue ou ouverte au public, plusieurs sources tombent.
+3. Les données à usage non commercial (Sackmann, StatsBomb Open Data, Open-Meteo) sont utilisables : l'usage strictement personnel est confirmé par le commanditaire (2026-09-05). Si l'usage changeait, plusieurs sources tomberaient.
 4. Le scraping de sites dont les conditions l'interdisent est exclu ; les sites sans conditions explicites sont interrogés avec un délai de plusieurs secondes entre requêtes et un cache local.
 
 ### Questions réellement bloquantes
 
-Une seule pour démarrer P0 : **l'application est-elle destinée à un usage strictement personnel, ou à être distribuée ?** La réponse détermine les licences utilisables et l'architecture (locale vs hébergée). En l'absence de réponse, P0 est mené sous l'hypothèse « usage personnel ».
+Une seule pour démarrer P0 : l'application est-elle destinée à un usage strictement personnel, ou à être distribuée ? **Tranchée le 2026-09-05 : usage strictement personnel** (journal des décisions, livrable 0). Les licences non commerciales sont donc utilisables ; aucune redistribution de données ni de prédictions.
 
 Deux questions non bloquantes pour P0, bloquantes pour le MVP : chez quels opérateurs les cotes doivent-elles être collectées en paper trading ? Quel budget mensuel maximal pour les données ?
 

@@ -143,6 +143,6 @@ Mécanique :
 ## 8. Décisions et alternatives écartées
 
 - **Tout en TypeScript** : écarté, bibliothèques statistiques insuffisantes.
-- **Base locale SQLite/DuckDB pour le MVP** : viable pour un usage strictement personnel sans interface web ; écarté au profit de Postgres parce que l'interface Next.js et le portefeuille fictif bénéficient des triggers d'immuabilité et de la RLS. DuckDB reste utilisé en P0 pour l'analyse.
+- **Base locale SQLite/DuckDB pour le MVP** : l'usage strictement personnel étant confirmé (2026-09-05), cette option redevient sérieuse. Postgres reste préféré pour les triggers d'immuabilité et l'interface web, mais un déploiement entièrement local (moteur, PostgreSQL local ou DuckDB, interface servie en local) est acceptable et supprime tout coût d'hébergement. Décision à prendre à l'entrée de M1 selon le besoin réel d'une interface accessible depuis un téléphone.
 - **Réutiliser le projet Supabase de Ti Kanal** : écarté ; données et droits sans rapport, risque de fuite entre applications.
 - **Calcul des probabilités dans l'interface** : écarté ; une seule implémentation, versionnée, côté moteur.

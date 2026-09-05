@@ -8,6 +8,7 @@ Objet : estimer des probabilités d'issues sportives à partir de sources recoup
 
 | N° | Livrable | Fichier | Statut |
 |---|---|---|---|
+| 0 | Journal des décisions | `docs/00-journal-des-decisions.md` | Tenu à jour |
 | 1 | Étude de faisabilité et choix du premier sport | `docs/01-etude-de-faisabilite.md` | Rédigé, à réviser après P0 |
 | 2 | Inventaire vérifié des sources de données | `docs/02-inventaire-des-sources.md` | Rédigé ; 9 vérifications à refaire hors proxy (§G) |
 | 3 | Périmètre MVP | `docs/03-perimetre-mvp.md` | Rédigé |
