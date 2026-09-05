@@ -1,0 +1,329 @@
+canonical,source,alias,method,validated
+Arsenal,football-data,Arsenal,seed,false
+Arsenal,understat,Arsenal,seed,false
+Aston Villa,football-data,Aston Villa,seed,false
+Aston Villa,understat,Aston Villa,seed,false
+Bournemouth,football-data,Bournemouth,seed,false
+Bournemouth,understat,Bournemouth,seed,false
+Brentford,football-data,Brentford,seed,false
+Brentford,understat,Brentford,seed,false
+Brighton,football-data,Brighton,seed,false
+Brighton,understat,Brighton,seed,false
+Burnley,football-data,Burnley,seed,false
+Burnley,understat,Burnley,seed,false
+Chelsea,football-data,Chelsea,seed,false
+Chelsea,understat,Chelsea,seed,false
+Crystal Palace,football-data,Crystal Palace,seed,false
+Crystal Palace,understat,Crystal Palace,seed,false
+Everton,football-data,Everton,seed,false
+Everton,understat,Everton,seed,false
+Fulham,football-data,Fulham,seed,false
+Fulham,understat,Fulham,seed,false
+Ipswich,football-data,Ipswich,seed,false
+Ipswich,understat,Ipswich,seed,false
+Leeds,football-data,Leeds,seed,false
+Leeds,understat,Leeds,seed,false
+Leicester,football-data,Leicester,seed,false
+Leicester,understat,Leicester,seed,false
+Liverpool,football-data,Liverpool,seed,false
+Liverpool,understat,Liverpool,seed,false
+Luton,football-data,Luton,seed,false
+Luton,understat,Luton,seed,false
+Manchester City,football-data,Man City,seed,false
+Manchester City,understat,Manchester City,seed,false
+Manchester United,football-data,Man United,seed,false
+Manchester United,understat,Manchester United,seed,false
+Newcastle United,football-data,Newcastle,seed,false
+Newcastle United,understat,Newcastle United,seed,false
+Nottingham Forest,football-data,Nott'm Forest,seed,false
+Nottingham Forest,understat,Nottingham Forest,seed,false
+Sheffield United,football-data,Sheffield United,seed,false
+Sheffield United,understat,Sheffield United,seed,false
+Southampton,football-data,Southampton,seed,false
+Southampton,understat,Southampton,seed,false
+Sunderland,football-data,Sunderland,seed,false
+Sunderland,understat,Sunderland,seed,false
+Tottenham,football-data,Tottenham,seed,false
+Tottenham,understat,Tottenham,seed,false
+West Ham,football-data,West Ham,seed,false
+West Ham,understat,West Ham,seed,false
+Wolverhampton Wanderers,football-data,Wolves,seed,false
+Wolverhampton Wanderers,understat,Wolverhampton Wanderers,seed,false
+Watford,football-data,Watford,seed,false
+Watford,understat,Watford,seed,false
+Norwich,football-data,Norwich,seed,false
+Norwich,understat,Norwich,seed,false
+West Bromwich Albion,football-data,West Brom,seed,false
+West Bromwich Albion,understat,West Bromwich Albion,seed,false
+Cardiff,football-data,Cardiff,seed,false
+Cardiff,understat,Cardiff,seed,false
+Huddersfield,football-data,Huddersfield,seed,false
+Huddersfield,understat,Huddersfield,seed,false
+Swansea,football-data,Swansea,seed,false
+Swansea,understat,Swansea,seed,false
+Stoke,football-data,Stoke,seed,false
+Stoke,understat,Stoke,seed,false
+Hull,football-data,Hull,seed,false
+Hull,understat,Hull,seed,false
+Middlesbrough,football-data,Middlesbrough,seed,false
+Middlesbrough,understat,Middlesbrough,seed,false
+Queens Park Rangers,football-data,QPR,seed,false
+Queens Park Rangers,understat,Queens Park Rangers,seed,false
+Alaves,football-data,Alaves,seed,false
+Alaves,understat,Alaves,seed,false
+Almeria,football-data,Almeria,seed,false
+Almeria,understat,Almeria,seed,false
+Athletic Club,football-data,Ath Bilbao,seed,false
+Athletic Club,understat,Athletic Club,seed,false
+Atletico Madrid,football-data,Ath Madrid,seed,false
+Atletico Madrid,understat,Atletico Madrid,seed,false
+Barcelona,football-data,Barcelona,seed,false
+Barcelona,understat,Barcelona,seed,false
+Cadiz,football-data,Cadiz,seed,false
+Cadiz,understat,Cadiz,seed,false
+Celta Vigo,football-data,Celta,seed,false
+Celta Vigo,understat,Celta Vigo,seed,false
+Deportivo La Coruna,football-data,La Coruna,seed,false
+Deportivo La Coruna,understat,Deportivo La Coruna,seed,false
+Eibar,football-data,Eibar,seed,false
+Eibar,understat,Eibar,seed,false
+Elche,football-data,Elche,seed,false
+Elche,understat,Elche,seed,false
+Espanyol,football-data,Espanol,seed,false
+Espanyol,understat,Espanyol,seed,false
+Getafe,football-data,Getafe,seed,false
+Getafe,understat,Getafe,seed,false
+Girona,football-data,Girona,seed,false
+Girona,understat,Girona,seed,false
+Granada,football-data,Granada,seed,false
+Granada,understat,Granada,seed,false
+Las Palmas,football-data,Las Palmas,seed,false
+Las Palmas,understat,Las Palmas,seed,false
+Leganes,football-data,Leganes,seed,false
+Leganes,understat,Leganes,seed,false
+Levante,football-data,Levante,seed,false
+Levante,understat,Levante,seed,false
+Malaga,football-data,Malaga,seed,false
+Malaga,understat,Malaga,seed,false
+Mallorca,football-data,Mallorca,seed,false
+Mallorca,understat,Mallorca,seed,false
+Osasuna,football-data,Osasuna,seed,false
+Osasuna,understat,Osasuna,seed,false
+Rayo Vallecano,football-data,Vallecano,seed,false
+Rayo Vallecano,understat,Rayo Vallecano,seed,false
+Real Betis,football-data,Betis,seed,false
+Real Betis,understat,Real Betis,seed,false
+Real Madrid,football-data,Real Madrid,seed,false
+Real Madrid,understat,Real Madrid,seed,false
+Real Oviedo,football-data,Oviedo,seed,false
+Real Oviedo,understat,Real Oviedo,seed,false
+Real Sociedad,football-data,Sociedad,seed,false
+Real Sociedad,understat,Real Sociedad,seed,false
+Real Valladolid,football-data,Valladolid,seed,false
+Real Valladolid,understat,Real Valladolid,seed,false
+SD Huesca,football-data,Huesca,seed,false
+SD Huesca,understat,SD Huesca,seed,false
+Sevilla,football-data,Sevilla,seed,false
+Sevilla,understat,Sevilla,seed,false
+Sporting Gijon,football-data,Sp Gijon,seed,false
+Sporting Gijon,understat,Sporting Gijon,seed,false
+Valencia,football-data,Valencia,seed,false
+Valencia,understat,Valencia,seed,false
+Villarreal,football-data,Villarreal,seed,false
+Villarreal,understat,Villarreal,seed,false
+Arminia Bielefeld,football-data,Bielefeld,seed,false
+Arminia Bielefeld,understat,Arminia Bielefeld,seed,false
+Augsburg,football-data,Augsburg,seed,false
+Augsburg,understat,Augsburg,seed,false
+Bayer Leverkusen,football-data,Leverkusen,seed,false
+Bayer Leverkusen,understat,Bayer Leverkusen,seed,false
+Bayern Munich,football-data,Bayern Munich,seed,false
+Bayern Munich,understat,Bayern Munich,seed,false
+Bochum,football-data,Bochum,seed,false
+Bochum,understat,Bochum,seed,false
+Borussia Dortmund,football-data,Dortmund,seed,false
+Borussia Dortmund,understat,Borussia Dortmund,seed,false
+Borussia M.Gladbach,football-data,M'gladbach,seed,false
+Borussia M.Gladbach,understat,Borussia M.Gladbach,seed,false
+Darmstadt,football-data,Darmstadt,seed,false
+Darmstadt,understat,Darmstadt,seed,false
+Eintracht Frankfurt,football-data,Ein Frankfurt,seed,false
+Eintracht Frankfurt,understat,Eintracht Frankfurt,seed,false
+FC Cologne,football-data,FC Koln,seed,false
+FC Cologne,understat,FC Cologne,seed,false
+FC Heidenheim,football-data,Heidenheim,seed,false
+FC Heidenheim,understat,FC Heidenheim,seed,false
+Fortuna Duesseldorf,football-data,Fortuna Dusseldorf,seed,false
+Fortuna Duesseldorf,understat,Fortuna Duesseldorf,seed,false
+Freiburg,football-data,Freiburg,seed,false
+Freiburg,understat,Freiburg,seed,false
+Greuther Fuerth,football-data,Greuther Furth,seed,false
+Greuther Fuerth,understat,Greuther Fuerth,seed,false
+Hamburger SV,football-data,Hamburg,seed,false
+Hamburger SV,understat,Hamburger SV,seed,false
+Hannover 96,football-data,Hannover,seed,false
+Hannover 96,understat,Hannover 96,seed,false
+Hertha Berlin,football-data,Hertha,seed,false
+Hertha Berlin,understat,Hertha Berlin,seed,false
+Hoffenheim,football-data,Hoffenheim,seed,false
+Hoffenheim,understat,Hoffenheim,seed,false
+Holstein Kiel,football-data,Holstein Kiel,seed,false
+Holstein Kiel,understat,Holstein Kiel,seed,false
+Ingolstadt,football-data,Ingolstadt,seed,false
+Ingolstadt,understat,Ingolstadt,seed,false
+Mainz 05,football-data,Mainz,seed,false
+Mainz 05,understat,Mainz 05,seed,false
+Nuernberg,football-data,Nurnberg,seed,false
+Nuernberg,understat,Nuernberg,seed,false
+Paderborn,football-data,Paderborn,seed,false
+Paderborn,understat,Paderborn,seed,false
+RasenBallsport Leipzig,football-data,RB Leipzig,seed,false
+RasenBallsport Leipzig,understat,RasenBallsport Leipzig,seed,false
+Schalke 04,football-data,Schalke 04,seed,false
+Schalke 04,understat,Schalke 04,seed,false
+St. Pauli,football-data,St Pauli,seed,false
+St. Pauli,understat,St. Pauli,seed,false
+Union Berlin,football-data,Union Berlin,seed,false
+Union Berlin,understat,Union Berlin,seed,false
+VfB Stuttgart,football-data,Stuttgart,seed,false
+VfB Stuttgart,understat,VfB Stuttgart,seed,false
+Werder Bremen,football-data,Werder Bremen,seed,false
+Werder Bremen,understat,Werder Bremen,seed,false
+Wolfsburg,football-data,Wolfsburg,seed,false
+Wolfsburg,understat,Wolfsburg,seed,false
+AC Milan,football-data,Milan,seed,false
+AC Milan,understat,AC Milan,seed,false
+Atalanta,football-data,Atalanta,seed,false
+Atalanta,understat,Atalanta,seed,false
+Benevento,football-data,Benevento,seed,false
+Benevento,understat,Benevento,seed,false
+Bologna,football-data,Bologna,seed,false
+Bologna,understat,Bologna,seed,false
+Brescia,football-data,Brescia,seed,false
+Brescia,understat,Brescia,seed,false
+Cagliari,football-data,Cagliari,seed,false
+Cagliari,understat,Cagliari,seed,false
+Carpi,football-data,Carpi,seed,false
+Carpi,understat,Carpi,seed,false
+Chievo,football-data,Chievo,seed,false
+Chievo,understat,Chievo,seed,false
+Como,football-data,Como,seed,false
+Como,understat,Como,seed,false
+Cremonese,football-data,Cremonese,seed,false
+Cremonese,understat,Cremonese,seed,false
+Crotone,football-data,Crotone,seed,false
+Crotone,understat,Crotone,seed,false
+Empoli,football-data,Empoli,seed,false
+Empoli,understat,Empoli,seed,false
+Fiorentina,football-data,Fiorentina,seed,false
+Fiorentina,understat,Fiorentina,seed,false
+Frosinone,football-data,Frosinone,seed,false
+Frosinone,understat,Frosinone,seed,false
+Genoa,football-data,Genoa,seed,false
+Genoa,understat,Genoa,seed,false
+Inter,football-data,Inter,seed,false
+Inter,understat,Inter,seed,false
+Juventus,football-data,Juventus,seed,false
+Juventus,understat,Juventus,seed,false
+Lazio,football-data,Lazio,seed,false
+Lazio,understat,Lazio,seed,false
+Lecce,football-data,Lecce,seed,false
+Lecce,understat,Lecce,seed,false
+Monza,football-data,Monza,seed,false
+Monza,understat,Monza,seed,false
+Napoli,football-data,Napoli,seed,false
+Napoli,understat,Napoli,seed,false
+Palermo,football-data,Palermo,seed,false
+Palermo,understat,Palermo,seed,false
+Parma Calcio 1913,football-data,Parma,seed,false
+Parma Calcio 1913,understat,Parma Calcio 1913,seed,false
+Pescara,football-data,Pescara,seed,false
+Pescara,understat,Pescara,seed,false
+Pisa,football-data,Pisa,seed,false
+Pisa,understat,Pisa,seed,false
+Roma,football-data,Roma,seed,false
+Roma,understat,Roma,seed,false
+Salernitana,football-data,Salernitana,seed,false
+Salernitana,understat,Salernitana,seed,false
+Sampdoria,football-data,Sampdoria,seed,false
+Sampdoria,understat,Sampdoria,seed,false
+Sassuolo,football-data,Sassuolo,seed,false
+Sassuolo,understat,Sassuolo,seed,false
+SPAL 2013,football-data,Spal,seed,false
+SPAL 2013,understat,SPAL 2013,seed,false
+Spezia,football-data,Spezia,seed,false
+Spezia,understat,Spezia,seed,false
+Torino,football-data,Torino,seed,false
+Torino,understat,Torino,seed,false
+Udinese,football-data,Udinese,seed,false
+Udinese,understat,Udinese,seed,false
+Venezia,football-data,Venezia,seed,false
+Venezia,understat,Venezia,seed,false
+Verona,football-data,Verona,seed,false
+Verona,understat,Verona,seed,false
+Ajaccio,football-data,Ajaccio,seed,false
+Ajaccio,understat,Ajaccio,seed,false
+Amiens,football-data,Amiens,seed,false
+Amiens,understat,Amiens,seed,false
+Angers,football-data,Angers,seed,false
+Angers,understat,Angers,seed,false
+Auxerre,football-data,Auxerre,seed,false
+Auxerre,understat,Auxerre,seed,false
+Bastia,football-data,Bastia,seed,false
+Bastia,understat,Bastia,seed,false
+Bordeaux,football-data,Bordeaux,seed,false
+Bordeaux,understat,Bordeaux,seed,false
+Brest,football-data,Brest,seed,false
+Brest,understat,Brest,seed,false
+Caen,football-data,Caen,seed,false
+Caen,understat,Caen,seed,false
+Clermont Foot,football-data,Clermont,seed,false
+Clermont Foot,understat,Clermont Foot,seed,false
+Dijon,football-data,Dijon,seed,false
+Dijon,understat,Dijon,seed,false
+Evian Thonon Gaillard,football-data,Evian Thonon Gaillard,seed,false
+Evian Thonon Gaillard,understat,Evian Thonon Gaillard,seed,false
+Guingamp,football-data,Guingamp,seed,false
+Guingamp,understat,Guingamp,seed,false
+Le Havre,football-data,Le Havre,seed,false
+Le Havre,understat,Le Havre,seed,false
+Lens,football-data,Lens,seed,false
+Lens,understat,Lens,seed,false
+Lille,football-data,Lille,seed,false
+Lille,understat,Lille,seed,false
+Lorient,football-data,Lorient,seed,false
+Lorient,understat,Lorient,seed,false
+Lyon,football-data,Lyon,seed,false
+Lyon,understat,Lyon,seed,false
+Marseille,football-data,Marseille,seed,false
+Marseille,understat,Marseille,seed,false
+Metz,football-data,Metz,seed,false
+Metz,understat,Metz,seed,false
+Monaco,football-data,Monaco,seed,false
+Monaco,understat,Monaco,seed,false
+Montpellier,football-data,Montpellier,seed,false
+Montpellier,understat,Montpellier,seed,false
+Nancy,football-data,Nancy,seed,false
+Nancy,understat,Nancy,seed,false
+Nantes,football-data,Nantes,seed,false
+Nantes,understat,Nantes,seed,false
+Nice,football-data,Nice,seed,false
+Nice,understat,Nice,seed,false
+Nimes,football-data,Nimes,seed,false
+Nimes,understat,Nimes,seed,false
+Paris FC,football-data,Paris FC,seed,false
+Paris FC,understat,Paris FC,seed,false
+Paris Saint Germain,football-data,Paris SG,seed,false
+Paris Saint Germain,understat,Paris Saint Germain,seed,false
+Reims,football-data,Reims,seed,false
+Reims,understat,Reims,seed,false
+Rennes,football-data,Rennes,seed,false
+Rennes,understat,Rennes,seed,false
+Saint-Etienne,football-data,St Etienne,seed,false
+Saint-Etienne,understat,Saint-Etienne,seed,false
+Strasbourg,football-data,Strasbourg,seed,false
+Strasbourg,understat,Strasbourg,seed,false
+Toulouse,football-data,Toulouse,seed,false
+Toulouse,understat,Toulouse,seed,false
+Troyes,football-data,Troyes,seed,false
+Troyes,understat,Troyes,seed,false

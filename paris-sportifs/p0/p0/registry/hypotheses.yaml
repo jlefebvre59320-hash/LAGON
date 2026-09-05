@@ -1,0 +1,32 @@
+# Registre d'hypothèses pré-enregistrées (livrable 1 §5). Une hypothèse est inscrite ici AVANT
+# d'être testée ; le résultat est ajouté ensuite. Rien n'est supprimé.
+- id: H0
+  family: market
+  statement: "La cote de clôture Pinnacle, marge retirée par Shin, a la meilleure log-loss de tous les modèles sur 1N2 et O/U 2,5."
+  registered: 2026-09-05
+  outcome: null
+- id: H1
+  family: results
+  statement: "Dixon-Coles pondéré (ξ ≈ 0,0035/jour) bat Elo en log-loss sur le 1N2 et produit un O/U 2,5 calibré (ECE < 0,02)."
+  registered: 2026-09-05
+  outcome: null
+- id: H2
+  family: xg
+  statement: "Dixon-Coles sur xG améliore la log-loss O/U 2,5 d'au moins 0,5 % par rapport à Dixon-Coles sur buts, hors échantillon, sur 2016/17 à 2024/25."
+  registered: 2026-09-05
+  outcome: null
+- id: H3
+  family: ensemble
+  statement: "L'ensemble (Elo + DC + DC-xG + marché pré-clôture) a une log-loss inférieure à celle du marché pré-clôture seul, mais reste supérieure à la clôture."
+  registered: 2026-09-05
+  outcome: null
+- id: H4
+  family: value
+  statement: "Une stratégie 'EV ≥ 2 % contre Max, mise fixe' à partir de l'ensemble sans cotes en entrée a une CLV moyenne > 1,00 (IC 95 % excluant 1)."
+  registered: 2026-09-05
+  outcome: null
+- id: H5
+  family: france
+  statement: "La même stratégie contre une marge simulée de 12 % (FR_SIM) a un ROI significativement négatif."
+  registered: 2026-09-05
+  outcome: null
