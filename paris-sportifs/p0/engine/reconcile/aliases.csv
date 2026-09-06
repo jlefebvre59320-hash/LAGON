@@ -1,33 +1,33 @@
 canonical,source,alias,method,validated
-Arsenal,football-data,Arsenal,seed,false
+Arsenal,football-data,Arsenal,identity,true
 Arsenal,understat,Arsenal,seed,false
-Aston Villa,football-data,Aston Villa,seed,false
+Aston Villa,football-data,Aston Villa,identity,true
 Aston Villa,understat,Aston Villa,seed,false
-Bournemouth,football-data,Bournemouth,seed,false
+Bournemouth,football-data,Bournemouth,identity,true
 Bournemouth,understat,Bournemouth,seed,false
-Brentford,football-data,Brentford,seed,false
+Brentford,football-data,Brentford,identity,true
 Brentford,understat,Brentford,seed,false
-Brighton,football-data,Brighton,seed,false
+Brighton,football-data,Brighton,identity,true
 Brighton,understat,Brighton,seed,false
-Burnley,football-data,Burnley,seed,false
+Burnley,football-data,Burnley,identity,true
 Burnley,understat,Burnley,seed,false
-Chelsea,football-data,Chelsea,seed,false
+Chelsea,football-data,Chelsea,identity,true
 Chelsea,understat,Chelsea,seed,false
-Crystal Palace,football-data,Crystal Palace,seed,false
+Crystal Palace,football-data,Crystal Palace,identity,true
 Crystal Palace,understat,Crystal Palace,seed,false
-Everton,football-data,Everton,seed,false
+Everton,football-data,Everton,identity,true
 Everton,understat,Everton,seed,false
-Fulham,football-data,Fulham,seed,false
+Fulham,football-data,Fulham,identity,true
 Fulham,understat,Fulham,seed,false
-Ipswich,football-data,Ipswich,seed,false
+Ipswich,football-data,Ipswich,identity,true
 Ipswich,understat,Ipswich,seed,false
-Leeds,football-data,Leeds,seed,false
+Leeds,football-data,Leeds,identity,true
 Leeds,understat,Leeds,seed,false
-Leicester,football-data,Leicester,seed,false
+Leicester,football-data,Leicester,identity,true
 Leicester,understat,Leicester,seed,false
-Liverpool,football-data,Liverpool,seed,false
+Liverpool,football-data,Liverpool,identity,true
 Liverpool,understat,Liverpool,seed,false
-Luton,football-data,Luton,seed,false
+Luton,football-data,Luton,identity,true
 Luton,understat,Luton,seed,false
 Manchester City,football-data,Man City,seed,false
 Manchester City,understat,Manchester City,seed,false
@@ -37,83 +37,83 @@ Newcastle United,football-data,Newcastle,seed,false
 Newcastle United,understat,Newcastle United,seed,false
 Nottingham Forest,football-data,Nott'm Forest,seed,false
 Nottingham Forest,understat,Nottingham Forest,seed,false
-Sheffield United,football-data,Sheffield United,seed,false
+Sheffield United,football-data,Sheffield United,identity,true
 Sheffield United,understat,Sheffield United,seed,false
-Southampton,football-data,Southampton,seed,false
+Southampton,football-data,Southampton,identity,true
 Southampton,understat,Southampton,seed,false
-Sunderland,football-data,Sunderland,seed,false
+Sunderland,football-data,Sunderland,identity,true
 Sunderland,understat,Sunderland,seed,false
-Tottenham,football-data,Tottenham,seed,false
+Tottenham,football-data,Tottenham,identity,true
 Tottenham,understat,Tottenham,seed,false
-West Ham,football-data,West Ham,seed,false
+West Ham,football-data,West Ham,identity,true
 West Ham,understat,West Ham,seed,false
 Wolverhampton Wanderers,football-data,Wolves,seed,false
 Wolverhampton Wanderers,understat,Wolverhampton Wanderers,seed,false
-Watford,football-data,Watford,seed,false
+Watford,football-data,Watford,identity,true
 Watford,understat,Watford,seed,false
-Norwich,football-data,Norwich,seed,false
+Norwich,football-data,Norwich,identity,true
 Norwich,understat,Norwich,seed,false
 West Bromwich Albion,football-data,West Brom,seed,false
 West Bromwich Albion,understat,West Bromwich Albion,seed,false
-Cardiff,football-data,Cardiff,seed,false
+Cardiff,football-data,Cardiff,identity,true
 Cardiff,understat,Cardiff,seed,false
-Huddersfield,football-data,Huddersfield,seed,false
+Huddersfield,football-data,Huddersfield,identity,true
 Huddersfield,understat,Huddersfield,seed,false
-Swansea,football-data,Swansea,seed,false
+Swansea,football-data,Swansea,identity,true
 Swansea,understat,Swansea,seed,false
-Stoke,football-data,Stoke,seed,false
+Stoke,football-data,Stoke,identity,true
 Stoke,understat,Stoke,seed,false
-Hull,football-data,Hull,seed,false
+Hull,football-data,Hull,identity,true
 Hull,understat,Hull,seed,false
-Middlesbrough,football-data,Middlesbrough,seed,false
+Middlesbrough,football-data,Middlesbrough,identity,true
 Middlesbrough,understat,Middlesbrough,seed,false
 Queens Park Rangers,football-data,QPR,seed,false
 Queens Park Rangers,understat,Queens Park Rangers,seed,false
-Alaves,football-data,Alaves,seed,false
+Alaves,football-data,Alaves,identity,true
 Alaves,understat,Alaves,seed,false
-Almeria,football-data,Almeria,seed,false
+Almeria,football-data,Almeria,identity,true
 Almeria,understat,Almeria,seed,false
 Athletic Club,football-data,Ath Bilbao,seed,false
 Athletic Club,understat,Athletic Club,seed,false
 Atletico Madrid,football-data,Ath Madrid,seed,false
 Atletico Madrid,understat,Atletico Madrid,seed,false
-Barcelona,football-data,Barcelona,seed,false
+Barcelona,football-data,Barcelona,identity,true
 Barcelona,understat,Barcelona,seed,false
-Cadiz,football-data,Cadiz,seed,false
+Cadiz,football-data,Cadiz,identity,true
 Cadiz,understat,Cadiz,seed,false
 Celta Vigo,football-data,Celta,seed,false
 Celta Vigo,understat,Celta Vigo,seed,false
 Deportivo La Coruna,football-data,La Coruna,seed,false
 Deportivo La Coruna,understat,Deportivo La Coruna,seed,false
-Eibar,football-data,Eibar,seed,false
+Eibar,football-data,Eibar,identity,true
 Eibar,understat,Eibar,seed,false
-Elche,football-data,Elche,seed,false
+Elche,football-data,Elche,identity,true
 Elche,understat,Elche,seed,false
 Espanyol,football-data,Espanol,seed,false
 Espanyol,understat,Espanyol,seed,false
-Getafe,football-data,Getafe,seed,false
+Getafe,football-data,Getafe,identity,true
 Getafe,understat,Getafe,seed,false
-Girona,football-data,Girona,seed,false
+Girona,football-data,Girona,identity,true
 Girona,understat,Girona,seed,false
-Granada,football-data,Granada,seed,false
+Granada,football-data,Granada,identity,true
 Granada,understat,Granada,seed,false
-Las Palmas,football-data,Las Palmas,seed,false
+Las Palmas,football-data,Las Palmas,identity,true
 Las Palmas,understat,Las Palmas,seed,false
-Leganes,football-data,Leganes,seed,false
+Leganes,football-data,Leganes,identity,true
 Leganes,understat,Leganes,seed,false
-Levante,football-data,Levante,seed,false
+Levante,football-data,Levante,identity,true
 Levante,understat,Levante,seed,false
-Malaga,football-data,Malaga,seed,false
+Malaga,football-data,Malaga,identity,true
 Malaga,understat,Malaga,seed,false
-Mallorca,football-data,Mallorca,seed,false
+Mallorca,football-data,Mallorca,identity,true
 Mallorca,understat,Mallorca,seed,false
-Osasuna,football-data,Osasuna,seed,false
+Osasuna,football-data,Osasuna,identity,true
 Osasuna,understat,Osasuna,seed,false
 Rayo Vallecano,football-data,Vallecano,seed,false
 Rayo Vallecano,understat,Rayo Vallecano,seed,false
 Real Betis,football-data,Betis,seed,false
 Real Betis,understat,Real Betis,seed,false
-Real Madrid,football-data,Real Madrid,seed,false
+Real Madrid,football-data,Real Madrid,identity,true
 Real Madrid,understat,Real Madrid,seed,false
 Real Oviedo,football-data,Oviedo,seed,false
 Real Oviedo,understat,Real Oviedo,seed,false
@@ -123,29 +123,29 @@ Real Valladolid,football-data,Valladolid,seed,false
 Real Valladolid,understat,Real Valladolid,seed,false
 SD Huesca,football-data,Huesca,seed,false
 SD Huesca,understat,SD Huesca,seed,false
-Sevilla,football-data,Sevilla,seed,false
+Sevilla,football-data,Sevilla,identity,true
 Sevilla,understat,Sevilla,seed,false
 Sporting Gijon,football-data,Sp Gijon,seed,false
 Sporting Gijon,understat,Sporting Gijon,seed,false
-Valencia,football-data,Valencia,seed,false
+Valencia,football-data,Valencia,identity,true
 Valencia,understat,Valencia,seed,false
-Villarreal,football-data,Villarreal,seed,false
+Villarreal,football-data,Villarreal,identity,true
 Villarreal,understat,Villarreal,seed,false
 Arminia Bielefeld,football-data,Bielefeld,seed,false
 Arminia Bielefeld,understat,Arminia Bielefeld,seed,false
-Augsburg,football-data,Augsburg,seed,false
+Augsburg,football-data,Augsburg,identity,true
 Augsburg,understat,Augsburg,seed,false
 Bayer Leverkusen,football-data,Leverkusen,seed,false
 Bayer Leverkusen,understat,Bayer Leverkusen,seed,false
-Bayern Munich,football-data,Bayern Munich,seed,false
+Bayern Munich,football-data,Bayern Munich,identity,true
 Bayern Munich,understat,Bayern Munich,seed,false
-Bochum,football-data,Bochum,seed,false
+Bochum,football-data,Bochum,identity,true
 Bochum,understat,Bochum,seed,false
 Borussia Dortmund,football-data,Dortmund,seed,false
 Borussia Dortmund,understat,Borussia Dortmund,seed,false
 Borussia M.Gladbach,football-data,M'gladbach,seed,false
 Borussia M.Gladbach,understat,Borussia M.Gladbach,seed,false
-Darmstadt,football-data,Darmstadt,seed,false
+Darmstadt,football-data,Darmstadt,identity,true
 Darmstadt,understat,Darmstadt,seed,false
 Eintracht Frankfurt,football-data,Ein Frankfurt,seed,false
 Eintracht Frankfurt,understat,Eintracht Frankfurt,seed,false
@@ -155,7 +155,7 @@ FC Heidenheim,football-data,Heidenheim,seed,false
 FC Heidenheim,understat,FC Heidenheim,seed,false
 Fortuna Duesseldorf,football-data,Fortuna Dusseldorf,seed,false
 Fortuna Duesseldorf,understat,Fortuna Duesseldorf,seed,false
-Freiburg,football-data,Freiburg,seed,false
+Freiburg,football-data,Freiburg,identity,true
 Freiburg,understat,Freiburg,seed,false
 Greuther Fuerth,football-data,Greuther Furth,seed,false
 Greuther Fuerth,understat,Greuther Fuerth,seed,false
@@ -165,165 +165,221 @@ Hannover 96,football-data,Hannover,seed,false
 Hannover 96,understat,Hannover 96,seed,false
 Hertha Berlin,football-data,Hertha,seed,false
 Hertha Berlin,understat,Hertha Berlin,seed,false
-Hoffenheim,football-data,Hoffenheim,seed,false
+Hoffenheim,football-data,Hoffenheim,identity,true
 Hoffenheim,understat,Hoffenheim,seed,false
-Holstein Kiel,football-data,Holstein Kiel,seed,false
+Holstein Kiel,football-data,Holstein Kiel,identity,true
 Holstein Kiel,understat,Holstein Kiel,seed,false
-Ingolstadt,football-data,Ingolstadt,seed,false
+Ingolstadt,football-data,Ingolstadt,identity,true
 Ingolstadt,understat,Ingolstadt,seed,false
 Mainz 05,football-data,Mainz,seed,false
 Mainz 05,understat,Mainz 05,seed,false
 Nuernberg,football-data,Nurnberg,seed,false
 Nuernberg,understat,Nuernberg,seed,false
-Paderborn,football-data,Paderborn,seed,false
+Paderborn,football-data,Paderborn,identity,true
 Paderborn,understat,Paderborn,seed,false
 RasenBallsport Leipzig,football-data,RB Leipzig,seed,false
 RasenBallsport Leipzig,understat,RasenBallsport Leipzig,seed,false
-Schalke 04,football-data,Schalke 04,seed,false
+Schalke 04,football-data,Schalke 04,identity,true
 Schalke 04,understat,Schalke 04,seed,false
 St. Pauli,football-data,St Pauli,seed,false
 St. Pauli,understat,St. Pauli,seed,false
-Union Berlin,football-data,Union Berlin,seed,false
+Union Berlin,football-data,Union Berlin,identity,true
 Union Berlin,understat,Union Berlin,seed,false
 VfB Stuttgart,football-data,Stuttgart,seed,false
 VfB Stuttgart,understat,VfB Stuttgart,seed,false
-Werder Bremen,football-data,Werder Bremen,seed,false
+Werder Bremen,football-data,Werder Bremen,identity,true
 Werder Bremen,understat,Werder Bremen,seed,false
-Wolfsburg,football-data,Wolfsburg,seed,false
+Wolfsburg,football-data,Wolfsburg,identity,true
 Wolfsburg,understat,Wolfsburg,seed,false
 AC Milan,football-data,Milan,seed,false
 AC Milan,understat,AC Milan,seed,false
-Atalanta,football-data,Atalanta,seed,false
+Atalanta,football-data,Atalanta,identity,true
 Atalanta,understat,Atalanta,seed,false
-Benevento,football-data,Benevento,seed,false
+Benevento,football-data,Benevento,identity,true
 Benevento,understat,Benevento,seed,false
-Bologna,football-data,Bologna,seed,false
+Bologna,football-data,Bologna,identity,true
 Bologna,understat,Bologna,seed,false
-Brescia,football-data,Brescia,seed,false
+Brescia,football-data,Brescia,identity,true
 Brescia,understat,Brescia,seed,false
-Cagliari,football-data,Cagliari,seed,false
+Cagliari,football-data,Cagliari,identity,true
 Cagliari,understat,Cagliari,seed,false
-Carpi,football-data,Carpi,seed,false
+Carpi,football-data,Carpi,identity,true
 Carpi,understat,Carpi,seed,false
-Chievo,football-data,Chievo,seed,false
+Chievo,football-data,Chievo,identity,true
 Chievo,understat,Chievo,seed,false
-Como,football-data,Como,seed,false
+Como,football-data,Como,identity,true
 Como,understat,Como,seed,false
-Cremonese,football-data,Cremonese,seed,false
+Cremonese,football-data,Cremonese,identity,true
 Cremonese,understat,Cremonese,seed,false
-Crotone,football-data,Crotone,seed,false
+Crotone,football-data,Crotone,identity,true
 Crotone,understat,Crotone,seed,false
-Empoli,football-data,Empoli,seed,false
+Empoli,football-data,Empoli,identity,true
 Empoli,understat,Empoli,seed,false
-Fiorentina,football-data,Fiorentina,seed,false
+Fiorentina,football-data,Fiorentina,identity,true
 Fiorentina,understat,Fiorentina,seed,false
-Frosinone,football-data,Frosinone,seed,false
+Frosinone,football-data,Frosinone,identity,true
 Frosinone,understat,Frosinone,seed,false
-Genoa,football-data,Genoa,seed,false
+Genoa,football-data,Genoa,identity,true
 Genoa,understat,Genoa,seed,false
-Inter,football-data,Inter,seed,false
+Inter,football-data,Inter,identity,true
 Inter,understat,Inter,seed,false
-Juventus,football-data,Juventus,seed,false
+Juventus,football-data,Juventus,identity,true
 Juventus,understat,Juventus,seed,false
-Lazio,football-data,Lazio,seed,false
+Lazio,football-data,Lazio,identity,true
 Lazio,understat,Lazio,seed,false
-Lecce,football-data,Lecce,seed,false
+Lecce,football-data,Lecce,identity,true
 Lecce,understat,Lecce,seed,false
-Monza,football-data,Monza,seed,false
+Monza,football-data,Monza,identity,true
 Monza,understat,Monza,seed,false
-Napoli,football-data,Napoli,seed,false
+Napoli,football-data,Napoli,identity,true
 Napoli,understat,Napoli,seed,false
-Palermo,football-data,Palermo,seed,false
+Palermo,football-data,Palermo,identity,true
 Palermo,understat,Palermo,seed,false
 Parma Calcio 1913,football-data,Parma,seed,false
 Parma Calcio 1913,understat,Parma Calcio 1913,seed,false
-Pescara,football-data,Pescara,seed,false
+Pescara,football-data,Pescara,identity,true
 Pescara,understat,Pescara,seed,false
-Pisa,football-data,Pisa,seed,false
+Pisa,football-data,Pisa,identity,true
 Pisa,understat,Pisa,seed,false
-Roma,football-data,Roma,seed,false
+Roma,football-data,Roma,identity,true
 Roma,understat,Roma,seed,false
-Salernitana,football-data,Salernitana,seed,false
+Salernitana,football-data,Salernitana,identity,true
 Salernitana,understat,Salernitana,seed,false
-Sampdoria,football-data,Sampdoria,seed,false
+Sampdoria,football-data,Sampdoria,identity,true
 Sampdoria,understat,Sampdoria,seed,false
-Sassuolo,football-data,Sassuolo,seed,false
+Sassuolo,football-data,Sassuolo,identity,true
 Sassuolo,understat,Sassuolo,seed,false
 SPAL 2013,football-data,Spal,seed,false
 SPAL 2013,understat,SPAL 2013,seed,false
-Spezia,football-data,Spezia,seed,false
+Spezia,football-data,Spezia,identity,true
 Spezia,understat,Spezia,seed,false
-Torino,football-data,Torino,seed,false
+Torino,football-data,Torino,identity,true
 Torino,understat,Torino,seed,false
-Udinese,football-data,Udinese,seed,false
+Udinese,football-data,Udinese,identity,true
 Udinese,understat,Udinese,seed,false
-Venezia,football-data,Venezia,seed,false
+Venezia,football-data,Venezia,identity,true
 Venezia,understat,Venezia,seed,false
-Verona,football-data,Verona,seed,false
+Verona,football-data,Verona,identity,true
 Verona,understat,Verona,seed,false
-Ajaccio,football-data,Ajaccio,seed,false
+Ajaccio,football-data,Ajaccio,identity,true
 Ajaccio,understat,Ajaccio,seed,false
-Amiens,football-data,Amiens,seed,false
+Amiens,football-data,Amiens,identity,true
 Amiens,understat,Amiens,seed,false
-Angers,football-data,Angers,seed,false
+Angers,football-data,Angers,identity,true
 Angers,understat,Angers,seed,false
-Auxerre,football-data,Auxerre,seed,false
+Auxerre,football-data,Auxerre,identity,true
 Auxerre,understat,Auxerre,seed,false
-Bastia,football-data,Bastia,seed,false
+Bastia,football-data,Bastia,identity,true
 Bastia,understat,Bastia,seed,false
-Bordeaux,football-data,Bordeaux,seed,false
+Bordeaux,football-data,Bordeaux,identity,true
 Bordeaux,understat,Bordeaux,seed,false
-Brest,football-data,Brest,seed,false
+Brest,football-data,Brest,identity,true
 Brest,understat,Brest,seed,false
-Caen,football-data,Caen,seed,false
+Caen,football-data,Caen,identity,true
 Caen,understat,Caen,seed,false
 Clermont Foot,football-data,Clermont,seed,false
 Clermont Foot,understat,Clermont Foot,seed,false
-Dijon,football-data,Dijon,seed,false
+Dijon,football-data,Dijon,identity,true
 Dijon,understat,Dijon,seed,false
-Evian Thonon Gaillard,football-data,Evian Thonon Gaillard,seed,false
+Evian Thonon Gaillard,football-data,Evian Thonon Gaillard,identity,true
 Evian Thonon Gaillard,understat,Evian Thonon Gaillard,seed,false
-Guingamp,football-data,Guingamp,seed,false
+Guingamp,football-data,Guingamp,identity,true
 Guingamp,understat,Guingamp,seed,false
-Le Havre,football-data,Le Havre,seed,false
+Le Havre,football-data,Le Havre,identity,true
 Le Havre,understat,Le Havre,seed,false
-Lens,football-data,Lens,seed,false
+Lens,football-data,Lens,identity,true
 Lens,understat,Lens,seed,false
-Lille,football-data,Lille,seed,false
+Lille,football-data,Lille,identity,true
 Lille,understat,Lille,seed,false
-Lorient,football-data,Lorient,seed,false
+Lorient,football-data,Lorient,identity,true
 Lorient,understat,Lorient,seed,false
-Lyon,football-data,Lyon,seed,false
+Lyon,football-data,Lyon,identity,true
 Lyon,understat,Lyon,seed,false
-Marseille,football-data,Marseille,seed,false
+Marseille,football-data,Marseille,identity,true
 Marseille,understat,Marseille,seed,false
-Metz,football-data,Metz,seed,false
+Metz,football-data,Metz,identity,true
 Metz,understat,Metz,seed,false
-Monaco,football-data,Monaco,seed,false
+Monaco,football-data,Monaco,identity,true
 Monaco,understat,Monaco,seed,false
-Montpellier,football-data,Montpellier,seed,false
+Montpellier,football-data,Montpellier,identity,true
 Montpellier,understat,Montpellier,seed,false
-Nancy,football-data,Nancy,seed,false
+Nancy,football-data,Nancy,identity,true
 Nancy,understat,Nancy,seed,false
-Nantes,football-data,Nantes,seed,false
+Nantes,football-data,Nantes,identity,true
 Nantes,understat,Nantes,seed,false
-Nice,football-data,Nice,seed,false
+Nice,football-data,Nice,identity,true
 Nice,understat,Nice,seed,false
-Nimes,football-data,Nimes,seed,false
+Nimes,football-data,Nimes,identity,true
 Nimes,understat,Nimes,seed,false
-Paris FC,football-data,Paris FC,seed,false
+Paris FC,football-data,Paris FC,identity,true
 Paris FC,understat,Paris FC,seed,false
 Paris Saint Germain,football-data,Paris SG,seed,false
 Paris Saint Germain,understat,Paris Saint Germain,seed,false
-Reims,football-data,Reims,seed,false
+Reims,football-data,Reims,identity,true
 Reims,understat,Reims,seed,false
-Rennes,football-data,Rennes,seed,false
+Rennes,football-data,Rennes,identity,true
 Rennes,understat,Rennes,seed,false
 Saint-Etienne,football-data,St Etienne,seed,false
 Saint-Etienne,understat,Saint-Etienne,seed,false
-Strasbourg,football-data,Strasbourg,seed,false
+Strasbourg,football-data,Strasbourg,identity,true
 Strasbourg,understat,Strasbourg,seed,false
-Toulouse,football-data,Toulouse,seed,false
+Toulouse,football-data,Toulouse,identity,true
 Toulouse,understat,Toulouse,seed,false
-Troyes,football-data,Troyes,seed,false
+Troyes,football-data,Troyes,identity,true
 Troyes,understat,Troyes,seed,false
+Alemannia Aachen,football-data,Aachen,manual,false
+GFC Ajaccio,football-data,Ajaccio GFCO,manual,false
+Albacete,football-data,Albacete,identity,true
+Ancona,football-data,Ancona,identity,true
+Arles-Avignon,football-data,Arles,manual,false
+Ascoli,football-data,Ascoli,identity,true
+Bari,football-data,Bari,identity,true
+Birmingham City,football-data,Birmingham,manual,false
+Blackburn Rovers,football-data,Blackburn,manual,false
+Bolton Wanderers,football-data,Bolton,manual,false
+Boulogne,football-data,Boulogne,identity,true
+Bradford City,football-data,Bradford,manual,false
+Eintracht Braunschweig,football-data,Braunschweig,manual,false
+Catania,football-data,Catania,identity,true
+Cesena,football-data,Cesena,identity,true
+Charlton Athletic,football-data,Charlton,manual,false
+Cordoba,football-data,Cordoba,identity,true
+Energie Cottbus,football-data,Cottbus,manual,false
+Coventry City,football-data,Coventry,manual,false
+Derby County,football-data,Derby,manual,false
+MSV Duisburg,football-data,Duisburg,manual,false
+Gimnastic Tarragona,football-data,Gimnastic,manual,false
+Grenoble,football-data,Grenoble,identity,true
+Hansa Rostock,football-data,Hansa Rostock,identity,true
+Istres,football-data,Istres,identity,true
+Kaiserslautern,football-data,Kaiserslautern,identity,true
+Karlsruher SC,football-data,Karlsruhe,manual,false
+Le Mans,football-data,Le Mans,identity,true
+Livorno,football-data,Livorno,identity,true
+Messina,football-data,Messina,identity,true
+Modena,football-data,Modena,identity,true
+1860 Munich,football-data,Munich 1860,manual,false
+Real Murcia,football-data,Murcia,manual,false
+Novara,football-data,Novara,identity,true
+Numancia,football-data,Numancia,identity,true
+Perugia,football-data,Perugia,identity,true
+Piacenza,football-data,Piacenza,identity,true
+Portsmouth,football-data,Portsmouth,identity,true
+Reading,football-data,Reading,identity,true
+Recreativo Huelva,football-data,Recreativo,manual,false
+Reggina,football-data,Reggina,identity,true
+Racing Santander,football-data,Santander,manual,false
+Sedan,football-data,Sedan,identity,true
+Siena,football-data,Siena,identity,true
+Sochaux,football-data,Sochaux,identity,true
+Tenerife,football-data,Tenerife,identity,true
+Treviso,football-data,Treviso,identity,true
+Unterhaching,football-data,Unterhaching,identity,true
+Valenciennes,football-data,Valenciennes,identity,true
+Vicenza,football-data,Vicenza,identity,true
+Wigan Athletic,football-data,Wigan,manual,false
+Xerez,football-data,Xerez,identity,true
+Real Zaragoza,football-data,Zaragoza,manual,false
+Cesena,understat,Cesena,seed,false
+Cordoba,understat,Cordoba,seed,false
+GFC Ajaccio,understat,GFC Ajaccio,seed,false

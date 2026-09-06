@@ -88,7 +88,7 @@ def cmd_aliases(a):
     print(f"Alias non validés au total (toutes sources) : {int((~aliases['validated']).sum())} / {len(aliases)}")
     if a.mark_validated:
         path = Path(a.mark_validated)
-        wanted = {l.strip() for l in path.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
+        wanted = {l.split("->")[0].strip() for l in path.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
         mask = aliases["alias"].isin(wanted)
         aliases.loc[mask, "validated"] = True
         aliases["validated"] = aliases["validated"].map(lambda v: "true" if v else "false")

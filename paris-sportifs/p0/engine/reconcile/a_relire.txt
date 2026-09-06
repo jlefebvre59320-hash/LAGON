@@ -1,0 +1,67 @@
+# Alias Football-Data à relire : chaque ligne affirme « la source écrit ALIAS pour désigner CANONIQUE ».
+# Relisez, supprimez ou corrigez toute ligne douteuse (dans aliases.csv), puis :
+#   p0 aliases --mark-validated engine/reconcile/a_relire.txt
+# Le programme ne lit que la partie avant la flèche.
+Man City -> Manchester City
+Man United -> Manchester United
+Newcastle -> Newcastle United
+Nott'm Forest -> Nottingham Forest
+Wolves -> Wolverhampton Wanderers
+West Brom -> West Bromwich Albion
+QPR -> Queens Park Rangers
+Ath Bilbao -> Athletic Club
+Ath Madrid -> Atletico Madrid
+Celta -> Celta Vigo
+La Coruna -> Deportivo La Coruna
+Espanol -> Espanyol
+Vallecano -> Rayo Vallecano
+Betis -> Real Betis
+Oviedo -> Real Oviedo
+Sociedad -> Real Sociedad
+Valladolid -> Real Valladolid
+Huesca -> SD Huesca
+Sp Gijon -> Sporting Gijon
+Bielefeld -> Arminia Bielefeld
+Leverkusen -> Bayer Leverkusen
+Dortmund -> Borussia Dortmund
+M'gladbach -> Borussia M.Gladbach
+Ein Frankfurt -> Eintracht Frankfurt
+FC Koln -> FC Cologne
+Heidenheim -> FC Heidenheim
+Fortuna Dusseldorf -> Fortuna Duesseldorf
+Greuther Furth -> Greuther Fuerth
+Hamburg -> Hamburger SV
+Hannover -> Hannover 96
+Hertha -> Hertha Berlin
+Mainz -> Mainz 05
+Nurnberg -> Nuernberg
+RB Leipzig -> RasenBallsport Leipzig
+St Pauli -> St. Pauli
+Stuttgart -> VfB Stuttgart
+Milan -> AC Milan
+Parma -> Parma Calcio 1913
+Spal -> SPAL 2013
+Clermont -> Clermont Foot
+Paris SG -> Paris Saint Germain
+St Etienne -> Saint-Etienne
+Aachen -> Alemannia Aachen
+Ajaccio GFCO -> GFC Ajaccio
+Arles -> Arles-Avignon
+Birmingham -> Birmingham City
+Blackburn -> Blackburn Rovers
+Bolton -> Bolton Wanderers
+Bradford -> Bradford City
+Braunschweig -> Eintracht Braunschweig
+Charlton -> Charlton Athletic
+Cottbus -> Energie Cottbus
+Coventry -> Coventry City
+Derby -> Derby County
+Duisburg -> MSV Duisburg
+Gimnastic -> Gimnastic Tarragona
+Karlsruhe -> Karlsruher SC
+Munich 1860 -> 1860 Munich
+Murcia -> Real Murcia
+Recreativo -> Recreativo Huelva
+Santander -> Racing Santander
+Wigan -> Wigan Athletic
+Zaragoza -> Real Zaragoza
