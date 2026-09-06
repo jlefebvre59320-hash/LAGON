@@ -48,3 +48,10 @@ def test_team_resolver_requires_validation():
     assert lax.resolve("understat", "Manchester United") == "Manchester United"
     assert lax.resolve("football-data", "Nott'm Forest") == "Nottingham Forest"
     assert normalise_name("Paris Saint-Germain FC") == "paris saint germain"
+
+
+def test_find_unknown_lists_all():
+    from p0.reconcile.teams import find_unknown
+    lax = TeamResolver(load_aliases(), accept_unvalidated=True)
+    unknown = find_unknown(lax, ["Man United", "Club Inconnu", "Autre Inconnu"], "football-data")
+    assert unknown == ["Autre Inconnu", "Club Inconnu"]

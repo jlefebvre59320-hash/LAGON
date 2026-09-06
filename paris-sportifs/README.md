@@ -19,6 +19,7 @@ Objet : estimer des probabilités d'issues sportives à partir de sources recoup
 | 8 | Maquettes des écrans principaux | `docs/08-maquettes.md` | Maquettes filaires |
 | 9 | Feuille de route, coûts, dépendances | `docs/09-feuille-de-route.md` | Rédigé |
 | 10 | Critères poursuivre / corriger / abandonner | `docs/10-criteres-de-decision.md` | Rédigé |
+| 11 | Guide pas à pas pour exécuter P0 sur le poste | `docs/11-guide-pas-a-pas.md` | Rédigé |
 
 ## Principes non négociables
 

@@ -62,6 +62,17 @@ class TeamResolver:
         return out
 
 
+def find_unknown(resolver: "TeamResolver", names: "pd.Series | list[str]", source: str) -> list[str]:
+    """Liste, sans lever d'exception, les noms d'une source que le résolveur ne connaît pas."""
+    unknown = []
+    for n in sorted(set(names)):
+        try:
+            resolver.resolve(source, n)
+        except ReconciliationError:
+            unknown.append(n)
+    return unknown
+
+
 def check_season_consistency(matches: pd.DataFrame) -> None:
     for (comp, season), g in matches.groupby(["competition", "season"]):
         teams = set(g["home"]) | set(g["away"])
