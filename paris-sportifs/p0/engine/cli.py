@@ -135,11 +135,11 @@ def cmd_build(a):
 
 def cmd_xg(a):
     from engine.ingest.understat import LEAGUES, UnderstatClient, to_xg_table
-    from engine.reconcile.teams import TeamResolver, load_aliases
+    from engine.reconcile.teams import TeamResolver, find_unknown, load_aliases
     matches = pd.read_parquet(DATA / "processed" / "matches.parquet")
     client = UnderstatClient(DATA / "raw" / "understat")
     resolver = TeamResolver(load_aliases(), accept_unvalidated=a.accept_unvalidated)
-    frames = []
+    frames, unknown_all = [], set()
     for comp in LEAGUES:
         for season in range(a.seasons[0], a.seasons[1] + 1):
             try:
@@ -147,17 +147,32 @@ def cmd_xg(a):
             except PermissionError as e:
                 print(e)
                 return
+            except Exception as e:
+                print(f"{comp} {season} : échec ({type(e).__name__}: {str(e)[:100]})")
+                continue
+            if u.empty:
+                print(f"{comp} {season} : aucun match dans la réponse")
+                continue
+            unknown = set(find_unknown(resolver, pd.concat([u["home"], u["away"]]), "understat"))
+            unknown_all |= unknown
+            u = u[~u["home"].isin(unknown) & ~u["away"].isin(unknown)]
             u = resolver.resolve_frame(u, "understat")
             key = matches[(matches["competition"] == comp) & (matches["season"] == season)][["match_id", "home", "away"]]
             merged = u.merge(key, on=["home", "away"], how="left")
-            missing = merged["match_id"].isna().sum()
-            if missing:
-                print(f"{comp} {season} : {missing} matchs Understat non rapprochés")
+            missing = int(merged["match_id"].isna().sum())
             merged = merged[merged["match_id"].notna()]
             frames.append(to_xg_table(merged, merged["match_id"], pd.Timestamp.now()))
-            print(f"{comp} {season} : {len(merged)} xG")
-    xg = pd.concat(frames, ignore_index=True)
-    xg.to_parquet(DATA / "processed" / "xg.parquet", index=False)
+            note = f" ; {missing} sans match Football-Data correspondant" if missing else ""
+            note += f" ; {len(unknown)} nom(s) Understat inconnu(s)" if unknown else ""
+            print(f"{comp} {season} : {len(merged)} xG rapprochés{note}")
+    if unknown_all:
+        print(f"\n{len(unknown_all)} nom(s) Understat inconnus de la table d'alias, lignes à compléter (canonique en tête) :")
+        for n in sorted(unknown_all):
+            print(f"  ,understat,{n},manual,true")
+    if frames:
+        xg = pd.concat(frames, ignore_index=True)
+        xg.to_parquet(DATA / "processed" / "xg.parquet", index=False)
+        print(f"\n{len(xg)} lignes xG écrites dans {DATA / 'processed' / 'xg.parquet'}")
 
 
 def _load(data_dir: Path):

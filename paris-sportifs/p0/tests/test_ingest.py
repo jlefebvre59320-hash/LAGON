@@ -165,3 +165,38 @@ def test_download_rejects_html_body(tmp_path):
     from engine.ingest.football_data import download
     paths, failures = download([2023], ["E0"], tmp_path, fetch=lambda u: b"<html>not archived</html>", sleep=lambda s: None, progress=None)
     assert paths == [] and len(failures) == 1 and "HTML" in failures[0][1]
+
+
+def test_understat_matches_from_teams_history(tmp_path):
+    import gzip, json
+    from engine.ingest.understat import UnderstatClient, matches_from_teams, parse_league_payload
+    teams = {
+        "71": {"id": "71", "title": "Aston Villa", "history": [
+            {"h_a": "a", "date": "2014-08-16 15:00:00", "scored": 1, "missed": 0, "xG": 0.909774, "xGA": 0.423368},
+            {"h_a": "h", "date": "2014-08-23 12:45:00", "scored": 0, "missed": 0, "xG": 0.507525, "xGA": 0.699295}]},
+        "86": {"id": "86", "title": "Stoke", "history": [
+            {"h_a": "h", "date": "2014-08-16 15:00:00", "scored": 0, "missed": 1, "xG": 0.423368, "xGA": 0.909774}]},
+        "87": {"id": "87", "title": "Newcastle United", "history": [
+            {"h_a": "a", "date": "2014-08-23 12:45:00", "scored": 0, "missed": 0, "xG": 0.699295, "xGA": 0.507525}]},
+    }
+    df = matches_from_teams(teams).sort_values("date").reset_index(drop=True)
+    assert len(df) == 2
+    assert df.loc[0, "home"] == "Stoke" and df.loc[0, "away"] == "Aston Villa" and df.loc[0, "ag"] == 1
+    assert abs(df.loc[0, "home_xg"] - 0.423368) < 1e-9 and abs(df.loc[0, "away_xg"] - 0.909774) < 1e-9
+    assert df.loc[1, "home"] == "Aston Villa" and df.loc[1, "away"] == "Newcastle United"
+    payload = gzip.compress(json.dumps({"teams": teams}).encode())
+    seen = []
+
+    def fetch(url, headers):
+        seen.append((url, headers))
+        return payload
+
+    c = UnderstatClient(tmp_path, fetch=fetch, min_delay_s=0)
+    out = c.league_season("ENG1", 2014)
+    assert len(out) == 2 and (out["competition"] == "ENG1").all()
+    assert seen[0][0] == "https://understat.com/getLeagueData/EPL/2014"
+    assert seen[0][1]["X-Requested-With"] == "XMLHttpRequest"
+    assert (tmp_path / "EPL_2014.json.gz").exists()
+    c.league_season("ENG1", 2014)
+    assert len(seen) == 1  # cache : aucune seconde requête
+    assert len(parse_league_payload({"teams": teams})) == 2
