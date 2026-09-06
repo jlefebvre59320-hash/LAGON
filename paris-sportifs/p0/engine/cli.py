@@ -25,13 +25,13 @@ DATA = ROOT / "data"
 
 def cmd_download(a):
     import sys
-    from p0.ingest.football_data import SiteUnavailable, check, download
+    from engine.ingest.football_data import SiteUnavailable, check, download
     if a.check:
         for r in check():
             print(r)
         return
     years = list(range(a.seasons[0], a.seasons[1] + 1))
-    from p0.ingest.football_data import wait_until_available
+    from engine.ingest.football_data import wait_until_available
     if a.wait_minutes and not wait_until_available(a.wait_minutes, progress=lambda m: print(m, flush=True)):
         sys.exit("ARRÊT : le site ne répond toujours pas ; relancer plus tard.")
     try:
@@ -47,8 +47,8 @@ def cmd_download(a):
 
 def cmd_aliases(a):
     """État de la table d'alias face aux données brutes : inconnus (à ajouter) et non validés (à relire)."""
-    from p0.ingest.football_data import load_raw_dir
-    from p0.reconcile.teams import TeamResolver, find_unknown, load_aliases
+    from engine.ingest.football_data import load_raw_dir
+    from engine.reconcile.teams import TeamResolver, find_unknown, load_aliases
     aliases = load_aliases()
     matches, _ = load_raw_dir(DATA / "raw")
     lax = TeamResolver(aliases, accept_unvalidated=True)
@@ -58,7 +58,7 @@ def cmd_aliases(a):
     used = set(names)
     unvalidated_used = unvalidated[(unvalidated["source"] == "football-data") & unvalidated["alias"].isin(used)]
     print(f"Équipes distinctes dans les bruts Football-Data : {len(used)}")
-    print(f"Alias inconnus (à ajouter dans p0/reconcile/aliases.csv) : {len(unknown)}")
+    print(f"Alias inconnus (à ajouter dans engine/reconcile/aliases.csv) : {len(unknown)}")
     for n in unknown:
         print(f"  ,football-data,{n},manual,true")
     print(f"Alias Football-Data non validés et présents dans les données : {len(unvalidated_used)}")
@@ -71,14 +71,14 @@ def cmd_aliases(a):
         mask = aliases["alias"].isin(wanted)
         aliases.loc[mask, "validated"] = True
         aliases["validated"] = aliases["validated"].map(lambda v: "true" if v else "false")
-        from p0.reconcile.teams import ALIASES_PATH
+        from engine.reconcile.teams import ALIASES_PATH
         aliases.to_csv(ALIASES_PATH, index=False)
         print(f"{int(mask.sum())} alias marqués validés depuis {path}")
 
 
 def cmd_build(a):
-    from p0.ingest.football_data import load_raw_dir, quality_flags
-    from p0.reconcile.teams import ReconciliationError, TeamResolver, check_season_consistency, find_unknown, load_aliases
+    from engine.ingest.football_data import load_raw_dir, quality_flags
+    from engine.reconcile.teams import ReconciliationError, TeamResolver, check_season_consistency, find_unknown, load_aliases
     matches, odds = load_raw_dir(DATA / "raw")
     resolver = TeamResolver(load_aliases(), accept_unvalidated=a.accept_unvalidated)
     unknown = find_unknown(resolver, pd.concat([matches["home"], matches["away"]]), "football-data")
@@ -98,8 +98,8 @@ def cmd_build(a):
 
 
 def cmd_xg(a):
-    from p0.ingest.understat import LEAGUES, UnderstatClient, to_xg_table
-    from p0.reconcile.teams import TeamResolver, load_aliases
+    from engine.ingest.understat import LEAGUES, UnderstatClient, to_xg_table
+    from engine.reconcile.teams import TeamResolver, load_aliases
     matches = pd.read_parquet(DATA / "processed" / "matches.parquet")
     client = UnderstatClient(DATA / "raw" / "understat")
     resolver = TeamResolver(load_aliases(), accept_unvalidated=a.accept_unvalidated)
@@ -133,10 +133,10 @@ def _load(data_dir: Path):
 
 
 def cmd_backtest(a):
-    from p0.backtest import metrics as M
-    from p0.backtest.strategy import Strategy, select_bets, summarise_bets
-    from p0.backtest.walk_forward import WalkForwardConfig, evaluate_models, run
-    from p0.report import render
+    from engine.backtest import metrics as M
+    from engine.backtest.strategy import Strategy, select_bets, summarise_bets
+    from engine.backtest.walk_forward import WalkForwardConfig, evaluate_models, run
+    from engine.report import render
     data_dir = Path(a.data) if a.data else DATA / "processed"
     matches, odds, xg = _load(data_dir)
     seasons = list(range(a.test_seasons[0], a.test_seasons[1] + 1))
@@ -144,7 +144,7 @@ def cmd_backtest(a):
                             models=tuple(a.models) if a.models else ("elo", "dixon_coles", "dixon_coles_xg"))
     preds = run(matches, odds, xg, cfg)
     ev = evaluate_models(preds, matches)
-    strategies = [Strategy(**{k: v for k, v in s.items()}) for s in yaml.safe_load((ROOT / "p0" / "registry" / "strategies.yaml").read_text())]
+    strategies = [Strategy(**{k: v for k, v in s.items()}) for s in yaml.safe_load((ROOT / "engine" / "registry" / "strategies.yaml").read_text())]
     summaries, calib = {}, {}
     for s in strategies:
         bets = select_bets(preds, odds, matches, s)
@@ -164,7 +164,7 @@ def cmd_backtest(a):
 
 
 def cmd_synthetic(a):
-    from p0.synthetic import make_world
+    from engine.synthetic import make_world
     matches, odds, xg, _ = make_world(seasons=tuple(range(a.seasons[0], a.seasons[1] + 1)), seed=a.seed)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)

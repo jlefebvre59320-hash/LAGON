@@ -8,19 +8,19 @@ Un moteur complet, exécutable hors ligne sur données synthétiques et prêt à
 
 | Composant | Fichier | Rôle |
 |---|---|---|
-| Horloge de décision | `p0/clock.py` | Filtre unique anti-fuite ; lève `LeakageError` si une ligne postérieure à T atteint un modèle |
-| Ingestion Football-Data | `p0/ingest/football_data.py` | Téléchargement avec empreinte, lecture tolérante (encodage, dates, lignes vides), projection dans le schéma P0, horodatage documenté des cotes (« afternoon » = J-1 15:00 ; « closing » = coup d'envoi − 1 min), contrôles de qualité |
-| Ingestion Understat | `p0/ingest/understat.py` | Décodage du bloc `datesData`, cache disque, délai ≥ 6 s, arrêt sur 403/429 |
-| Rapprochement | `p0/reconcile/teams.py`, `aliases.csv` | 328 alias Football-Data et Understat pour les 5 ligues, **tous marqués non validés** ; le mode strict refuse un alias non validé ; contrôle 18/20 équipes par saison |
-| Marge | `p0/models/market.py` | Multiplicative, power, Shin |
-| Elo | `p0/models/elo.py` | K = 20, avantage domicile 60, multiplicateur logarithmique de l'écart de buts, conversion 1N2 par logit ordonné |
-| Dixon-Coles | `p0/models/dixon_coles.py` | Poisson bivarié avec correction ρ, pondération exp(−ξ·jours), ξ = 0,0035 (demi-vie ≈ 200 jours) ; variante xG par quasi-vraisemblance (ρ = 0) |
-| Ensemble | `p0/models/ensemble.py` | Logit multinomial L2 sur les log-rapports des modèles de base et du marché pré-clôture, entraîné sur les prédictions hors échantillon des saisons antérieures |
-| Walk-forward | `p0/backtest/walk_forward.py` | Refit tous les 7 jours (paramètre), fenêtre de 6 saisons, référence marché pré-clôture et clôture |
-| Stratégies | `p0/backtest/strategy.py`, `registry/strategies.yaml` | 7 stratégies pré-enregistrées ; sélection par espérance ; mise fixe ou Kelly 1/8 plafonné ; CLV ; simulation « FR_SIM » à marge 12 % |
-| Métriques | `p0/backtest/metrics.py` | Log-loss, Brier, calibration par déciles et ECE, ROI avec IC bootstrap, drawdown, série perdante, probabilité de perte à 500 paris |
-| Rapport et verdict | `p0/report.py` | Markdown ; verdict poursuivre / corriger / abandonner selon les seuils du livrable 10 |
-| Monde synthétique | `p0/synthetic.py` | Saisons simulées avec bookmakers à marge et bruit connus, pour tester la chaîne |
+| Horloge de décision | `engine/clock.py` | Filtre unique anti-fuite ; lève `LeakageError` si une ligne postérieure à T atteint un modèle |
+| Ingestion Football-Data | `engine/ingest/football_data.py` | Téléchargement avec empreinte, lecture tolérante (encodage, dates, lignes vides), projection dans le schéma P0, horodatage documenté des cotes (« afternoon » = J-1 15:00 ; « closing » = coup d'envoi − 1 min), contrôles de qualité |
+| Ingestion Understat | `engine/ingest/understat.py` | Décodage du bloc `datesData`, cache disque, délai ≥ 6 s, arrêt sur 403/429 |
+| Rapprochement | `engine/reconcile/teams.py`, `aliases.csv` | 328 alias Football-Data et Understat pour les 5 ligues, **tous marqués non validés** ; le mode strict refuse un alias non validé ; contrôle 18/20 équipes par saison |
+| Marge | `engine/models/market.py` | Multiplicative, power, Shin |
+| Elo | `engine/models/elo.py` | K = 20, avantage domicile 60, multiplicateur logarithmique de l'écart de buts, conversion 1N2 par logit ordonné |
+| Dixon-Coles | `engine/models/dixon_coles.py` | Poisson bivarié avec correction ρ, pondération exp(−ξ·jours), ξ = 0,0035 (demi-vie ≈ 200 jours) ; variante xG par quasi-vraisemblance (ρ = 0) |
+| Ensemble | `engine/models/ensemble.py` | Logit multinomial L2 sur les log-rapports des modèles de base et du marché pré-clôture, entraîné sur les prédictions hors échantillon des saisons antérieures |
+| Walk-forward | `engine/backtest/walk_forward.py` | Refit tous les 7 jours (paramètre), fenêtre de 6 saisons, référence marché pré-clôture et clôture |
+| Stratégies | `engine/backtest/strategy.py`, `registry/strategies.yaml` | 7 stratégies pré-enregistrées ; sélection par espérance ; mise fixe ou Kelly 1/8 plafonné ; CLV ; simulation « FR_SIM » à marge 12 % |
+| Métriques | `engine/backtest/metrics.py` | Log-loss, Brier, calibration par déciles et ECE, ROI avec IC bootstrap, drawdown, série perdante, probabilité de perte à 500 paris |
+| Rapport et verdict | `engine/report.py` | Markdown ; verdict poursuivre / corriger / abandonner selon les seuils du livrable 10 |
+| Monde synthétique | `engine/synthetic.py` | Saisons simulées avec bookmakers à marge et bruit connus, pour tester la chaîne |
 
 ## 2. Hypothèses de chaque modèle et ce qu'elles coûtent
 
@@ -69,7 +69,7 @@ python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 pytest                                   # 20 tests, données synthétiques, ~20 s
 p0 download --seasons 2000 2025          # 130 CSV Football-Data (~15 Mo)
 p0 build --accept-unvalidated            # première passe : signale les alias inconnus
-#   corriger p0/reconcile/aliases.csv, passer validated à true après vérification manuelle
+#   corriger engine/reconcile/aliases.csv, passer validated à true après vérification manuelle
 p0 build                                 # mode strict
 p0 xg --seasons 2014 2025                # Understat, ~60 pages, ≥ 6 s chacune, cache
 p0 backtest --test-seasons 2019 2024 --refit-days 7   # saison 2025 sous scellés : ne pas la passer

@@ -1,8 +1,8 @@
 import pandas as pd
 
-from p0.ingest.football_data import normalise, quality_flags, read_csv_bytes, url_for
-from p0.ingest.understat import parse_league_page
-from p0.reconcile.teams import ReconciliationError, TeamResolver, load_aliases, normalise_name
+from engine.ingest.football_data import normalise, quality_flags, read_csv_bytes, url_for
+from engine.ingest.understat import parse_league_page
+from engine.reconcile.teams import ReconciliationError, TeamResolver, load_aliases, normalise_name
 
 CSV = b"""Div,Date,Time,HomeTeam,AwayTeam,FTHG,FTAG,FTR,HTHG,HTAG,HTR,Referee,HS,AS,HST,AST,HC,AC,HY,AY,HR,AR,B365H,B365D,B365A,PSH,PSD,PSA,MaxH,MaxD,MaxA,AvgH,AvgD,AvgA,B365>2.5,B365<2.5,P>2.5,P<2.5,B365CH,B365CD,B365CA,PSCH,PSCD,PSCA
 E0,11/08/2023,20:00,Burnley,Man City,0,3,A,0,2,A,C Pawson,6,17,1,8,4,9,1,1,0,0,9.5,5.75,1.3,10.36,6.11,1.31,10.5,6.2,1.32,9.4,5.7,1.3,1.53,2.5,1.55,2.55,9.0,5.5,1.33,9.8,5.9,1.34
@@ -51,14 +51,14 @@ def test_team_resolver_requires_validation():
 
 
 def test_find_unknown_lists_all():
-    from p0.reconcile.teams import find_unknown
+    from engine.reconcile.teams import find_unknown
     lax = TeamResolver(load_aliases(), accept_unvalidated=True)
     unknown = find_unknown(lax, ["Man United", "Club Inconnu", "Autre Inconnu"], "football-data")
     assert unknown == ["Autre Inconnu", "Club Inconnu"]
 
 
 def test_download_retries_and_continues(tmp_path):
-    from p0.ingest.football_data import download
+    from engine.ingest.football_data import download
     import requests
 
     calls = {"n": 0}
@@ -87,7 +87,7 @@ def test_download_retries_and_continues(tmp_path):
 def test_download_stops_when_site_is_down(tmp_path):
     import pytest
     import requests
-    from p0.ingest.football_data import SiteUnavailable, download
+    from engine.ingest.football_data import SiteUnavailable, download
 
     def fetch(url):
         r = requests.Response(); r.status_code = 503
@@ -100,7 +100,7 @@ def test_download_stops_when_site_is_down(tmp_path):
 
 
 def test_wait_until_available_honours_retry_after():
-    from p0.ingest.football_data import wait_until_available
+    from engine.ingest.football_data import wait_until_available
     answers = iter([(503, "120"), (503, None), (200, None)])
     slept, lines = [], []
     ok = wait_until_available(60, probe=lambda u: next(answers), sleep=slept.append, progress=lines.append)

@@ -6,9 +6,9 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from p0.backtest import metrics as M
-from p0.backtest.staking import flat, kelly_fraction
-from p0.models.market import implied
+from engine.backtest import metrics as M
+from engine.backtest.staking import flat, kelly_fraction
+from engine.models.market import implied
 
 
 @dataclass

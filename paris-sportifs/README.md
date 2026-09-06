@@ -15,7 +15,7 @@ Objet : estimer des probabilités d'issues sportives à partir de sources recoup
 | 4 | Architecture technique et schéma de base | `docs/04-architecture.md`, `db/schema.sql` | Rédigé |
 | 5 | Plan de collecte, nettoyage, rapprochement | `docs/05-plan-de-collecte.md` | Rédigé |
 | 6 | Premier modèle de référence | `docs/06-modele-de-reference.md`, `p0/` | Code livré et testé ; à exécuter sur données réelles |
-| 7 | Protocole de backtest reproductible | `docs/07-protocole-de-backtest.md`, `p0/backtest/` | Rédigé et implémenté |
+| 7 | Protocole de backtest reproductible | `docs/07-protocole-de-backtest.md`, `engine/backtest/` | Rédigé et implémenté |
 | 8 | Maquettes des écrans principaux | `docs/08-maquettes.md` | Maquettes filaires |
 | 9 | Feuille de route, coûts, dépendances | `docs/09-feuille-de-route.md` | Rédigé |
 | 10 | Critères poursuivre / corriger / abandonner | `docs/10-criteres-de-decision.md` | Rédigé |
@@ -37,5 +37,5 @@ Objet : estimer des probabilités d'issues sportives à partir de sources recoup
 paris-sportifs/
   docs/         livrables 1 à 10
   db/           schema.sql (PostgreSQL, schéma bet)
-  p0/           prototype Python : ingestion, modèles, backtest, rapport, tests
+  p0/           prototype Python : paquet engine/ (ingestion, modèles, backtest, rapport), tests/
 ```

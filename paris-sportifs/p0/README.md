@@ -15,7 +15,7 @@ Données réelles (poste avec accès à football-data.co.uk et understat.com) :
 ```bash
 p0 download --seasons 2000 2025
 p0 aliases                                    # liste les noms inconnus et les alias non validés
-# éditer p0/reconcile/aliases.csv : compléter, corriger, puis validated=true après relecture
+# éditer engine/reconcile/aliases.csv : compléter, corriger, puis validated=true après relecture
 # (ou : p0 aliases --mark-validated fichier_des_alias_relus.txt)
 p0 build
 p0 xg --seasons 2014 2025

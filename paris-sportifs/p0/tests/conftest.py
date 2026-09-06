@@ -1,6 +1,6 @@
 import pytest
 
-from p0.synthetic import make_world
+from engine.synthetic import make_world
 
 
 @pytest.fixture(scope="session")

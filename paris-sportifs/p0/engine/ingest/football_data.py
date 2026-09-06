@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from p0.schema import MATCH_COLUMNS, ODDS_COLUMNS
+from engine.schema import MATCH_COLUMNS, ODDS_COLUMNS
 
 BASE_URL = "https://www.football-data.co.uk/mmz4281/{ss}/{div}.csv"
 

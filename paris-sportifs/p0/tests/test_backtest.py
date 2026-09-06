@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from p0.backtest import metrics as M
-from p0.backtest.strategy import Strategy, select_bets, summarise_bets
-from p0.backtest.walk_forward import WalkForwardConfig, evaluate_models, run
-from p0.clock import Clock, LeakageError
+from engine.backtest import metrics as M
+from engine.backtest.strategy import Strategy, select_bets, summarise_bets
+from engine.backtest.walk_forward import WalkForwardConfig, evaluate_models, run
+from engine.clock import Clock, LeakageError
 
 
 def test_clock_blocks_future_rows():

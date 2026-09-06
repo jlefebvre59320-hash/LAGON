@@ -15,7 +15,7 @@ import hashlib
 import numpy as np
 import pandas as pd
 
-from p0.schema import MATCH_COLUMNS, ODDS_COLUMNS, XG_COLUMNS
+from engine.schema import MATCH_COLUMNS, ODDS_COLUMNS, XG_COLUMNS
 
 
 def _price_from_probs(p: np.ndarray, margin: float, noise: float, rng) -> np.ndarray:

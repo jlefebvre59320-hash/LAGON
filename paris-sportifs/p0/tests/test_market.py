@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from p0.models.market import implied, implied_multiplicative, implied_power, implied_shin, overround
+from engine.models.market import implied, implied_multiplicative, implied_power, implied_shin, overround
 
 
 @pytest.mark.parametrize("prices", [[2.10, 3.40, 3.60], [1.25, 6.0, 12.0], [1.90, 1.95]])

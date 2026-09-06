@@ -1,6 +1,6 @@
 # Protocole de backtest reproductible
 
-Livrable 7 sur 10. Rédigé le 2026-09-05. Implémenté dans `p0/backtest/`.
+Livrable 7 sur 10. Rédigé le 2026-09-05. Implémenté dans `engine/backtest/`.
 
 ## 1. Séparation chronologique
 

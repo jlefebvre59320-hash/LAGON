@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from p0.schema import XG_COLUMNS
+from engine.schema import XG_COLUMNS
 
 LEAGUES = {"ENG1": "EPL", "ESP1": "La_liga", "GER1": "Bundesliga", "ITA1": "Serie_A", "FRA1": "Ligue_1"}
 URL = "https://understat.com/league/{league}/{season}"

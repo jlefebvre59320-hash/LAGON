@@ -26,7 +26,7 @@ git clone -b claude/sports-betting-analysis-app-fm181u https://github.com/jlefeb
 cd LAGON/paris-sportifs/p0
 ```
 
-Vous devez voir les dossiers `p0/`, `tests/`, `data/` et le fichier `pyproject.toml`.
+Vous devez voir les dossiers `engine/` (le paquet Python), `tests/`, `data/` et le fichier `pyproject.toml`.
 
 ## Étape 2 : environnement Python et tests (5 minutes)
 
@@ -73,7 +73,7 @@ Attendu : le nombre d'équipes distinctes dans les bruts (de l'ordre de 150 à 1
 
 C'est l'étape manuelle du projet, et elle ne se contourne pas. Un mauvais rapprochement fausse silencieusement tout le reste.
 
-1. Ouvrez `p0/reconcile/aliases.csv` dans un tableur ou un éditeur. Colonnes : `canonical, source, alias, method, validated`.
+1. Ouvrez `engine/reconcile/aliases.csv` dans un tableur ou un éditeur. Colonnes : `canonical, source, alias, method, validated`.
 2. Pour chaque nom inconnu affiché par `p0 aliases`, ajoutez une ligne `canonical,football-data,<nom Football-Data>,manual,true` (la commande affiche déjà la ligne à coller, il ne manque que le nom canonique). Le nom canonique est celui d'Understat quand l'équipe y figure, sinon un nom lisible de votre choix, stable dans le temps.
 3. Pour chaque alias existant, vérifiez que `alias` désigne bien `canonical` (exemple : `Ath Bilbao` → `Athletic Club`). Corrigez les erreurs éventuelles ; la table a été rédigée de mémoire et n'a pas été relue contre les fichiers.
 4. Une fois relu, marquez les alias validés. Deux façons : mettre `true` dans la colonne `validated` directement, ou écrire les alias relus dans un fichier texte (un par ligne) et lancer :
@@ -134,13 +134,13 @@ Dans l'ordre :
 
 ## Étape 11 : consigner (20 minutes)
 
-1. Dans `p0/registry/hypotheses.yaml`, renseignez `outcome` pour H0 à H5 avec les chiffres du rapport (une phrase chacune).
+1. Dans `engine/registry/hypotheses.yaml`, renseignez `outcome` pour H0 à H5 avec les chiffres du rapport (une phrase chacune).
 2. Dans `docs/00-journal-des-decisions.md`, ajoutez une ligne : date, verdict P0, écart de log-loss, meilleure CLV et son IC, nombre total d'essais effectués (y compris ceux qui n'ont pas donné de rapport).
 3. Commitez le registre, le journal et le rapport Markdown (pas les Parquet ni les CSV, exclus par `.gitignore`) :
 
 ```bash
 cd ..
-git add p0/p0/registry/hypotheses.yaml docs/00-journal-des-decisions.md p0/reports/*.md p0/p0/reconcile/aliases.csv
+git add p0/engine/registry/hypotheses.yaml docs/00-journal-des-decisions.md p0/reports/*.md p0/engine/reconcile/aliases.csv
 git commit -m "P0 : premier backtest réel, alias validés, verdict consigné"
 git push
 ```

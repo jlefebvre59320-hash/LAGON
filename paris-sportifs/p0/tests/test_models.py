@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from p0.models.dixon_coles import DixonColes
-from p0.models.elo import Elo
-from p0.models.ensemble import MultinomialLogit, features_from_probs
+from engine.models.dixon_coles import DixonColes
+from engine.models.elo import Elo
+from engine.models.ensemble import MultinomialLogit, features_from_probs
 
 
 def test_dixon_coles_recovers_structure(world):

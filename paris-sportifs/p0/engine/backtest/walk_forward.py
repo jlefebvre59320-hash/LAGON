@@ -16,11 +16,11 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-from p0.clock import Clock
-from p0.models.dixon_coles import DixonColes
-from p0.models.elo import Elo
-from p0.models.ensemble import MultinomialLogit, features_from_probs
-from p0.models.market import implied
+from engine.clock import Clock
+from engine.models.dixon_coles import DixonColes
+from engine.models.elo import Elo
+from engine.models.ensemble import MultinomialLogit, features_from_probs
+from engine.models.market import implied
 
 SEL_1X2 = ["home", "draw", "away"]
 SEL_OU = ["over", "under"]
@@ -177,7 +177,7 @@ def _ensemble(preds: pd.DataFrame, matches: pd.DataFrame, cfg: WalkForwardConfig
 def evaluate_models(preds: pd.DataFrame, matches: pd.DataFrame) -> pd.DataFrame:
     """Log-loss, Brier et calibration de chaque modèle par marché et saison, sur les matchs
     communs à tous les modèles (comparaison équitable)."""
-    from p0.backtest import metrics as M
+    from engine.backtest import metrics as M
 
     res = matches.set_index("match_id")
     rows = []

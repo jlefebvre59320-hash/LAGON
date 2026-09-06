@@ -13,10 +13,10 @@ dependencies = ["numpy>=1.26", "pandas>=2.1", "scipy>=1.11", "pyarrow>=14", "req
 dev = ["pytest>=8"]
 
 [project.scripts]
-p0 = "p0.cli:main"
+p0 = "engine.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["p0*"]
+include = ["engine*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
