@@ -97,3 +97,14 @@ def test_download_stops_when_site_is_down(tmp_path):
     with pytest.raises(SiteUnavailable):
         download([2000, 2001], ["E0", "SP1"], tmp_path, fetch=fetch, sleep=lambda s: None, progress=lines.append, retries=2)
     assert any("reprise" in l for l in lines) and sum("échec" in l for l in lines) == 3
+
+
+def test_wait_until_available_honours_retry_after():
+    from p0.ingest.football_data import wait_until_available
+    answers = iter([(503, "120"), (503, None), (200, None)])
+    slept, lines = [], []
+    ok = wait_until_available(60, probe=lambda u: next(answers), sleep=slept.append, progress=lines.append)
+    assert ok and slept == [120, 180]
+    answers = iter([(503, "300")] * 10)
+    ok = wait_until_available(7, probe=lambda u: next(answers), sleep=slept.append, progress=lines.append)
+    assert ok is False

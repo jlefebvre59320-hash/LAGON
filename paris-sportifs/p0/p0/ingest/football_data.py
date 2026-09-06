@@ -188,6 +188,40 @@ def check(url: str | None = None) -> list[dict]:
     return out
 
 
+def wait_until_available(max_minutes: float, probe=None, sleep=None, progress=print, url: str | None = None) -> bool:
+    """Interroge le site jusqu'à obtenir 200 (True) ou dépasser max_minutes (False). Entre deux essais,
+    attend le Retry-After annoncé (borné à 5 min) ou 3 minutes. `probe(url) -> (status, retry_after)`."""
+    import time
+
+    import requests
+
+    sleep = sleep or time.sleep
+    url = url or url_for(2023, "E0")
+    if probe is None:
+        def probe(u):
+            r = requests.get(u, timeout=30, headers={"User-Agent": BROWSER_UA}, stream=True)
+            ra = r.headers.get("Retry-After")
+            r.close()
+            return r.status_code, ra
+    waited = 0.0
+    while True:
+        try:
+            status, ra = probe(url)
+        except Exception as e:
+            status, ra = None, None
+            progress(f"site injoignable ({type(e).__name__})")
+        if status == 200:
+            progress("site disponible")
+            return True
+        wait = min(int(ra), 300) if str(ra).isdigit() else 180
+        if waited + wait / 60 > max_minutes:
+            progress(f"toujours {status} après {waited:.0f} min d'attente : abandon")
+            return False
+        progress(f"réponse {status}, nouvel essai dans {wait // 60} min {wait % 60} s (attente cumulée {waited:.0f} min)")
+        sleep(wait)
+        waited += wait / 60
+
+
 def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None, retries: int = 5,
              delay_s: float = 1.0, sleep=None, skip_existing: bool = True, progress=print,
              max_consecutive_failures: int = 3, user_agent: str = BROWSER_UA) -> tuple[list[Path], list[tuple[str, str]]]:
@@ -240,6 +274,9 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
                     break  # 404 : le fichier n'existe pas pour cette saison, inutile d'insister
                 if attempt < retries - 1:
                     wait = 2 ** (attempt + 1)
+                    ra = getattr(getattr(e, "response", None), "headers", {}) or {}
+                    if str(ra.get("Retry-After", "")).isdigit():
+                        wait = min(int(ra["Retry-After"]), 300)
                     progress(f"[{i}/{len(jobs)}] {name} : {status or type(e).__name__}, reprise {attempt + 1}/{retries - 1} dans {wait} s")
                     sleep(wait)
         if raw is None:

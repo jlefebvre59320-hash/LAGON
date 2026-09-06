@@ -2,6 +2,7 @@
 
   p0 download --seasons 2014 2025 --divs E0 SP1 D1 I1 F1      télécharge les CSV Football-Data (progression affichée)
   p0 download --check                                          diagnostic : réponse du site avec deux User-Agent
+  p0 download --seasons 2000 2025 --wait-minutes 360           attend le retour du site (Retry-After respecté) puis télécharge
   p0 aliases [--mark-validated fichier.txt]                    liste les alias inconnus et non validés ; marque validés ceux relus
   p0 build [--accept-unvalidated]                              normalise, rapproche, contrôle, écrit data/processed/*.parquet
   p0 xg --seasons 2014 2025                                    récupère les xG Understat (cache, délai 6 s)
@@ -30,6 +31,9 @@ def cmd_download(a):
             print(r)
         return
     years = list(range(a.seasons[0], a.seasons[1] + 1))
+    from p0.ingest.football_data import wait_until_available
+    if a.wait_minutes and not wait_until_available(a.wait_minutes, progress=lambda m: print(m, flush=True)):
+        sys.exit("ARRÊT : le site ne répond toujours pas ; relancer plus tard.")
     try:
         paths, failures = download(years, a.divs, DATA / "raw", progress=lambda m: print(m, flush=True))
     except SiteUnavailable as e:
@@ -173,7 +177,7 @@ def cmd_synthetic(a):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="p0", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
-    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.add_argument("--check", action="store_true", help="diagnostic : affiche la réponse du site pour un fichier, avec deux User-Agent"); d.set_defaults(fn=cmd_download)
+    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.add_argument("--check", action="store_true", help="diagnostic : affiche la réponse du site pour un fichier, avec deux User-Agent"); d.add_argument("--wait-minutes", type=float, default=0, help="attendre le retour du site jusqu'à N minutes avant de télécharger"); d.set_defaults(fn=cmd_download)
     b = sub.add_parser("build"); b.add_argument("--accept-unvalidated", action="store_true"); b.set_defaults(fn=cmd_build)
     al = sub.add_parser("aliases"); al.add_argument("--mark-validated", default=None, help="fichier texte : un alias par ligne, relu à la main, à marquer validé"); al.set_defaults(fn=cmd_aliases)
     x = sub.add_parser("xg"); x.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); x.add_argument("--accept-unvalidated", action="store_true"); x.set_defaults(fn=cmd_xg)
