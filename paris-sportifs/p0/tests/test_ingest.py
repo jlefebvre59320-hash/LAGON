@@ -120,7 +120,7 @@ def test_download_via_wayback_records_provenance(tmp_path):
 
     paths, failures = download([2023], ["E0"], tmp_path, fetch=fetch, sleep=lambda s: None, progress=None, via_wayback=True)
     assert seen == [wayback_url("https://www.football-data.co.uk/mmz4281/2324/E0.csv")]
-    assert seen[0].startswith("https://web.archive.org/web/2id_/")
+    assert seen[0].startswith("https://web.archive.org/web/20991231235959id_/")
     assert (paths[0].parent / "2324_E0.csv.source").read_text() == seen[0]
 
 
@@ -200,3 +200,16 @@ def test_understat_matches_from_teams_history(tmp_path):
     c.league_season("ENG1", 2014)
     assert len(seen) == 1  # cache : aucune seconde requête
     assert len(parse_league_payload({"teams": teams})) == 2
+
+
+def test_verify_flags_truncated_season(tmp_path):
+    from engine.ingest.football_data import verify_raw_dir
+    d = tmp_path / "football-data" / "2026-09-06"
+    d.mkdir(parents=True)
+    header = "Div,Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR\n"
+    rows = "".join(f"SP1,{10 + i:02d}/08/2019,T{2 * i:02d},T{2 * i + 1:02d},1,0,H\n" for i in range(10))  # 20 équipes, 10 matchs
+    (d / "1920_SP1.csv").write_bytes((header + rows).encode())
+    bad = verify_raw_dir(tmp_path, current_season=2025)
+    assert len(bad) == 1 and "incomplet" in bad[0][1] and "10 matchs" in bad[0][1]
+    (d / "2526_E0.csv").write_bytes((header + rows).encode())  # saison en cours : pas signalée
+    assert len(verify_raw_dir(tmp_path, current_season=2025)) == 1

@@ -150,6 +150,8 @@ def quality_flags(matches: pd.DataFrame, odds: pd.DataFrame) -> list[str]:
             flags.append(f"{comp} {season} : {n_teams} équipes, attendu 18 ou 20")
         elif len(g) > expected:
             flags.append(f"{comp} {season} : {len(g)} matchs > {expected}")
+        elif g["hg"].notna().sum() < expected and not (comp == "FRA1" and season == 2019):
+            flags.append(f"{comp} {season} : {int(g['hg'].notna().sum())} matchs joués sur {expected} attendus (fichier tronqué ou saison en cours)")
         dup = g.duplicated(["home", "away"]).sum()
         if dup:
             flags.append(f"{comp} {season} : {dup} doublon(s) domicile/extérieur")
@@ -177,7 +179,10 @@ BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1
 PLAIN_UA = "paris-sportifs-p0 (usage personnel)"
 
 
-WAYBACK_PREFIX = "https://web.archive.org/web/2id_/"  # dernier instantané, contenu original sans bandeau
+# Horodatage futur : l'archive renvoie la capture la plus proche, donc la plus récente. Un horodatage
+# court (« 2 ») renvoyait la plus ancienne, ce qui donnait des fichiers de saison tronqués (constaté sur
+# la Liga 2019/20 : 220 matchs sur 380). Le suffixe id_ livre le contenu original sans bandeau.
+WAYBACK_PREFIX = "https://web.archive.org/web/20991231235959id_/"
 
 
 def wayback_url(url: str) -> str:
@@ -210,14 +215,40 @@ def validate_raw(raw: bytes) -> pd.DataFrame:
     return df
 
 
-def verify_raw_dir(raw_dir: Path) -> list[tuple[Path, str]]:
-    """Liste les fichiers bruts invalides avec la raison."""
+def expected_matches(n_teams: int) -> int | None:
+    return {18: 306, 20: 380}.get(n_teams)
+
+
+def verify_raw_dir(raw_dir: Path, current_season: int | None = None) -> list[tuple[Path, str]]:
+    """Liste les fichiers bruts invalides ou incomplets avec la raison. Un fichier d'une saison terminée
+    (antérieure à `current_season`) qui contient moins de matchs joués qu'attendu est signalé « incomplet »,
+    sauf les saisons connues pour avoir été arrêtées (Ligue 1 2019/20 : 279 matchs)."""
+    import datetime as dt
+
+    if current_season is None:
+        today = dt.date.today()
+        current_season = today.year if today.month >= 7 else today.year - 1
+    known_short = {("F1", 2019): 279}  # saison arrêtée (COVID)
     bad = []
     for p in sorted((raw_dir / "football-data").glob("*/*.csv")):
         try:
-            validate_raw(p.read_bytes())
+            df = validate_raw(p.read_bytes())
         except InvalidCsv as e:
             bad.append((p, str(e)))
+            continue
+        mobj = re.match(r"(\d{2})(\d{2})_(\w+)\.csv", p.name)
+        if not mobj:
+            continue
+        yy = int(mobj.group(1))
+        season = 2000 + yy if yy < 90 else 1900 + yy
+        div = mobj.group(3)
+        if season >= current_season:
+            continue
+        played = int(pd.to_numeric(df["FTHG"], errors="coerce").notna().sum())
+        n_teams = len(set(df["HomeTeam"].dropna()) | set(df["AwayTeam"].dropna()))
+        exp = known_short.get((div, season), expected_matches(n_teams))
+        if exp is not None and played < exp:
+            bad.append((p, f"incomplet : {played} matchs joués sur {exp} attendus ({n_teams} équipes) ; copie d'archive prise en cours de saison ?"))
     return bad
 
 
