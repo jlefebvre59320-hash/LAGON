@@ -3,8 +3,10 @@
   p0 download --seasons 2014 2025 --divs E0 SP1 D1 I1 F1      télécharge les CSV Football-Data (progression affichée)
   p0 download --check                                          diagnostic : réponse du site avec deux User-Agent
   p0 download --seasons 2000 2025 --wait-minutes 360           attend le retour du site (Retry-After respecté) puis télécharge
-  p0 aliases [--mark-validated fichier.txt]                    liste les alias inconnus et non validés ; marque validés ceux relus
-  p0 build [--accept-unvalidated]                              normalise, rapproche, contrôle, écrit data/processed/*.parquet
+  p0 download --seasons 2000 2024 --via-wayback                site en panne : copies de l'archive Internet, saisons terminées
+  p0 import-club-data                                          secours : jeu dérivé de Football-Data (xgabora, MIT), sans cotes de clôture
+  p0 aliases [--source club] [--mark-validated fichier.txt]    liste les alias inconnus et non validés ; marque validés ceux relus
+  p0 build [--source club] [--accept-unvalidated]              normalise, rapproche, contrôle, écrit data/processed/*.parquet
   p0 xg --seasons 2014 2025                                    récupère les xG Understat (cache, délai 6 s)
   p0 backtest --test-seasons 2019 2024 [--refit-days 7]        walk-forward + stratégies + rapport
   p0 synthetic --out data/synthetic                            génère un monde synthétique pour tester la chaîne
@@ -35,7 +37,7 @@ def cmd_download(a):
     if a.wait_minutes and not wait_until_available(a.wait_minutes, progress=lambda m: print(m, flush=True)):
         sys.exit("ARRÊT : le site ne répond toujours pas ; relancer plus tard.")
     try:
-        paths, failures = download(years, a.divs, DATA / "raw", progress=lambda m: print(m, flush=True))
+        paths, failures = download(years, a.divs, DATA / "raw", progress=lambda m: print(m, flush=True), via_wayback=a.via_wayback)
     except SiteUnavailable as e:
         sys.exit(f"ARRÊT : {e}")
     print(f"{len(paths)} fichiers téléchargés dans {DATA / 'raw' / 'football-data'} (les fichiers déjà présents sont sautés)")
@@ -45,12 +47,18 @@ def cmd_download(a):
             print(f"  {url} : {err.splitlines()[0][:120]}")
 
 
+def cmd_import_club_data(a):
+    """Source de secours (Football-Data indisponible) : Matches.csv de xgabora/Club-Football-Match-Data-2000-2025."""
+    from engine.ingest.club_data import download
+    p = download(DATA / "raw")
+    print(f"téléchargé : {p} ({p.stat().st_size // 1_000_000} Mo). Ensuite : p0 aliases --source club, puis p0 build --source club")
+
+
 def cmd_aliases(a):
     """État de la table d'alias face aux données brutes : inconnus (à ajouter) et non validés (à relire)."""
-    from engine.ingest.football_data import load_raw_dir
     from engine.reconcile.teams import TeamResolver, find_unknown, load_aliases
     aliases = load_aliases()
-    matches, _ = load_raw_dir(DATA / "raw")
+    matches, _ = _load_raw(a)
     lax = TeamResolver(aliases, accept_unvalidated=True)
     names = pd.concat([matches["home"], matches["away"]]) if not matches.empty else pd.Series(dtype=str)
     unknown = find_unknown(lax, names, "football-data")
@@ -76,10 +84,22 @@ def cmd_aliases(a):
         print(f"{int(mask.sum())} alias marqués validés depuis {path}")
 
 
+DIVS = ["E0", "SP1", "D1", "I1", "F1"]
+
+
+def _load_raw(a):
+    """Bruts Football-Data (défaut) ou source de secours club-data (--source club)."""
+    if getattr(a, "source", "football-data") == "club":
+        from engine.ingest.club_data import load_latest
+        return load_latest(DATA / "raw", DIVS)
+    from engine.ingest.football_data import load_raw_dir
+    return load_raw_dir(DATA / "raw")
+
+
 def cmd_build(a):
-    from engine.ingest.football_data import load_raw_dir, quality_flags
+    from engine.ingest.football_data import quality_flags
     from engine.reconcile.teams import ReconciliationError, TeamResolver, check_season_consistency, find_unknown, load_aliases
-    matches, odds = load_raw_dir(DATA / "raw")
+    matches, odds = _load_raw(a)
     resolver = TeamResolver(load_aliases(), accept_unvalidated=a.accept_unvalidated)
     unknown = find_unknown(resolver, pd.concat([matches["home"], matches["away"]]), "football-data")
     if unknown:
@@ -95,6 +115,9 @@ def cmd_build(a):
     odds.to_parquet(out / "odds.parquet", index=False)
     (out / "reconcile_log.json").write_text(json.dumps(resolver.log, ensure_ascii=False, indent=1))
     print(f"{len(matches)} matchs, {len(odds)} relevés de cotes écrits dans {out}")
+    if getattr(a, "source", "football-data") == "club":
+        print("SOURCE DE SECOURS : aucune cote de clôture, la CLV et le verdict automatique ne seront pas calculables ; "
+              "reconstruire depuis Football-Data dès que le site est revenu.")
 
 
 def cmd_xg(a):
@@ -177,9 +200,10 @@ def cmd_synthetic(a):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="p0", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
-    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.add_argument("--check", action="store_true", help="diagnostic : affiche la réponse du site pour un fichier, avec deux User-Agent"); d.add_argument("--wait-minutes", type=float, default=0, help="attendre le retour du site jusqu'à N minutes avant de télécharger"); d.set_defaults(fn=cmd_download)
-    b = sub.add_parser("build"); b.add_argument("--accept-unvalidated", action="store_true"); b.set_defaults(fn=cmd_build)
-    al = sub.add_parser("aliases"); al.add_argument("--mark-validated", default=None, help="fichier texte : un alias par ligne, relu à la main, à marquer validé"); al.set_defaults(fn=cmd_aliases)
+    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.add_argument("--check", action="store_true", help="diagnostic : affiche la réponse du site pour un fichier, avec deux User-Agent"); d.add_argument("--wait-minutes", type=float, default=0, help="attendre le retour du site jusqu'à N minutes avant de télécharger"); d.add_argument("--via-wayback", action="store_true", help="site indisponible : lire les copies de l'archive Internet (saisons terminées uniquement)"); d.set_defaults(fn=cmd_download)
+    b = sub.add_parser("build"); b.add_argument("--accept-unvalidated", action="store_true"); b.add_argument("--source", choices=["football-data", "club"], default="football-data"); b.set_defaults(fn=cmd_build)
+    al = sub.add_parser("aliases"); al.add_argument("--mark-validated", default=None, help="fichier texte : un alias par ligne, relu à la main, à marquer validé"); al.add_argument("--source", choices=["football-data", "club"], default="football-data"); al.set_defaults(fn=cmd_aliases)
+    ic = sub.add_parser("import-club-data"); ic.set_defaults(fn=cmd_import_club_data)
     x = sub.add_parser("xg"); x.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); x.add_argument("--accept-unvalidated", action="store_true"); x.set_defaults(fn=cmd_xg)
     t = sub.add_parser("backtest"); t.add_argument("--test-seasons", nargs=2, type=int, required=True); t.add_argument("--refit-days", type=int, default=7)
     t.add_argument("--data", default=None); t.add_argument("--models", nargs="*", default=None); t.add_argument("--verbose", action="store_true"); t.set_defaults(fn=cmd_backtest)

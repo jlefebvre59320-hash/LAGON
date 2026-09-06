@@ -59,7 +59,19 @@ Attendu : `130 fichiers téléchargés dans .../data/raw/football-data`. Chaque 
 
 Si la commande se termine par `N fichier(s) en échec`, relancez-la telle quelle quelques minutes plus tard : les fichiers déjà présents sont sautés, seuls les manquants sont retentés. Une erreur 404 sur une saison ancienne d'une ligue signifie que le fichier n'existe pas sur le site ; l'historique commence plus tard pour cette ligue, ce n'est pas bloquant.
 
-Le site football-data.co.uk est un site personnel qui répond parfois 503 pendant quelques minutes ; c'est ce qui s'est produit lors du premier essai le 2026-09-05.
+Le site football-data.co.uk est un site personnel ; le 5 septembre 2026 il est resté indisponible plus de cinq heures. Deux voies de secours, dans cet ordre :
+
+```bash
+p0 download --seasons 2000 2024 --via-wayback
+```
+
+lit les copies de l'archive Internet (Wayback Machine) des mêmes fichiers. Pour une saison terminée, la copie est identique à l'original ; la provenance est notée dans un fichier `.source` à côté de chaque CSV. Les fichiers non archivés sont signalés en échec et seront repris sur le site quand il reviendra (la relance saute ceux déjà présents). La saison en cours n'est pas à prendre par cette voie.
+
+```bash
+p0 import-club-data
+```
+
+télécharge un jeu dérivé de Football-Data maintenu sur GitHub (licence MIT, 45 Mo, cotes Bet365 et maximum du marché, **sans cotes de clôture**). Il permet de faire les étapes 5 à 7 (`p0 aliases --source club`, `p0 build --source club`) et de commencer les modèles, mais ni la CLV ni le verdict automatique. Reconstruire depuis Football-Data dès que possible.
 
 ## Étape 5 : état des noms d'équipes (2 minutes)
 

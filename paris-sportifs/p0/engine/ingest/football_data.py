@@ -166,6 +166,15 @@ BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1
 PLAIN_UA = "paris-sportifs-p0 (usage personnel)"
 
 
+WAYBACK_PREFIX = "https://web.archive.org/web/2id_/"  # dernier instantané, contenu original sans bandeau
+
+
+def wayback_url(url: str) -> str:
+    """URL de la copie la plus récente d'un fichier dans l'archive Internet (Wayback Machine).
+    Pour une saison terminée, le fichier ne change plus : la copie est identique à l'original."""
+    return WAYBACK_PREFIX + url
+
+
 class SiteUnavailable(RuntimeError):
     """Plusieurs fichiers consécutifs en échec 5xx : le site ne répond pas, inutile de continuer."""
 
@@ -225,13 +234,17 @@ def wait_until_available(max_minutes: float, probe=None, sleep=None, progress=pr
 
 def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None, retries: int = 5,
              delay_s: float = 1.0, sleep=None, skip_existing: bool = True, progress=print,
-             max_consecutive_failures: int = 3, user_agent: str = BROWSER_UA) -> tuple[list[Path], list[tuple[str, str]]]:
+             max_consecutive_failures: int = 3, user_agent: str = BROWSER_UA,
+             via_wayback: bool = False) -> tuple[list[Path], list[tuple[str, str]]]:
     """Télécharge les CSV dans raw_dir/football-data/<date>/ et garde une empreinte.
 
     Tolérant : `retries` tentatives par fichier avec attente 2, 4, 8, 16 s sur erreur 5xx ou réseau ;
     `delay_s` entre deux fichiers ; un fichier déjà présent dans un snapshot antérieur est sauté
     (`skip_existing`) ; un fichier en échec n'interrompt pas les autres, sauf `max_consecutive_failures`
     échecs 5xx/réseau d'affilée (SiteUnavailable). `progress` reçoit une ligne par événement.
+    `via_wayback` : lit les copies de l'archive Internet au lieu du site (site indisponible) ; la provenance
+    est notée dans un fichier `<nom>.source` à côté de l'empreinte, et l'arrêt anticipé est désactivé
+    car un 404 de l'archive signifie seulement qu'un fichier n'a pas été archivé.
     Retourne (fichiers écrits, [(url, erreur)]). `fetch` et `sleep` sont injectables pour les tests.
     """
     import datetime as dt
@@ -262,6 +275,8 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
             progress(f"[{i}/{len(jobs)}] {name} déjà présent, sauté")
             continue
         url = url_for(y, div)
+        if via_wayback:
+            url = wayback_url(url)
         raw, err, hard = None, None, False
         for attempt in range(retries):
             try:
@@ -285,7 +300,7 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
         if raw is None:
             failures.append((url, str(err)))
             progress(f"[{i}/{len(jobs)}] {name} : échec ({str(err).splitlines()[0][:80]})")
-            if not hard:
+            if not hard and not via_wayback:
                 consecutive += 1
                 if consecutive >= max_consecutive_failures:
                     raise SiteUnavailable(f"{consecutive} fichiers consécutifs en échec : le site ne répond pas. "
@@ -295,8 +310,9 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
             p = out_dir / name
             p.write_bytes(raw)
             (out_dir / f"{p.name}.sha256").write_text(hashlib.sha256(raw).hexdigest())
+            (out_dir / f"{p.name}.source").write_text(url)
             paths.append(p)
-            progress(f"[{i}/{len(jobs)}] {name} ok ({len(raw) // 1024} Ko)")
+            progress(f"[{i}/{len(jobs)}] {name} ok ({len(raw) // 1024} Ko){' via archive Internet' if via_wayback else ''}")
         sleep(delay_s)
     return paths, failures
 

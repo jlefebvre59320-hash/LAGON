@@ -38,7 +38,7 @@ Aucune source ci-dessous n'a été inventée. Quand une capacité d'API n'a pas 
 | Sources déclarées (V2) | Résultats : XScores ; statistiques : BBC, Flashscore, ESPN, Bundesliga.de, Gazzetta.it, Football.fr ; cotes : Betbrain.com, Oddsportal.com, bookmakers individuels. |
 | Fréquence | Deux mises à jour par semaine (V2, README footballcsv). Fichier des rencontres à venir avec cotes : V3 (page bloquée). |
 | Coût, licence | Gratuit. **Aucune mention de licence, de copyright ni de conditions dans les notes** (V2, lecture complète de la copie). Réutilisation : téléchargement toléré sans licence explicite ; usage personnel, pas de redistribution. |
-| Fiabilité, trous | Référence de fait de la littérature amateur et académique. Colonnes variables selon saisons et ligues ; bookmakers disparus ; noms d'équipes propres au site. |
+| Fiabilité, trous | Référence de fait de la littérature amateur et académique. Colonnes variables selon saisons et ligues ; bookmakers disparus ; noms d'équipes propres au site. **Disponibilité** : panne de plus de cinq heures constatée le 5 septembre 2026 (503 nginx, confirmée depuis une seconde connexion). Les bruts doivent être sauvegardés hors du poste dès leur première obtention. Copies de secours : archive Internet (`p0 download --via-wayback`, saisons terminées) et jeu dérivé A14bis. |
 | Historique exploitable | **Oui.** Colonne vertébrale du backtest P0. |
 
 ### A2. Understat
@@ -148,6 +148,17 @@ Conditions non lues (V3, extraits) : Sofascore/Torneo interdirait « robots or s
 
 - **Opta / Stats Perform, StatsBomb (payant), Wyscout** : pas de tarif public, devis (V3). Stats Perform est fournisseur officiel de la LFP depuis 2016/17 (V3).
 - **Sportmonks** (V2, copie des plans datée mai 2026 sur github.com/api-evangelist/sportmonks) : Free (Superliga danoise, Premiership écossaise) ; Starter 29 €/mois, 5 ligues au choix, 2 000 appels/entité/heure ; Growth 99 €/mois, 30 ligues ; Pro 249 €/mois, 120 ligues ; Enterprise sur devis avec « Historical Data ». Flux de cotes premium en option ; **historique des cotes conservé seulement « until 7 days after the match has started »** (V3). Donc pas de source d'historique long.
+
+### A14bis. Club Football Match Data 2000-2025 (source de secours) (V1)
+
+| Champ | Contenu |
+|---|---|
+| URL | https://github.com/xgabora/Club-Football-Match-Data-2000-2025 ; fichier `data/Matches.csv` (45 Mo, lu le 2026-09-06) |
+| Organisme | Particulier (Adam Gábor) |
+| Contenu (V1, en-tête et premières lignes lus) | 238 858 matchs du 28 juillet 2000 au 3 septembre 2026, 38 divisions ; colonnes `Division` (codes Football-Data : E0, F1…), date, heure, équipes (noms Football-Data), Elo ClubElo, forme, scores, tirs, cadrés, fautes, corners, cartons, cotes `OddHome/Draw/Away` (Bet365), `Max*` (maximum du marché), `Over25/Under25` (Bet365), `MaxOver25/MaxUnder25`, handicap asiatique. |
+| Licence | MIT (V1). |
+| Limites | **Aucune cote de clôture**, une seule série de cotes par bookmaker, pas d'arbitre, dérivation non documentée colonne par colonne. Elo ClubElo jusqu'au 1er juin 2025 puis projections. |
+| Usage | Source de secours quand Football-Data est indisponible (panne constatée le 5 septembre 2026, plus de cinq heures) : validation des alias, construction des tables, premiers modèles. Ne permet ni la CLV ni le verdict automatique. À remplacer par les fichiers originaux dès leur disponibilité. Commande : `p0 import-club-data`. |
 
 ### A14. Sites officiels des ligues
 

@@ -108,3 +108,37 @@ def test_wait_until_available_honours_retry_after():
     answers = iter([(503, "300")] * 10)
     ok = wait_until_available(7, probe=lambda u: next(answers), sleep=slept.append, progress=lines.append)
     assert ok is False
+
+
+def test_download_via_wayback_records_provenance(tmp_path):
+    from engine.ingest.football_data import download, wayback_url
+    seen = []
+
+    def fetch(url):
+        seen.append(url)
+        return b"Div,Date\nE0,01/01/01\n"
+
+    paths, failures = download([2023], ["E0"], tmp_path, fetch=fetch, sleep=lambda s: None, progress=None, via_wayback=True)
+    assert seen == [wayback_url("https://www.football-data.co.uk/mmz4281/2324/E0.csv")]
+    assert seen[0].startswith("https://web.archive.org/web/2id_/")
+    assert (paths[0].parent / "2324_E0.csv.source").read_text() == seen[0]
+
+
+CLUB_CSV = b"""Division,MatchDate,MatchTime,HomeTeam,AwayTeam,HomeElo,AwayElo,Form3Home,Form5Home,Form3Away,Form5Away,FTHome,FTAway,FTResult,HTHome,HTAway,HTResult,HomeShots,AwayShots,HomeTarget,AwayTarget,HomeFouls,AwayFouls,HomeCorners,AwayCorners,HomeYellow,AwayYellow,HomeRed,AwayRed,OddHome,OddDraw,OddAway,MaxHome,MaxDraw,MaxAway,Over25,Under25,MaxOver25,MaxUnder25,HandiSize,HandiHome,HandiAway,C_LTH,C_LTA,C_VHD,C_VAD,C_HTB,C_PHB
+F1,2000-07-28,,Marseille,Troyes,1686.34,1586.57,0.0,0.0,0.0,0.0,3.0,1.0,H,2.0,1.0,H,,,,,,,,,,,,,1.65,3.3,4.3,,,,,,,,,,,,,,,,
+F2,2000-07-28,,Wasquehal,Nancy,1465.08,1633.8,0.0,0.0,0.0,0.0,0.0,1.0,A,0.0,1.0,A,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+E0,2024-01-14,16:30,Man United,Tottenham,1800,1790,3,6,4,7,2.0,2.0,D,1.0,1.0,D,12,10,5,4,9,11,4,6,2,1,0,0,2.4,3.5,2.9,2.55,3.6,3.05,1.7,2.2,1.75,2.3,-0.25,1.95,1.95,,,,,,
+"""
+
+
+def test_club_data_normalise():
+    from engine.ingest.club_data import normalise
+    import io
+    df = pd.read_csv(io.BytesIO(CLUB_CSV))
+    m, o = normalise(df, ["E0", "F1"], snapshot="t")
+    assert len(m) == 2 and set(m["competition"]) == {"FRA1", "ENG1"}
+    row = m[m["competition"] == "ENG1"].iloc[0]
+    assert row["season"] == 2023 and row["date"] == pd.Timestamp("2024-01-14 16:30") and row["hst"] == 5
+    assert m[m["competition"] == "FRA1"].iloc[0]["season"] == 2000
+    assert set(o["bookmaker"]) == {"B365", "Max"} and (~o["is_closing"]).all()
+    assert len(o[(o["market"] == "ou") & (o["bookmaker"] == "Max")]) == 2
