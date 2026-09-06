@@ -190,7 +190,8 @@ def check(url: str | None = None) -> list[dict]:
 
 def wait_until_available(max_minutes: float, probe=None, sleep=None, progress=print, url: str | None = None) -> bool:
     """Interroge le site jusqu'à obtenir 200 (True) ou dépasser max_minutes (False). Entre deux essais,
-    attend le Retry-After annoncé (borné à 5 min) ou 3 minutes. `probe(url) -> (status, retry_after)`."""
+    attend le Retry-After annoncé plus 30 s (borné à 1 h), ou 10 minutes s'il n'est pas annoncé : réessayer
+    avant la fin du délai demandé peut prolonger un blocage de débit. `probe(url) -> (status, retry_after)`."""
     import time
 
     import requests
@@ -213,7 +214,7 @@ def wait_until_available(max_minutes: float, probe=None, sleep=None, progress=pr
         if status == 200:
             progress("site disponible")
             return True
-        wait = min(int(ra), 300) if str(ra).isdigit() else 180
+        wait = min(int(ra) + 30, 3600) if str(ra).isdigit() else 600
         if waited + wait / 60 > max_minutes:
             progress(f"toujours {status} après {waited:.0f} min d'attente : abandon")
             return False
@@ -276,7 +277,9 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
                     wait = 2 ** (attempt + 1)
                     ra = getattr(getattr(e, "response", None), "headers", {}) or {}
                     if str(ra.get("Retry-After", "")).isdigit():
-                        wait = min(int(ra["Retry-After"]), 300)
+                        # respecter intégralement le délai demandé, avec une marge : réessayer trop tôt
+                        # peut prolonger un blocage de débit côté serveur
+                        wait = min(int(ra["Retry-After"]) + 30, 3600)
                     progress(f"[{i}/{len(jobs)}] {name} : {status or type(e).__name__}, reprise {attempt + 1}/{retries - 1} dans {wait} s")
                     sleep(wait)
         if raw is None:

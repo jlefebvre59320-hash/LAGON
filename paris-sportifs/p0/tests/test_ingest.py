@@ -104,7 +104,7 @@ def test_wait_until_available_honours_retry_after():
     answers = iter([(503, "120"), (503, None), (200, None)])
     slept, lines = [], []
     ok = wait_until_available(60, probe=lambda u: next(answers), sleep=slept.append, progress=lines.append)
-    assert ok and slept == [120, 180]
+    assert ok and slept == [150, 600]
     answers = iter([(503, "300")] * 10)
     ok = wait_until_available(7, probe=lambda u: next(answers), sleep=slept.append, progress=lines.append)
     assert ok is False
