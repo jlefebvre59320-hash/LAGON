@@ -24,8 +24,12 @@ DATA = ROOT / "data"
 def cmd_download(a):
     from p0.ingest.football_data import download
     years = list(range(a.seasons[0], a.seasons[1] + 1))
-    paths = download(years, a.divs, DATA / "raw")
-    print(f"{len(paths)} fichiers téléchargés dans {DATA / 'raw' / 'football-data'}")
+    paths, failures = download(years, a.divs, DATA / "raw")
+    print(f"{len(paths)} fichiers téléchargés dans {DATA / 'raw' / 'football-data'} (les fichiers déjà présents sont sautés)")
+    if failures:
+        print(f"{len(failures)} fichier(s) en échec ; relancer la même commande plus tard, seuls les manquants seront retentés :")
+        for url, err in failures:
+            print(f"  {url} : {err.splitlines()[0][:120]}")
 
 
 def cmd_aliases(a):

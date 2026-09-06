@@ -161,28 +161,61 @@ def quality_flags(matches: pd.DataFrame, odds: pd.DataFrame) -> list[str]:
     return flags
 
 
-def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None) -> list[Path]:
-    """Télécharge les CSV dans raw_dir/football-data/<date>/ et garde une empreinte. `fetch` est
-    injectable pour les tests (bytes = fetch(url))."""
+def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None, retries: int = 5,
+             delay_s: float = 1.0, sleep=None, skip_existing: bool = True) -> tuple[list[Path], list[tuple[str, str]]]:
+    """Télécharge les CSV dans raw_dir/football-data/<date>/ et garde une empreinte.
+
+    Tolérant : `retries` tentatives par fichier avec attente 2, 4, 8, 16 s sur erreur 5xx ou réseau ;
+    `delay_s` entre deux fichiers ; un fichier déjà présent dans un snapshot antérieur est sauté
+    (`skip_existing`) ; un fichier en échec n'interrompt pas les autres. Retourne (fichiers écrits,
+    [(url, erreur)]). `fetch` et `sleep` sont injectables pour les tests.
+    """
     import datetime as dt
+    import time
+
     import requests
 
+    sleep = sleep or time.sleep
     if fetch is None:
+        session = requests.Session()
+        session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; paris-sportifs-p0; usage personnel; contact via le depot)"})
+
         def fetch(url: str) -> bytes:
-            r = requests.get(url, timeout=60, headers={"User-Agent": "paris-sportifs-p0 (usage personnel)"})
+            r = session.get(url, timeout=60)
             r.raise_for_status()
             return r.content
-    out_dir = raw_dir / "football-data" / dt.date.today().isoformat()
+    base = raw_dir / "football-data"
+    out_dir = base / dt.date.today().isoformat()
     out_dir.mkdir(parents=True, exist_ok=True)
-    paths = []
+    existing = {p.name for p in base.glob("*/*.csv")} if skip_existing else set()
+    paths, failures = [], []
     for y in start_years:
         for div in divs:
-            raw = fetch(url_for(y, div))
-            p = out_dir / f"{season_code(y)}_{div}.csv"
-            p.write_bytes(raw)
-            (out_dir / f"{p.name}.sha256").write_text(hashlib.sha256(raw).hexdigest())
-            paths.append(p)
-    return paths
+            name = f"{season_code(y)}_{div}.csv"
+            if name in existing:
+                continue
+            url = url_for(y, div)
+            raw, err = None, None
+            for attempt in range(retries):
+                try:
+                    raw = fetch(url)
+                    break
+                except Exception as e:  # HTTPError, ConnectionError, Timeout
+                    err = e
+                    status = getattr(getattr(e, "response", None), "status_code", None)
+                    if status is not None and 400 <= status < 500 and status != 429:
+                        break  # 404 : le fichier n'existe pas pour cette saison, inutile d'insister
+                    if attempt < retries - 1:
+                        sleep(2 ** (attempt + 1))
+            if raw is None:
+                failures.append((url, str(err)))
+            else:
+                p = out_dir / name
+                p.write_bytes(raw)
+                (out_dir / f"{p.name}.sha256").write_text(hashlib.sha256(raw).hexdigest())
+                paths.append(p)
+            sleep(delay_s)
+    return paths, failures
 
 
 def load_raw_dir(raw_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:

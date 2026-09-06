@@ -2,6 +2,8 @@
 
 Rédigé le 2026-09-05. Ce guide couvre la phase P0 (livrable 9 §1), du poste vide au verdict. Chaque étape indique la commande, la durée attendue, ce que vous devez voir, et quoi faire si ce n'est pas le cas. Les commandes sont données pour Linux et macOS ; sous Windows, utilisez WSL ou remplacez `. .venv/bin/activate` par `.venv\Scripts\activate`.
 
+**Collez les commandes une par une, sans les lignes de commentaires.** Dans zsh (le shell par défaut de macOS), une ligne commençant par `#` collée dans le terminal n'est pas un commentaire : elle produit `unknown file attribute` et peut désynchroniser les commandes suivantes (un second `git clone` s'exécute alors dans le mauvais dossier). L'aide-mémoire en fin de guide est sans commentaires pour cette raison.
+
 Temps total estimé : une demi-journée de manipulation, dont une à deux heures de validation manuelle des noms d'équipes, plus le temps de calcul du backtest (30 à 60 minutes).
 
 ---
@@ -47,15 +49,17 @@ Les neuf points du livrable 2 §G n'ont pas pu être relus depuis l'environnemen
 2. https://understat.com : cherchez un lien « Terms » ou « Conditions » en bas de page. S'il en existe un qui interdit l'accès automatisé, **n'exécutez pas l'étape 7** et signalez-le.
 3. Les autres points (The Odds API, ANJ, API-Football, Transfermarkt, Betfair, Wikidata) ne concernent pas P0 ; ils peuvent attendre M1.
 
-## Étape 4 : télécharger Football-Data (5 minutes)
+## Étape 4 : télécharger Football-Data (5 à 10 minutes)
 
 ```bash
 p0 download --seasons 2000 2025
 ```
 
-Attendu : `130 fichiers téléchargés dans .../data/raw/football-data`. Chaque fichier a une empreinte `.sha256` à côté. Volume : environ 15 Mo.
+Attendu : `130 fichiers téléchargés dans .../data/raw/football-data`. Chaque fichier a une empreinte `.sha256` à côté. Volume : environ 15 Mo. Le téléchargeur attend une seconde entre deux fichiers, réessaie jusqu'à cinq fois (2, 4, 8, 16 s) sur une erreur 503 ou réseau, et continue avec les fichiers suivants si l'un échoue.
 
-Si un fichier manque (erreur 404 sur une saison ancienne d'une ligue), relancez avec une plage plus courte pour cette ligue, par exemple `p0 download --seasons 2005 2025 --divs F1`. Les saisons manquantes réduisent l'historique, elles n'empêchent pas le backtest.
+Si la commande se termine par `N fichier(s) en échec`, relancez-la telle quelle quelques minutes plus tard : les fichiers déjà présents sont sautés, seuls les manquants sont retentés. Une erreur 404 sur une saison ancienne d'une ligue signifie que le fichier n'existe pas sur le site ; l'historique commence plus tard pour cette ligue, ce n'est pas bloquant.
+
+Le site football-data.co.uk est un site personnel qui répond parfois 503 pendant quelques minutes ; c'est ce qui s'est produit lors du premier essai le 2026-09-05.
 
 ## Étape 5 : état des noms d'équipes (2 minutes)
 
@@ -153,15 +157,16 @@ Dans tous les cas, la saison 2025/26 reste scellée jusqu'à ce que les stratég
 
 ---
 
-## Aide-mémoire des commandes
+## Aide-mémoire des commandes (sans commentaires, à coller ligne par ligne)
 
 ```bash
+cd LAGON/paris-sportifs/p0
 . .venv/bin/activate
-p0 download --seasons 2000 2025          # CSV Football-Data
-p0 aliases                               # état des noms d'équipes
-p0 aliases --mark-validated fichier.txt  # marquer validés les alias relus
-p0 build                                 # tables Parquet (mode strict)
-p0 xg --seasons 2014 2025                # xG Understat, cache, 6 s entre pages
-p0 backtest --test-seasons 2019 2024     # jamais 2025 avant la fin de P0
-pytest                                   # tests sur données synthétiques
+p0 download --seasons 2000 2025
+p0 aliases
+p0 aliases --mark-validated alias_relus.txt
+p0 build
+p0 xg --seasons 2014 2025 --accept-unvalidated
+p0 backtest --test-seasons 2019 2024 --refit-days 7
+pytest
 ```

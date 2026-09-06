@@ -55,3 +55,30 @@ def test_find_unknown_lists_all():
     lax = TeamResolver(load_aliases(), accept_unvalidated=True)
     unknown = find_unknown(lax, ["Man United", "Club Inconnu", "Autre Inconnu"], "football-data")
     assert unknown == ["Autre Inconnu", "Club Inconnu"]
+
+
+def test_download_retries_and_continues(tmp_path):
+    from p0.ingest.football_data import download
+    import requests
+
+    calls = {"n": 0}
+
+    def fetch(url):
+        calls["n"] += 1
+        if "0001_E0" in url or url.endswith("/0001/E0.csv"):
+            if calls["n"] <= 2:
+                r = requests.Response(); r.status_code = 503
+                raise requests.HTTPError("503", response=r)
+        if url.endswith("/0001/F1.csv"):
+            r = requests.Response(); r.status_code = 404
+            raise requests.HTTPError("404", response=r)
+        return b"Div,Date\nE0,01/01/01\n"
+
+    slept = []
+    paths, failures = download([2000], ["E0", "F1"], tmp_path, fetch=fetch, sleep=slept.append)
+    assert [p.name for p in paths] == ["0001_E0.csv"]
+    assert len(failures) == 1 and failures[0][0].endswith("/0001/F1.csv")
+    assert slept[:2] == [2, 4]  # deux reprises sur le 503, puis succès
+    # relance : le fichier présent est sauté, seul le manquant est retenté
+    paths2, failures2 = download([2000], ["E0", "F1"], tmp_path, fetch=fetch, sleep=slept.append)
+    assert paths2 == [] and len(failures2) == 1
