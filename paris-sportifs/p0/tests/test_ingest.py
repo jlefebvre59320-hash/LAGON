@@ -75,10 +75,25 @@ def test_download_retries_and_continues(tmp_path):
         return b"Div,Date\nE0,01/01/01\n"
 
     slept = []
-    paths, failures = download([2000], ["E0", "F1"], tmp_path, fetch=fetch, sleep=slept.append)
+    paths, failures = download([2000], ["E0", "F1"], tmp_path, fetch=fetch, sleep=slept.append, progress=None)
     assert [p.name for p in paths] == ["0001_E0.csv"]
     assert len(failures) == 1 and failures[0][0].endswith("/0001/F1.csv")
     assert slept[:2] == [2, 4]  # deux reprises sur le 503, puis succès
     # relance : le fichier présent est sauté, seul le manquant est retenté
-    paths2, failures2 = download([2000], ["E0", "F1"], tmp_path, fetch=fetch, sleep=slept.append)
+    paths2, failures2 = download([2000], ["E0", "F1"], tmp_path, fetch=fetch, sleep=slept.append, progress=None)
     assert paths2 == [] and len(failures2) == 1
+
+
+def test_download_stops_when_site_is_down(tmp_path):
+    import pytest
+    import requests
+    from p0.ingest.football_data import SiteUnavailable, download
+
+    def fetch(url):
+        r = requests.Response(); r.status_code = 503
+        raise requests.HTTPError("503", response=r)
+
+    lines = []
+    with pytest.raises(SiteUnavailable):
+        download([2000, 2001], ["E0", "SP1"], tmp_path, fetch=fetch, sleep=lambda s: None, progress=lines.append, retries=2)
+    assert any("reprise" in l for l in lines) and sum("échec" in l for l in lines) == 3

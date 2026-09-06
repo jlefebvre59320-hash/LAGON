@@ -161,14 +161,43 @@ def quality_flags(matches: pd.DataFrame, odds: pd.DataFrame) -> list[str]:
     return flags
 
 
+BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+              "Version/17.4 Safari/605.1.15")
+PLAIN_UA = "paris-sportifs-p0 (usage personnel)"
+
+
+class SiteUnavailable(RuntimeError):
+    """Plusieurs fichiers consécutifs en échec 5xx : le site ne répond pas, inutile de continuer."""
+
+
+def check(url: str | None = None) -> list[dict]:
+    """Diagnostic : interroge une URL avec deux User-Agent et rapporte statut, serveur, type et début du corps."""
+    import requests
+
+    url = url or url_for(2023, "E0")
+    out = []
+    for label, ua in (("UA simple", PLAIN_UA), ("UA navigateur", BROWSER_UA)):
+        try:
+            r = requests.get(url, timeout=30, headers={"User-Agent": ua})
+            body = r.content[:300].decode("utf-8", "replace").replace("\n", " ")
+            out.append({"ua": label, "status": r.status_code, "server": r.headers.get("Server"),
+                        "content_type": r.headers.get("Content-Type"), "retry_after": r.headers.get("Retry-After"),
+                        "bytes": len(r.content), "body_start": body})
+        except Exception as e:
+            out.append({"ua": label, "status": None, "error": f"{type(e).__name__}: {e}"})
+    return out
+
+
 def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None, retries: int = 5,
-             delay_s: float = 1.0, sleep=None, skip_existing: bool = True) -> tuple[list[Path], list[tuple[str, str]]]:
+             delay_s: float = 1.0, sleep=None, skip_existing: bool = True, progress=print,
+             max_consecutive_failures: int = 3, user_agent: str = BROWSER_UA) -> tuple[list[Path], list[tuple[str, str]]]:
     """Télécharge les CSV dans raw_dir/football-data/<date>/ et garde une empreinte.
 
     Tolérant : `retries` tentatives par fichier avec attente 2, 4, 8, 16 s sur erreur 5xx ou réseau ;
     `delay_s` entre deux fichiers ; un fichier déjà présent dans un snapshot antérieur est sauté
-    (`skip_existing`) ; un fichier en échec n'interrompt pas les autres. Retourne (fichiers écrits,
-    [(url, erreur)]). `fetch` et `sleep` sont injectables pour les tests.
+    (`skip_existing`) ; un fichier en échec n'interrompt pas les autres, sauf `max_consecutive_failures`
+    échecs 5xx/réseau d'affilée (SiteUnavailable). `progress` reçoit une ligne par événement.
+    Retourne (fichiers écrits, [(url, erreur)]). `fetch` et `sleep` sont injectables pour les tests.
     """
     import datetime as dt
     import time
@@ -176,9 +205,10 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
     import requests
 
     sleep = sleep or time.sleep
+    progress = progress or (lambda *_: None)
     if fetch is None:
         session = requests.Session()
-        session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; paris-sportifs-p0; usage personnel; contact via le depot)"})
+        session.headers.update({"User-Agent": user_agent})
 
         def fetch(url: str) -> bytes:
             r = session.get(url, timeout=60)
@@ -188,33 +218,46 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
     out_dir = base / dt.date.today().isoformat()
     out_dir.mkdir(parents=True, exist_ok=True)
     existing = {p.name for p in base.glob("*/*.csv")} if skip_existing else set()
+    jobs = [(y, d) for y in start_years for d in divs]
     paths, failures = [], []
-    for y in start_years:
-        for div in divs:
-            name = f"{season_code(y)}_{div}.csv"
-            if name in existing:
-                continue
-            url = url_for(y, div)
-            raw, err = None, None
-            for attempt in range(retries):
-                try:
-                    raw = fetch(url)
-                    break
-                except Exception as e:  # HTTPError, ConnectionError, Timeout
-                    err = e
-                    status = getattr(getattr(e, "response", None), "status_code", None)
-                    if status is not None and 400 <= status < 500 and status != 429:
-                        break  # 404 : le fichier n'existe pas pour cette saison, inutile d'insister
-                    if attempt < retries - 1:
-                        sleep(2 ** (attempt + 1))
-            if raw is None:
-                failures.append((url, str(err)))
-            else:
-                p = out_dir / name
-                p.write_bytes(raw)
-                (out_dir / f"{p.name}.sha256").write_text(hashlib.sha256(raw).hexdigest())
-                paths.append(p)
-            sleep(delay_s)
+    consecutive = 0
+    for i, (y, div) in enumerate(jobs, 1):
+        name = f"{season_code(y)}_{div}.csv"
+        if name in existing:
+            progress(f"[{i}/{len(jobs)}] {name} déjà présent, sauté")
+            continue
+        url = url_for(y, div)
+        raw, err, hard = None, None, False
+        for attempt in range(retries):
+            try:
+                raw = fetch(url)
+                break
+            except Exception as e:  # HTTPError, ConnectionError, Timeout
+                err = e
+                status = getattr(getattr(e, "response", None), "status_code", None)
+                if status is not None and 400 <= status < 500 and status != 429:
+                    hard = True
+                    break  # 404 : le fichier n'existe pas pour cette saison, inutile d'insister
+                if attempt < retries - 1:
+                    wait = 2 ** (attempt + 1)
+                    progress(f"[{i}/{len(jobs)}] {name} : {status or type(e).__name__}, reprise {attempt + 1}/{retries - 1} dans {wait} s")
+                    sleep(wait)
+        if raw is None:
+            failures.append((url, str(err)))
+            progress(f"[{i}/{len(jobs)}] {name} : échec ({str(err).splitlines()[0][:80]})")
+            if not hard:
+                consecutive += 1
+                if consecutive >= max_consecutive_failures:
+                    raise SiteUnavailable(f"{consecutive} fichiers consécutifs en échec : le site ne répond pas. "
+                                          "Lancer `p0 download --check` pour voir sa réponse, puis réessayer plus tard.")
+        else:
+            consecutive = 0
+            p = out_dir / name
+            p.write_bytes(raw)
+            (out_dir / f"{p.name}.sha256").write_text(hashlib.sha256(raw).hexdigest())
+            paths.append(p)
+            progress(f"[{i}/{len(jobs)}] {name} ok ({len(raw) // 1024} Ko)")
+        sleep(delay_s)
     return paths, failures
 
 

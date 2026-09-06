@@ -1,6 +1,7 @@
 """Ligne de commande P0.
 
-  p0 download --seasons 2014 2025 --divs E0 SP1 D1 I1 F1      télécharge les CSV Football-Data
+  p0 download --seasons 2014 2025 --divs E0 SP1 D1 I1 F1      télécharge les CSV Football-Data (progression affichée)
+  p0 download --check                                          diagnostic : réponse du site avec deux User-Agent
   p0 aliases [--mark-validated fichier.txt]                    liste les alias inconnus et non validés ; marque validés ceux relus
   p0 build [--accept-unvalidated]                              normalise, rapproche, contrôle, écrit data/processed/*.parquet
   p0 xg --seasons 2014 2025                                    récupère les xG Understat (cache, délai 6 s)
@@ -22,9 +23,17 @@ DATA = ROOT / "data"
 
 
 def cmd_download(a):
-    from p0.ingest.football_data import download
+    import sys
+    from p0.ingest.football_data import SiteUnavailable, check, download
+    if a.check:
+        for r in check():
+            print(r)
+        return
     years = list(range(a.seasons[0], a.seasons[1] + 1))
-    paths, failures = download(years, a.divs, DATA / "raw")
+    try:
+        paths, failures = download(years, a.divs, DATA / "raw", progress=lambda m: print(m, flush=True))
+    except SiteUnavailable as e:
+        sys.exit(f"ARRÊT : {e}")
     print(f"{len(paths)} fichiers téléchargés dans {DATA / 'raw' / 'football-data'} (les fichiers déjà présents sont sautés)")
     if failures:
         print(f"{len(failures)} fichier(s) en échec ; relancer la même commande plus tard, seuls les manquants seront retentés :")
@@ -164,7 +173,7 @@ def cmd_synthetic(a):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="p0", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
-    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.set_defaults(fn=cmd_download)
+    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.add_argument("--check", action="store_true", help="diagnostic : affiche la réponse du site pour un fichier, avec deux User-Agent"); d.set_defaults(fn=cmd_download)
     b = sub.add_parser("build"); b.add_argument("--accept-unvalidated", action="store_true"); b.set_defaults(fn=cmd_build)
     al = sub.add_parser("aliases"); al.add_argument("--mark-validated", default=None, help="fichier texte : un alias par ligne, relu à la main, à marquer validé"); al.set_defaults(fn=cmd_aliases)
     x = sub.add_parser("xg"); x.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); x.add_argument("--accept-unvalidated", action="store_true"); x.set_defaults(fn=cmd_xg)
