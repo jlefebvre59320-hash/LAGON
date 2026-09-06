@@ -153,11 +153,22 @@ def quality_flags(matches: pd.DataFrame, odds: pd.DataFrame) -> list[str]:
         dup = g.duplicated(["home", "away"]).sum()
         if dup:
             flags.append(f"{comp} {season} : {dup} doublon(s) domicile/extérieur")
-    inv = odds[odds["market"] == "1x2"].assign(inv=lambda d: 1 / d["price"])
-    s = inv.groupby(["match_id", "bookmaker", "is_closing"])["inv"].sum()
-    bad = s[(s < 1.0) | (s > 1.25)]
+    # Cotes 1N2 : un jeu complet a trois sélections ; la somme des inverses (1 + marge) doit être
+    # plausible. « Max » agrège le meilleur prix de chaque issue chez des bookmakers différents : sa somme
+    # peut passer sous 1 (marge négative apparente), on lui applique une borne basse de 0,90.
+    x = odds[odds["market"] == "1x2"].assign(inv=lambda d: 1 / d["price"])
+    g = x.groupby(["match_id", "bookmaker", "is_closing"])["inv"].agg(["sum", "size"]).reset_index()
+    incomplete = g[g["size"] != 3]
+    complete = g[g["size"] == 3]
+    is_max = complete["bookmaker"].isin(["Max", "BbMx"])
+    bad = complete[((~is_max) & ((complete["sum"] < 1.0) | (complete["sum"] > 1.25)))
+                   | (is_max & ((complete["sum"] < 0.90) | (complete["sum"] > 1.25)))]
+    if len(incomplete):
+        by = incomplete.groupby("bookmaker").size().sort_values(ascending=False).head(6).to_dict()
+        flags.append(f"{len(incomplete)} jeu(x) de cotes 1N2 incomplets (moins de 3 sélections), exclus des modèles ; par bookmaker : {by}")
     if len(bad):
-        flags.append(f"{len(bad)} jeu(x) de cotes 1N2 avec somme des inverses hors [1,00 ; 1,25]")
+        by = bad.groupby("bookmaker").size().sort_values(ascending=False).head(6).to_dict()
+        flags.append(f"{len(bad)} jeu(x) de cotes 1N2 complets avec somme des inverses implausible ; par bookmaker : {by}")
     return flags
 
 
