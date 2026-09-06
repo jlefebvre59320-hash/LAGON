@@ -72,7 +72,7 @@ def test_download_retries_and_continues(tmp_path):
         if url.endswith("/0001/F1.csv"):
             r = requests.Response(); r.status_code = 404
             raise requests.HTTPError("404", response=r)
-        return b"Div,Date\nE0,01/01/01\n"
+        return CSV
 
     slept = []
     paths, failures = download([2000], ["E0", "F1"], tmp_path, fetch=fetch, sleep=slept.append, progress=None)
@@ -116,7 +116,7 @@ def test_download_via_wayback_records_provenance(tmp_path):
 
     def fetch(url):
         seen.append(url)
-        return b"Div,Date\nE0,01/01/01\n"
+        return CSV
 
     paths, failures = download([2023], ["E0"], tmp_path, fetch=fetch, sleep=lambda s: None, progress=None, via_wayback=True)
     assert seen == [wayback_url("https://www.football-data.co.uk/mmz4281/2324/E0.csv")]
@@ -142,3 +142,26 @@ def test_club_data_normalise():
     assert m[m["competition"] == "FRA1"].iloc[0]["season"] == 2000
     assert set(o["bookmaker"]) == {"B365", "Max"} and (~o["is_closing"]).all()
     assert len(o[(o["market"] == "ou") & (o["bookmaker"] == "Max")]) == 2
+
+
+def test_invalid_raw_files_are_reported_not_fatal(tmp_path):
+    from engine.ingest.football_data import InvalidCsv, load_raw_dir, validate_raw, verify_raw_dir
+    import pytest
+    d = tmp_path / "football-data" / "2026-09-06"
+    d.mkdir(parents=True)
+    (d / "2324_E0.csv").write_bytes(CSV)
+    (d / "2324_SP1.csv").write_bytes(b"<!DOCTYPE html><html><body>Wayback Machine has not archived that URL.</body></html>")
+    (d / "2324_D1.csv").write_bytes(b"\xef\xbb\xbf" + CSV)  # BOM UTF-8 : doit passer
+    with pytest.raises(InvalidCsv):
+        validate_raw(b"<html></html>")
+    bad = verify_raw_dir(tmp_path)
+    assert [p.name for p, _ in bad] == ["2324_SP1.csv"] and "HTML" in bad[0][1]
+    lines = []
+    m, o = load_raw_dir(tmp_path, progress=lines.append)
+    assert set(m["competition"]) == {"ENG1", "GER1"} and len(lines) == 1 and "IGNORÉ" in lines[0]
+
+
+def test_download_rejects_html_body(tmp_path):
+    from engine.ingest.football_data import download
+    paths, failures = download([2023], ["E0"], tmp_path, fetch=lambda u: b"<html>not archived</html>", sleep=lambda s: None, progress=None)
+    assert paths == [] and len(failures) == 1 and "HTML" in failures[0][1]

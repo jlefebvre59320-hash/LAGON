@@ -46,7 +46,7 @@ def url_for(start_year: int, div: str) -> str:
 
 def read_csv_bytes(raw: bytes) -> pd.DataFrame:
     """Lit un CSV Football-Data en tolérant l'encodage et les lignes vides de fin."""
-    for enc in ("utf-8", "latin-1"):
+    for enc in ("utf-8-sig", "latin-1"):
         try:
             text = raw.decode(enc)
             break
@@ -175,6 +175,41 @@ def wayback_url(url: str) -> str:
     return WAYBACK_PREFIX + url
 
 
+class InvalidCsv(ValueError):
+    """Le fichier n'est pas un CSV Football-Data (page HTML, fichier vide, en-tête inattendu)."""
+
+
+REQUIRED_COLUMNS = ("Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG")
+
+
+def validate_raw(raw: bytes) -> pd.DataFrame:
+    """Lit et vérifie un CSV brut ; lève InvalidCsv avec une raison lisible sinon."""
+    head = raw[:300].lstrip().lower()
+    if not raw.strip():
+        raise InvalidCsv("fichier vide")
+    if head.startswith(b"<!doctype") or head.startswith(b"<html") or b"<html" in head:
+        raise InvalidCsv("page HTML au lieu d'un CSV (copie d'archive absente ou page d'erreur)")
+    try:
+        df = read_csv_bytes(raw)
+    except Exception as e:
+        raise InvalidCsv(f"CSV illisible : {e}") from e
+    missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
+    if missing:
+        raise InvalidCsv(f"colonnes manquantes {missing} ; colonnes lues : {list(df.columns)[:8]}")
+    return df
+
+
+def verify_raw_dir(raw_dir: Path) -> list[tuple[Path, str]]:
+    """Liste les fichiers bruts invalides avec la raison."""
+    bad = []
+    for p in sorted((raw_dir / "football-data").glob("*/*.csv")):
+        try:
+            validate_raw(p.read_bytes())
+        except InvalidCsv as e:
+            bad.append((p, str(e)))
+    return bad
+
+
 class SiteUnavailable(RuntimeError):
     """Plusieurs fichiers consécutifs en échec 5xx : le site ne répond pas, inutile de continuer."""
 
@@ -297,6 +332,11 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
                         wait = min(int(ra["Retry-After"]) + 30, 3600)
                     progress(f"[{i}/{len(jobs)}] {name} : {status or type(e).__name__}, reprise {attempt + 1}/{retries - 1} dans {wait} s")
                     sleep(wait)
+        if raw is not None:
+            try:
+                validate_raw(raw)
+            except InvalidCsv as e:
+                err, raw, hard = e, None, True
         if raw is None:
             failures.append((url, str(err)))
             progress(f"[{i}/{len(jobs)}] {name} : échec ({str(err).splitlines()[0][:80]})")
@@ -317,8 +357,9 @@ def download(start_years: list[int], divs: list[str], raw_dir: Path, fetch=None,
     return paths, failures
 
 
-def load_raw_dir(raw_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Charge tous les CSV bruts (dernier snapshot par fichier) et les normalise."""
+def load_raw_dir(raw_dir: Path, progress=print) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Charge tous les CSV bruts (dernier snapshot par fichier) et les normalise. Un fichier invalide est
+    signalé et ignoré ; le supprimer (`p0 download --verify --delete-bad`) permet de le retélécharger."""
     files: dict[str, Path] = {}
     for p in sorted((raw_dir / "football-data").glob("*/*.csv")):
         files[p.name] = p  # le tri par date fait gagner le plus récent
@@ -330,7 +371,13 @@ def load_raw_dir(raw_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
         yy = int(mobj.group(1))
         start_year = 2000 + yy if yy < 90 else 1900 + yy
         div = mobj.group(3)
-        m, o = normalise(read_csv_bytes(p.read_bytes()), start_year, div, snapshot=str(p.parent.name))
+        try:
+            df = validate_raw(p.read_bytes())
+        except InvalidCsv as e:
+            if progress:
+                progress(f"IGNORÉ {p.parent.name}/{name} : {e}")
+            continue
+        m, o = normalise(df, start_year, div, snapshot=str(p.parent.name))
         ms.append(m)
         os_.append(o)
     if not ms:

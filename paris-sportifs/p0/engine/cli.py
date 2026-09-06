@@ -2,6 +2,7 @@
 
   p0 download --seasons 2014 2025 --divs E0 SP1 D1 I1 F1      télécharge les CSV Football-Data (progression affichée)
   p0 download --check                                          diagnostic : réponse du site avec deux User-Agent
+  p0 download --verify [--delete-bad]                          vérifie (et supprime) les fichiers bruts invalides
   p0 download --seasons 2000 2025 --wait-minutes 360           attend le retour du site (Retry-After respecté) puis télécharge
   p0 download --seasons 2000 2024 --via-wayback                site en panne : copies de l'archive Internet, saisons terminées
   p0 import-club-data                                          secours : jeu dérivé de Football-Data (xgabora, MIT), sans cotes de clôture
@@ -31,6 +32,18 @@ def cmd_download(a):
     if a.check:
         for r in check():
             print(r)
+        return
+    if a.verify:
+        from engine.ingest.football_data import verify_raw_dir
+        bad = verify_raw_dir(DATA / "raw")
+        print(f"{len(bad)} fichier(s) brut(s) invalide(s)")
+        for p, why in bad:
+            print(f"  {p.parent.name}/{p.name} : {why}")
+            if a.delete_bad:
+                for q in (p, p.with_name(p.name + ".sha256"), p.with_name(p.name + ".source")):
+                    q.unlink(missing_ok=True)
+        if bad and a.delete_bad:
+            print("supprimés ; relancer p0 download (avec ou sans --via-wayback) pour les reprendre")
         return
     years = list(range(a.seasons[0], a.seasons[1] + 1))
     from engine.ingest.football_data import wait_until_available
@@ -200,7 +213,7 @@ def cmd_synthetic(a):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="p0", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
-    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.add_argument("--check", action="store_true", help="diagnostic : affiche la réponse du site pour un fichier, avec deux User-Agent"); d.add_argument("--wait-minutes", type=float, default=0, help="attendre le retour du site jusqu'à N minutes avant de télécharger"); d.add_argument("--via-wayback", action="store_true", help="site indisponible : lire les copies de l'archive Internet (saisons terminées uniquement)"); d.set_defaults(fn=cmd_download)
+    d = sub.add_parser("download"); d.add_argument("--seasons", nargs=2, type=int, default=[2014, 2025]); d.add_argument("--divs", nargs="+", default=["E0", "SP1", "D1", "I1", "F1"]); d.add_argument("--check", action="store_true", help="diagnostic : affiche la réponse du site pour un fichier, avec deux User-Agent"); d.add_argument("--wait-minutes", type=float, default=0, help="attendre le retour du site jusqu'à N minutes avant de télécharger"); d.add_argument("--via-wayback", action="store_true", help="site indisponible : lire les copies de l'archive Internet (saisons terminées uniquement)"); d.add_argument("--verify", action="store_true", help="vérifie les fichiers bruts déjà téléchargés"); d.add_argument("--delete-bad", action="store_true", help="avec --verify : supprime les fichiers invalides pour les retélécharger"); d.set_defaults(fn=cmd_download)
     b = sub.add_parser("build"); b.add_argument("--accept-unvalidated", action="store_true"); b.add_argument("--source", choices=["football-data", "club"], default="football-data"); b.set_defaults(fn=cmd_build)
     al = sub.add_parser("aliases"); al.add_argument("--mark-validated", default=None, help="fichier texte : un alias par ligne, relu à la main, à marquer validé"); al.add_argument("--source", choices=["football-data", "club"], default="football-data"); al.set_defaults(fn=cmd_aliases)
     ic = sub.add_parser("import-club-data"); ic.set_defaults(fn=cmd_import_club_data)
