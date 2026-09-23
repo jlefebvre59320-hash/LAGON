@@ -6,7 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, intentBadge, eur, priceSuffix, prixAbsent } from "@/lib/taxonomy";
 import type { Listing } from "@/lib/types";
 import { photoUrl } from "@/components/ListingCard";
-import { SiteHeader, Mark } from "@/components/Brand";
+import { SiteHeader } from "@/components/Brand";
+import ModuleIcon from "@/components/ModuleIcon";
 import FavoriteButton from "@/components/FavoriteButton";
 import { FavoritesProvider } from "@/lib/favorites";
 import { recordView } from "@/lib/analytics";
@@ -302,8 +303,12 @@ function Annonce({ initialListing }: { initialListing: Listing | null }) {
               )}
             </>
           ) : (
-            <div style={{ aspectRatio: "16 / 9", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Mark size={150} color={m.color} />
+            /* Pas de photo : l'univers, en grand, et le mot pour le dire.
+               L'île reste le logo du site, pas l'image d'une annonce. */
+            <div style={{ aspectRatio: "16 / 9", display: "flex", flexDirection: "column", alignItems: "center",
+              justifyContent: "center", gap: 10, color: m.dark, opacity: 0.75 }}>
+              <ModuleIcon module={l.module} size={72} color={m.color} strokeWidth={1.4} />
+              <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>Aucune photo</span>
             </div>
           )}
         </div>

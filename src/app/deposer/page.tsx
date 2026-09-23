@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
-import { SiteHeader, Mark } from "@/components/Brand";
+import { SiteHeader } from "@/components/Brand";
+import ModuleIcon from "@/components/ModuleIcon";
 import { compressImage, thumbKey } from "@/lib/images";
 import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS, MESSAGE_UNE_SEULE } from "@/lib/featured";
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
@@ -240,7 +241,12 @@ export default function Deposer() {
                   onClick={() => { setMod(key); setSub(null); setAttrs({}); setShowMore(false); setStep(1); }}
                   style={{ border: `1.5px solid ${mm.color}55`, background: mm.soft, borderRadius: 16, padding: "20px 16px",
                     cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 14, minHeight: 84 }}>
-                  <Mark size={54} color={mm.color} />
+                  {/* Le pictogramme de l'univers, dans un disque de sa
+                      couleur : on reconnaît la catégorie avant de lire. */}
+                  <span aria-hidden="true" style={{ width: 54, height: 54, flex: "0 0 auto", borderRadius: 16,
+                    background: `${mm.color}1a`, display: "grid", placeItems: "center" }}>
+                    <ModuleIcon module={key} size={30} color={mm.color} />
+                  </span>
                   <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 17, color: mm.dark }}>
                     {mm.label}
                   </span>
