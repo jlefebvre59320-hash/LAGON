@@ -45,9 +45,12 @@ export function useMessagesNonLus(): number {
       /* La réplication respecte la RLS : on ne reçoit que les insertions
          des conversations auxquelles on participe. Le décompte exact est
          redemandé à la base — le calculer ici obligerait à savoir si le
-         fil concerné est déjà ouvert à l'écran. */
+         fil concerné est déjà ouvert à l'écran.
+         Le nom du canal est unique par instance : le bandeau et le dock
+         mobile utilisent tous deux ce hook, et Supabase refuse un second
+         abonnement sur un canal déjà souscrit. */
       canal = supabase()
-        .channel("messages-non-lus")
+        .channel(`messages-non-lus-${Math.random().toString(36).slice(2, 9)}`)
         .on("postgres_changes",
           { event: "INSERT", schema: "public", table: "messages" },
           () => { void recompter(); })

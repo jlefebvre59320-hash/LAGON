@@ -15,6 +15,7 @@ import { SITES } from "@/lib/sites";
 import { estEnAvant, joursRestants, finDeMiseEnAvant, autreEnAvant, MESSAGE_UNE_SEULE } from "@/lib/featured";
 import { connexionUrl } from "@/lib/urls";
 import ProfilForm from "@/components/ProfilForm";
+import ModuleIcon from "@/components/ModuleIcon";
 import { lireRecents } from "@/lib/recents";
 import { mesAlertes, supprimerAlerte, decrireAlerte, type Alerte } from "@/lib/alertes";
 
@@ -332,7 +333,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
                           style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 10 }} />
                       ) : (
                         <div style={{ width: 76, height: 76, borderRadius: 10, background: m.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <Mark size={46} color={m.color} />
+                          <ModuleIcon module={l.module} size={34} color={m.color} />
                         </div>
                       )}
                     </Link>

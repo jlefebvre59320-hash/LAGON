@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SITES, siteFromPath, type SiteKey } from "@/lib/sites";
+import { useMessagesNonLus } from "@/components/MessagesBadge";
 
 type DockItem = {
   href: string;
@@ -66,10 +67,16 @@ const ITEMS: DockItem[] = [
   },
 ];
 
-const TOP_LEVEL = new Set(["/", "/food", "/guide", "/event"]);
+/* Les pages où le dock a sa place : l'accueil des sections, et l'espace
+   personnel. Pas la messagerie : son champ de saisie vit en bas de l'écran,
+   le dock le recouvrirait. */
+const TOP_LEVEL = new Set(["/", "/food", "/guide", "/event", "/mon-espace"]);
 
 export default function MobileDock() {
   const pathname = usePathname() ?? "/";
+  /* Le compteur de messages non lus suit la même source que la pastille du
+     bandeau : temps réel, et remis à jour au retour sur l'onglet. */
+  const nonLus = useMessagesNonLus();
   if (!TOP_LEVEL.has(pathname)) return null;
 
   const visibles = ITEMS.filter((i) => !i.site || SITES[i.site].ready);
@@ -80,23 +87,29 @@ export default function MobileDock() {
   return (
     <nav className="mobile-dock" data-site={siteFromPath(pathname)} aria-label="Navigation principale">
       <div className="mobile-dock-inner">
-        {visibles.slice(0, coupe).map((item) => <DockLink key={item.href} item={item} pathname={pathname} />)}
+        {visibles.slice(0, coupe).map((item) => <DockLink key={item.href} item={item} pathname={pathname} badge={item.href === "/messages" ? nonLus : 0} />)}
         <Link href="/deposer" className="mobile-dock-publish" aria-label="Déposer une annonce">
           <span aria-hidden="true">+</span>
           <small>Publier</small>
         </Link>
-        {visibles.slice(coupe).map((item) => <DockLink key={item.href} item={item} pathname={pathname} />)}
+        {visibles.slice(coupe).map((item) => <DockLink key={item.href} item={item} pathname={pathname} badge={item.href === "/messages" ? nonLus : 0} />)}
       </div>
     </nav>
   );
 }
 
-function DockLink({ item, pathname }: { item: DockItem; pathname: string }) {
+function DockLink({ item, pathname, badge }: { item: DockItem; pathname: string; badge: number }) {
   const active = item.paths.includes(pathname);
   return (
     <Link href={item.href} className={`mobile-dock-link${active ? " is-active" : ""}`}
-      aria-current={active ? "page" : undefined}>
-      {item.icon}
+      aria-current={active ? "page" : undefined}
+      aria-label={badge > 0 ? `${item.label}, ${badge} non lu${badge > 1 ? "s" : ""}` : undefined}>
+      <span className="mobile-dock-icone">
+        {item.icon}
+        {/* La pastille dit « il y a du nouveau », avec le nombre tant qu'il
+            tient : au-delà de neuf, « 9+ » suffit. */}
+        {badge > 0 && <span className="mobile-dock-pastille" aria-hidden="true">{badge > 9 ? "9+" : badge}</span>}
+      </span>
       <span>{item.label}</span>
     </Link>
   );
