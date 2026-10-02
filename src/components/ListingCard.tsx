@@ -5,6 +5,7 @@ import type { Listing } from "@/lib/types";
 import FavoriteButton from "@/components/FavoriteButton";
 import { thumbKey } from "@/lib/images";
 import { estEnAvant } from "@/lib/featured";
+import ModuleIcon from "@/components/ModuleIcon";
 
 const ago = (iso: string) => {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -78,12 +79,11 @@ export default function ListingCard({ l }: { l: Listing }) {
              Le logo de l'île à la place faisait passer un manque pour un
              visuel — et neuf cartes identiques dans une grille, c'est un
              mur. */
+          /* Pas de photo : le pictogramme de l'univers, en grand, et le mot
+             pour le dire. On reconnaît la rubrique avant de lire, et neuf
+             cartes sans photo ne font plus un mur de logos identiques. */
           <div className="sans-photo" style={{ color: m.dark, background: `linear-gradient(140deg, ${m.soft}, ${m.color}1f)` }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.5-2h5L16 7h2.5A1.5 1.5 0 0 1 20 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z" />
-              <circle cx="12" cy="13" r="3.2" />
-            </svg>
+            <ModuleIcon module={l.module} size={44} color={m.color} strokeWidth={1.5} />
             <span>Aucune photo</span>
           </div>
         )}

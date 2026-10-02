@@ -1742,3 +1742,19 @@ body::before {
 .une-piste .listing-featured .subcat-pill { top: 8px !important; }
 /* Le libellé « aucune photo » se tient dans le haut de la vignette : la pastille de sens occupe le bas. */
 .sans-photo { padding-bottom: 28px; }
+
+/* --- Dock mobile : la pastille des messages non lus ----------------------
+   Posée sur l'icône, pas sur le mot : c'est là que l'œil va. Même or sur
+   vert que la pastille du bandeau, pour qu'on comprenne que c'est la même
+   information. */
+.mobile-dock-icone { position: relative; display: inline-flex; }
+.mobile-dock-pastille {
+  position: absolute; top: -6px; right: -10px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 99px;
+  background: var(--gold); color: var(--green);
+  border: 2px solid var(--surface);
+  font-size: 10.5px; font-weight: 800; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
