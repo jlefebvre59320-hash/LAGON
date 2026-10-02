@@ -10,9 +10,10 @@ import { MODULES, type Intent, type ModuleKey } from "@/lib/taxonomy";
 import { SITES, type SiteKey } from "@/lib/sites";
 import Dashboard from "@/components/admin/Dashboard";
 import FileModeration from "@/components/admin/FileModeration";
+import TempsReel from "@/components/admin/TempsReel";
 import styles from "./admin.module.css";
 
-type View = "overview" | "moderation" | "content" | "users" | "analytics" | "activity";
+type View = "overview" | "live" | "moderation" | "content" | "users" | "analytics" | "activity";
 type Kind = "listing" | "restaurant" | "place" | "event";
 type Claim = { id:string; restaurant_id:string; kind:"claim"|"correction"|"removal"; message:string; contact:string; user_id:string|null; created_at:string; restaurant:{name:string}|null };
 type Report = { id:string; listing_id:string; reason:string; created_at:string; listing:{title:string;status:string}|null };
@@ -30,7 +31,7 @@ type Stats = {
 };
 
 const VIEWS: {key:View;label:string}[] = [
-  {key:"overview",label:"Vue d’ensemble"},{key:"moderation",label:"Modération"},{key:"content",label:"Contenus"},
+  {key:"overview",label:"Vue d’ensemble"},{key:"live",label:"Temps réel"},{key:"moderation",label:"Modération"},{key:"content",label:"Contenus"},
   {key:"users",label:"Comptes"},{key:"analytics",label:"Statistiques"},{key:"activity",label:"Historique"},
 ];
 const KIND:Record<Kind,string> = {listing:"Annonce",restaurant:"Restaurant",place:"Lieu",event:"Événement"};
@@ -118,6 +119,7 @@ export default function AdminPage() {
     <header className={styles.heading}><div><span>Ti Kanal</span><h1>Administration</h1><p>Les urgences et les outils de pilotage au même endroit.</p></div><Link href="/mon-espace">Mon espace →</Link></header>
     <nav className={styles.nav} aria-label="Sections de l’administration">{VIEWS.map(x=><button key={x.key} onClick={()=>setView(x.key)} className={view===x.key?styles.active:""} aria-current={view===x.key?"page":undefined}>{x.label}{x.key==="moderation"&&queue>0&&<b>{queue}</b>}</button>)}</nav>
     {error&&<p className={styles.error} role="alert">{error}</p>}
+    {view==="live"&&<TempsReel/>}
     {view==="overview"&&<Overview stats={stats} queue={[events.length,aVerifier,claims.length,feedback.length]} users={users} go={setView}/>}
     {/* La file reste montée quel que soit l'onglet : c'est elle qui donne le
         compteur de la navigation, et on ne la recharge pas à chaque passage. */}
@@ -133,7 +135,7 @@ export default function AdminPage() {
   </main></div>;
 }
 
-function Overview({stats,queue,users,go}:{stats:Stats;queue:number[];users:AdminUser[];go:(v:View)=>void}){const labels=["Événements","Signalements","Établissements","Retours"];return <div className={styles.stack}><Head title="À traiter" text={queue.reduce((a,b)=>a+b,0)?"Les actions qui demandent votre attention.":"Tout est à jour."}/><div className={styles.actions}>{queue.map((n,i)=><button key={labels[i]} onClick={()=>go("moderation")} className={n?styles.attention:styles.ok}><span>{labels[i]}</span><strong>{n}</strong><small>{n?"en attente":"À jour"}</small></button>)}</div><Section title="Activité du site"><Tiles data={[["Annonces en ligne",stats.listings_active,`${stats.listings_7d} nouvelles sur 7 j`],["Visiteurs sur 7 j",stats.visitors_7d,`${stats.visits_7d} pages vues`],["Comptes",stats.users_total,`${stats.users_30d} nouveaux sur 30 j`],["Administrateurs",users.filter(x=>x.is_admin).length,`${users.filter(x=>x.is_banned).length} compte(s) banni(s)`]]}/></Section><div className={styles.quick}>{[["Gérer les contenus","Publier ou masquer une fiche","content"],["Rechercher un compte","Rôles et bannissement","users"],["Voir les statistiques","Fréquentation par univers","analytics"]].map(x=><button key={x[0]} onClick={()=>go(x[2] as View)}><strong>{x[0]}</strong><span>{x[1]} →</span></button>)}</div></div>}
+function Overview({stats,queue,users,go}:{stats:Stats;queue:number[];users:AdminUser[];go:(v:View)=>void}){const labels=["Événements","Signalements","Établissements","Retours"];return <div className={styles.stack}><Head title="À traiter" text={queue.reduce((a,b)=>a+b,0)?"Les actions qui demandent votre attention.":"Tout est à jour."}/><div className={styles.actions}>{queue.map((n,i)=><button key={labels[i]} onClick={()=>go("moderation")} className={n?styles.attention:styles.ok}><span>{labels[i]}</span><strong>{n}</strong><small>{n?"en attente":"À jour"}</small></button>)}</div><Section title="Activité du site"><Tiles data={[["Annonces en ligne",stats.listings_active,`${stats.listings_7d} nouvelles sur 7 j`],["Visiteurs sur 7 j",stats.visitors_7d,`${stats.visits_7d} pages vues`],["Comptes",stats.users_total,`${stats.users_30d} nouveaux sur 30 j`],["Administrateurs",users.filter(x=>x.is_admin).length,`${users.filter(x=>x.is_banned).length} compte(s) banni(s)`]]}/></Section><div className={styles.quick}>{[["Gérer les contenus","Publier ou masquer une fiche","content"],["Rechercher un compte","Rôles et bannissement","users"],["Temps réel","Qui est sur le site, maintenant","live"],["Voir les statistiques","Fréquentation par univers","analytics"]].map(x=><button key={x[0]} onClick={()=>go(x[2] as View)}><strong>{x[0]}</strong><span>{x[1]} →</span></button>)}</div></div>}
 
 function Moderation({events,reports,claims,feedback,busy,setEvent,setReport,setClaim,setFeedback}:{events:PendingEvent[];reports:Report[];claims:Claim[];feedback:Feedback[];busy:string|null;setEvent:(x:PendingEvent,s:"approved"|"rejected")=>void;setReport:(x:Report,r:boolean)=>void;setClaim:(x:Claim,a:"grant"|"hide"|"done")=>void;setFeedback:(x:Feedback)=>void}){if(!events.length&&!reports.length&&!claims.length&&!feedback.length)return null;return <div className={styles.stack} style={{marginTop:28}}>
   {!!events.length&&<Section title={`Événements à valider (${events.length})`} text="Rien ne paraît sans votre accord.">{events.map(x=><Card key={x.id} badge={x.category} title={x.title} meta={`${new Date(x.starts_at).toLocaleString("fr-FR",{timeZone:"America/St_Barthelemy",dateStyle:"medium",timeStyle:"short"})}${x.venue?` · ${x.venue}`:""}`} body={x.description} extra={<>Par <strong>{x.organizer}</strong> · {x.contact}{safeExternalUrl(x.link)&&<> · <a href={safeExternalUrl(x.link)!} target="_blank" rel="noopener noreferrer">lien ↗</a></>}</>} actions={<><button className="btn" disabled={busy===x.id} onClick={()=>setEvent(x,"approved")}>Publier</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>confirm("Refuser cet événement ?")&&setEvent(x,"rejected")}>Refuser</button></>}/>)}</Section>}
