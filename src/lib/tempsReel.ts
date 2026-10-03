@@ -24,10 +24,14 @@ export type TempsReel = {
   pages_top: { path: string; titre: string | null; n: number; visiteurs: number }[];
   flux: { t: string; path: string; titre: string | null; device: string | null; source: string | null; cle: string }[];
   comptes: {
-    total: number; connectes_30min: number; connectes_24h: number;
+    total: number; connectes_30min: number; connectes_2h?: number; connectes_24h: number;
     connexions_jour: number; nouveaux_jour: number; nouveaux_7j: number;
     dernieres: { id: string; nom: string; email: string | null; quand: string; inscrit: string; nouveau: boolean }[];
   };
+  /* 0038 : la journée heure par heure, et son pic. */
+  pic_jour?: number;
+  heure_pic?: string | null;
+  par_heure_jour?: { h: string; n: number; v: number }[];
   activite_jour: {
     annonces: number; annonces_60min: number; messages: number; messages_60min: number;
     conversations: number; signalements: number; alertes: number; favoris: number;

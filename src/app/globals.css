@@ -1821,3 +1821,9 @@ body::before {
   .tr-flux-ligne { grid-template-columns: 56px auto minmax(0, 1fr); }
   .tr-flux-meta { display: none; }
 }
+.tr-heures { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding-top: 6px; }
+.tr-heure { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
+.tr-heure-barre { position: relative; width: 100%; max-width: 26px; border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--green) 35%, var(--cream-dark)); overflow: hidden; }
+.tr-heure-barre i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--green); display: block; }
+.tr-heure small { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; }
+@media (max-width: 560px) { .tr-heure:nth-child(odd) small { visibility: hidden; } }

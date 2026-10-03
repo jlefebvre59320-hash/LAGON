@@ -13,6 +13,7 @@ import {
   type Conversation, type Message,
 } from "@/lib/messages";
 import NoterPanel from "@/components/NoterPanel";
+import { tableau } from "@/lib/tableau";
 import AvertissementPaiement from "@/components/AvertissementPaiement";
 
 export default function MessagesClient() {
@@ -38,7 +39,7 @@ export default function MessagesClient() {
       setErreur(messageErreur(error, "Vos messages n’ont pas pu être chargés."));
       return;
     }
-    setConvs((data as Conversation[]) ?? []);
+    setConvs(tableau<Conversation>(data));
   }, []);
 
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function MessagesClient() {
         .order("created_at");
       if (annule) return;
       if (error) { setErreur(messageErreur(error, "Ce fil n’a pas pu être ouvert.")); return; }
-      setFil((data as Message[]) ?? []);
+      setFil(tableau<Message>(data));
       await supabase().rpc("marquer_conversation_lue", { p_conversation_id: actif });
       if (!annule) chargerConversations();
     })();
@@ -96,7 +97,7 @@ export default function MessagesClient() {
     // et un message affiché qui n'existe pas en base est pire qu'une demi-seconde.
     const { data } = await supabase()
       .from("messages").select("*").eq("conversation_id", actif).order("created_at");
-    setFil((data as Message[]) ?? []);
+    setFil(tableau<Message>(data));
     chargerConversations();
   }
 

@@ -52,8 +52,11 @@ export async function creerAlerte(c: CriteresAlerte): Promise<{ error: string | 
   return { error: error ? error.message : null };
 }
 
-export async function mesAlertes(): Promise<Alerte[]> {
-  const { data } = await supabase().from("search_alerts").select("*").order("created_at", { ascending: false });
+/* null quand la table n'existe pas encore (migration 0034 absente) : l'onglet
+   « Mes alertes » ne s'affiche alors pas, plutôt qu'un onglet vide. */
+export async function mesAlertes(): Promise<Alerte[] | null> {
+  const { data, error } = await supabase().from("search_alerts").select("*").order("created_at", { ascending: false });
+  if (error) return null;
   return Array.isArray(data) ? (data as Alerte[]) : [];
 }
 

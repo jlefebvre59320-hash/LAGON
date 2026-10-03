@@ -25,7 +25,7 @@ PSQL="$BIN/psql -h $DIR -p $PORT -U postgres -q -v ON_ERROR_STOP=1"
 
 $PSQL -c "create database t" >/dev/null
 $PSQL -d t -f "$ICI/stub.sql" >/dev/null
-for f in "$MIG"/0032_*.sql "$MIG"/0033_*.sql "$MIG"/0034_*.sql "$MIG"/0035_*.sql "$MIG"/0036_*.sql "$MIG"/0037_*.sql; do
+for f in "$MIG"/0032_*.sql "$MIG"/0033_*.sql "$MIG"/0034_*.sql "$MIG"/0035_*.sql "$MIG"/0036_*.sql "$MIG"/0037_*.sql "$MIG"/0038_*.sql; do
   echo "→ $(basename "$f")"
   $PSQL -d t -f "$f" 2>&1 | grep -v "NOTICE:" || true
 done

@@ -204,4 +204,18 @@ do $$ begin
     if sqlerrm <> 'Réservé aux administrateurs.' then raise; end if;
   end;
 end $$;
+
+-- ---------- Statistiques : ne compter que ce qui se voit (0038) ----------
+set app.uid = '11111111-1111-1111-1111-111111111111';
+do $$
+declare st jsonb := public.site_stats(); db jsonb := public.admin_dashboard(7); tr jsonb := public.admin_temps_reel();
+begin
+  -- Trois annonces actives, dont une retenue : deux « en ligne ».
+  assert (st->>'listings_active')::int = 2, 'site_stats : la retenue ne compte pas';
+  assert (st->'by_module'->>'goods')::int = 2 and st->'by_module'->>'service' is null, 'by_module sans la retenue';
+  assert (db->'kpi'->'annonces_actives'->>'actuel')::int = 2, 'admin_dashboard : annonces actives visibles';
+  assert jsonb_array_length(tr->'par_heure_jour') >= 1, 'temps réel : la journée heure par heure';
+  assert (tr->'comptes'->>'connectes_2h')::int = 1, 'temps réel : connexions sur 2 h';
+end $$;
+
 \echo Toutes les règles passent.

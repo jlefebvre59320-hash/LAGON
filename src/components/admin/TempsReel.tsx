@@ -113,9 +113,9 @@ export default function TempsReel() {
         <Kpi titre="Visiteurs maintenant" valeur={m.visiteurs_5min} note="actifs ces 5 dernières minutes" fort />
         <Kpi titre="Pages vues · 5 min" valeur={m.pages_5min} note={`${entier(m.pages_60min)} sur l’heure`} />
         <Kpi titre="Visiteurs · 1 h" valeur={m.visiteurs_60min} note={`${entier(m.visiteurs_jour)} aujourd’hui`} />
-        <Kpi titre="Comptes connectés" valeur={c.connectes_30min} note={`${entier(c.connectes_24h)} sur 24 h · ${entier(c.total)} au total`} />
-        <Kpi titre="Connexions aujourd’hui" valeur={c.connexions_jour} note={`${entier(c.nouveaux_jour)} nouveau${c.nouveaux_jour > 1 ? "x" : ""} compte${c.nouveaux_jour > 1 ? "s" : ""}`} />
-        <Kpi titre="Pages vues aujourd’hui" valeur={m.pages_jour} note={`${entier(sj.nb)} session${sj.nb > 1 ? "s" : ""}`} />
+        <Kpi titre="Connexions · 30 min" valeur={c.connectes_30min} note={`${entier(c.connectes_2h ?? c.connectes_24h)} sur ${c.connectes_2h != null ? "2 h" : "24 h"} · ${entier(c.total)} comptes`} />
+        <Kpi titre="Connexions aujourd’hui" valeur={c.connexions_jour} note={`${entier(c.nouveaux_jour)} nouveau${c.nouveaux_jour > 1 ? "x" : ""} compte${c.nouveaux_jour > 1 ? "s" : ""} · ${entier(c.connectes_24h)} sur 24 h`} />
+        <Kpi titre="Pages vues aujourd’hui" valeur={m.pages_jour} note={d.pic_jour ? `pic ${entier(d.pic_jour)} à ${d.heure_pic ?? "?"} · ${entier(sj.nb)} session${sj.nb > 1 ? "s" : ""}` : `${entier(sj.nb)} session${sj.nb > 1 ? "s" : ""}`} />
       </div>
 
       {/* Soixante minutes, une barre par minute. */}
@@ -124,12 +124,33 @@ export default function TempsReel() {
         <p className="dash-note">L’heure écoulée. Pic : {entier(maxMinute)} vue{maxMinute > 1 ? "s" : ""} en une minute.</p>
         <div className="tr-minutes" role="img" aria-label={`Pages vues par minute sur l’heure écoulée, pic de ${maxMinute}`}>
           {parMinute.map((n, i) => (
-            <span key={i} className="tr-minute" title={`${d.par_minute[i] ? heure(d.par_minute[i].t).slice(0, 5) : ""} · ${n} vue${n > 1 ? "s" : ""}`}
+            <span key={i} className="tr-minute" title={`${d.par_minute?.[i] ? heure(d.par_minute[i].t).slice(0, 5) : ""} · ${n} vue${n > 1 ? "s" : ""}`}
               style={{ height: `${Math.max(n > 0 ? 6 : 2, (n / maxMinute) * 100)}%`, opacity: i === parMinute.length - 1 ? 1 : 0.55 + 0.45 * (i / parMinute.length) }} />
           ))}
         </div>
         <div className="tr-minutes-axe"><span>il y a 60 min</span><span>il y a 30 min</span><span>maintenant</span></div>
       </div>
+
+      {/* La journée, heure par heure : pages vues et visiteurs distincts. */}
+      {(d.par_heure_jour?.length ?? 0) > 0 && (
+        <div className="dash-carte">
+          <h3>La journée, heure par heure</h3>
+          <p className="dash-note">Depuis minuit, heure de l’île. Barre pleine : pages vues ; trait : visiteurs distincts.</p>
+          <div className="tr-heures">
+            {d.par_heure_jour!.map((h) => {
+              const maxH = Math.max(1, ...d.par_heure_jour!.map((x) => x.n));
+              return (
+                <div key={h.h} className="tr-heure" title={`${h.h} · ${h.n} vue${h.n > 1 ? "s" : ""} · ${h.v} visiteur${h.v > 1 ? "s" : ""}`}>
+                  <span className="tr-heure-barre" style={{ height: `${Math.max(h.n > 0 ? 4 : 1, (h.n / maxH) * 100)}%` }}>
+                    <i style={{ height: `${h.n > 0 ? (h.v / h.n) * 100 : 0}%` }} />
+                  </span>
+                  <small>{h.h}</small>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="dash-grille">
         {/* Qui est là, session par session. */}
