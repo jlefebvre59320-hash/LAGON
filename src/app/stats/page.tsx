@@ -12,6 +12,7 @@ import Dashboard from "@/components/admin/Dashboard";
 import FileModeration from "@/components/admin/FileModeration";
 import TempsReel from "@/components/admin/TempsReel";
 import styles from "./admin.module.css";
+import { tableau } from "@/lib/tableau";
 
 type View = "overview" | "live" | "moderation" | "content" | "users" | "analytics" | "activity";
 type Kind = "listing" | "restaurant" | "place" | "event";
@@ -80,15 +81,15 @@ export default function AdminPage() {
     ]);
     const failed=[c,r,f,u,e,l,rest,p,allE].find(x=>x.error)?.error;
     if(failed)setError(`Certaines données n’ont pas pu être chargées : ${failed.message}`);
-    setClaims((c.data as Claim[])??[]); setReports((r.data as unknown as Report[])??[]); setFeedbackItems((f.data as Feedback[])??[]);
-    setUsers((u.data as AdminUser[])??[]); setEvents((e.data as PendingEvent[])??[]);
+    setClaims(tableau<Claim>(c.data)); setReports(tableau<Report>(r.data)); setFeedbackItems(tableau<Feedback>(f.data));
+    setUsers(tableau<AdminUser>(u.data)); setEvents(tableau<PendingEvent>(e.data));
     const items:Content[]=[];
     for(const x of (l.data??[]) as {id:string;title:string;status:string;module:ModuleKey;created_at:string;review_state?:string|null}[]) items.push({id:x.id,kind:"listing",title:x.title,detail:MODULES[x.module]?.label??x.module,status:x.status,date:x.created_at,href:`/annonce/${x.id}`,review:x.review_state??null});
     for(const x of (rest.data??[]) as {id:string;name:string;status:string;cuisine:string;quartier:string;created_at:string}[]) items.push({id:x.id,kind:"restaurant",title:x.name,detail:[x.cuisine,x.quartier].filter(Boolean).join(" · "),status:x.status,date:x.created_at,href:`/food/resto/${x.id}`});
     for(const x of (p.data??[]) as {id:string;name:string;status:string;category:string;quartier:string;created_at:string}[]) items.push({id:x.id,kind:"place",title:x.name,detail:[x.category.replaceAll("_"," "),x.quartier].filter(Boolean).join(" · "),status:x.status,date:x.created_at,href:`/guide/lieu/${x.id}`});
     for(const x of (allE.data??[]) as {id:string;title:string;status:string;category:string;quartier:string;starts_at:string}[]) items.push({id:x.id,kind:"event",title:x.title,detail:[x.category,x.quartier].filter(Boolean).join(" · "),status:x.status,date:x.starts_at,href:"/event"});
     setContent(items.sort((x,y)=>(y.date??"").localeCompare(x.date??"")));
-    setAuditReady(!a.error); setAudit((a.data as Audit[])??[]);
+    setAuditReady(!a.error); setAudit(tableau<Audit>(a.data));
   };
 
   useEffect(()=>{(async()=>{

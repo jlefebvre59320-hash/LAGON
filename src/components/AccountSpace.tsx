@@ -16,6 +16,7 @@ import { estEnAvant, joursRestants, finDeMiseEnAvant, autreEnAvant, MESSAGE_UNE_
 import { connexionUrl } from "@/lib/urls";
 import ProfilForm from "@/components/ProfilForm";
 import ModuleIcon from "@/components/ModuleIcon";
+import { tableau } from "@/lib/tableau";
 import { lireRecents } from "@/lib/recents";
 import { mesAlertes, supprimerAlerte, decrireAlerte, type Alerte } from "@/lib/alertes";
 
@@ -83,7 +84,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
       // les montre quel que soit le site où on se connecte.
       const { data: owned } = await supabase()
         .from("restaurants").select("*").eq("owner_id", data.session.user.id).order("name");
-      setRestos((owned as Restaurant[]) ?? []);
+      setRestos(tableau<Restaurant>(owned));
       // Favoris restaurants : liste séparée des favoris d'annonces.
       const { data: rf } = await supabase()
         .from("restaurant_favorites").select("restaurant_id").eq("user_id", data.session.user.id);
@@ -91,7 +92,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
       if (rfIds.length > 0) {
         const { data: rfRestos } = await supabase()
           .from("restaurants").select("*").in("id", rfIds).order("name");
-        setRestoFavs((rfRestos as Restaurant[]) ?? []);
+        setRestoFavs(tableau<Restaurant>(rfRestos));
       }
       /* Le compteur est optionnel : tant que la migration 0025 n'est pas
          passée, la fonction n'existe pas et la pastille reste simplement
@@ -108,7 +109,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
       if (ids.length > 0) {
         const { data: vues } = await supabase()
           .from("listings").select("*, photos:listing_photos(storage_key, position)").in("id", ids);
-        const parId = new Map(((vues as Listing[]) ?? []).map((l) => [l.id, l]));
+        const parId = new Map(tableau<Listing>(vues).map((l) => [l.id, l]));
         setRecents(ids.map((id) => parId.get(id)).filter((l): l is Listing => !!l && l.user_id !== data.session!.user.id));
       }
     })();
@@ -130,9 +131,9 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
         .order("created_at", { ascending: false }),
       sb.rpc("my_listings_stats"),
     ]);
-    setMine((listings as Listing[]) ?? []);
+    setMine(tableau<Listing>(listings));
     const map: Record<string, Stats> = {};
-    for (const r of (rows as Stats[]) ?? []) map[r.listing_id] = r;
+    for (const r of tableau<Stats>(rows)) map[r.listing_id] = r;
     setStats(map);
     setLoading(false);
   }, [userId]);
@@ -152,7 +153,7 @@ function MonEspace({ site, defaultTab }: { site: "tikanal" | "food"; defaultTab:
         .select("*, photos:listing_photos(storage_key, position)")
         .in("id", list)
         .order("created_at", { ascending: false });
-      if (alive) setFavorites((data as Listing[]) ?? []);
+      if (alive) setFavorites(tableau<Listing>(data));
     })();
     return () => { alive = false; };
   }, [favIds, favReady, favUserId]);

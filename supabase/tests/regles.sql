@@ -179,19 +179,17 @@ update auth.users set last_sign_in_at = now() - interval '2 minutes' where id = 
 insert into public.page_views (path, listing_id, viewer_key, device, source, created_at) values
   ('/', null, 'visiteur-A-0123456789', 'mobile', 'direct', now() - interval '4 minutes'),
   ('/annonce/aaaaaaaa-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000002', 'visiteur-A-0123456789', 'mobile', 'direct', now() - interval '1 minute'),
-  ('/', null, 'visiteur-B-0123456789', 'ordinateur', 'google', now() - interval '3 hours'),
+  ('/', null, 'visiteur-B-0123456789', 'ordinateur', 'google', now() - interval '30 hours'),
   ('/', null, 'visiteur-B-0123456789', 'ordinateur', 'google', now() - interval '50 minutes');
 do $$
 declare t jsonb := public.admin_temps_reel();
 begin
-  assert (t->'maintenant'->>'visiteurs_5min')::int = 1, 'un visiteur actif';
+  assert (t->'essentiel'->>'visiteurs_5min')::int = 1, 'un visiteur actif';
   assert jsonb_array_length(t->'sessions_actives') = 1, 'une session active';
   assert (t->'sessions_actives'->0->>'pages')::int = 2 and (t->'sessions_actives'->0->>'duree_s')::int between 170 and 190, 'session : 2 pages, ~3 min';
   assert t->'sessions_actives'->0->>'titre' = 'Bitte d''amarrage inox', 'la page courante porte le titre de l''annonce';
-  assert (t->'sessions_jour'->>'nb')::int >= 2, 'B a deux sessions (écart de deux heures) + A';
-  assert jsonb_array_length(t->'par_minute') = 60, 'soixante minutes';
-  assert (t->'comptes'->>'connectes_30min')::int = 1, 'un compte connecté';
-  assert (t->'appareils_60min'->>'mobile')::int = 2, 'deux vues mobile sur l''heure';
+  assert (t->'h24'->>'sessions')::int >= 2, 'B a deux sessions (écart de deux heures) + A';
+  assert (t->'appareils_24h'->>'mobile')::int = 2, 'deux vues mobile sur 24 h';
   assert jsonb_array_length(t->'flux') = 4, 'quatre vues dans le flux';
   assert (t->'flux'->0->>'cle') <> 'visiteur-A-0123456789', 'la clé du flux est anonymisée';
 end $$;
@@ -204,4 +202,25 @@ do $$ begin
     if sqlerrm <> 'Réservé aux administrateurs.' then raise; end if;
   end;
 end $$;
+
+-- ---------- Statistiques : ce qui se voit, sans les administrateurs (0038) ----------
+set app.uid = '11111111-1111-1111-1111-111111111111';
+-- Un administrateur qui navigue n'est pas compté.
+select public.record_page_view('/', null, 'admin-navigue-0123456789', 'ordinateur', 'direct');
+do $$
+declare st jsonb := public.site_stats(); db jsonb := public.admin_dashboard(7); tr jsonb := public.admin_temps_reel();
+begin
+  assert not exists (select 1 from public.page_views where viewer_key = 'admin-navigue-0123456789'), 'la vue d''un admin n''est pas enregistrée';
+  assert (st->>'listings_active')::int = 2, 'site_stats : la retenue ne compte pas';
+  assert (st->'by_module'->>'goods')::int = 2 and st->'by_module'->>'service' is null, 'by_module sans la retenue';
+  assert (st->>'users_total')::int = 2, 'site_stats : les comptes hors admin';
+  assert (db->'kpi'->'annonces_actives'->>'actuel')::int = 2, 'admin_dashboard : annonces actives visibles';
+  assert (tr->'essentiel'->>'visiteurs_24h')::int = 2, 'temps réel : deux visiteurs uniques sur 24 h';
+  assert (tr->'essentiel'->>'comptes_crees_24h')::int = 0, 'temps réel : comptes créés hors admin (Paul et Marie ont 30 jours)';
+  assert (tr->'essentiel'->>'reconnexions_24h')::int = 1, 'temps réel : Marie s''est reconnectée';
+  assert (tr->'h24'->>'comptes_total')::int = 2, 'temps réel : total hors admin';
+  assert jsonb_array_length(tr->'par_heure') = 24, 'temps réel : 24 heures';
+  assert (tr->'h24'->>'visiteurs_revenus')::int = 1, 'temps réel : B est revenu (vu il y a 3 h et il y a 50 min)';
+end $$;
+
 \echo Toutes les règles passent.

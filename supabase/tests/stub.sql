@@ -66,3 +66,9 @@ create table public.page_views (
   viewer_key text, device text, source text, created_at timestamptz not null default now()
 );
 create table public.favorites (user_id uuid, listing_id uuid, created_at timestamptz default now());
+-- site_stats et admin_dashboard (0038) lisent aussi ces tables.
+create table public.feedback (id uuid primary key default gen_random_uuid(), handled boolean default false, created_at timestamptz default now());
+create table public.restaurant_claims (id uuid primary key default gen_random_uuid(), handled boolean default false, created_at timestamptz default now());
+create table public.events (id uuid primary key default gen_random_uuid(), title text, status text, starts_at timestamptz, ends_at timestamptz);
+create table public.places (id uuid primary key default gen_random_uuid(), name text, status text);
+create table public.restaurants (id uuid primary key default gen_random_uuid(), name text, status text);
