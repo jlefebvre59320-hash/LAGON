@@ -1827,3 +1827,23 @@ body::before {
 .tr-heure-barre i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--green); display: block; }
 .tr-heure small { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; }
 @media (max-width: 560px) { .tr-heure:nth-child(odd) small { visibility: hidden; } }
+/* Temps réel, version lisible : quatre grands chiffres, une ligne de petits, le reste replié. */
+.tr-essentiel { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.tr-essentiel .dash-kpi-valeur { font-size: 36px; }
+.tr-essentiel .dash-kpi-delta { white-space: normal; line-height: 1.35; }
+.tr-ligne { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.tr-details { border: 1px dashed var(--border-input); border-radius: 14px; padding: 10px 14px; }
+.tr-details summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--gold-deep); list-style: none; }
+.tr-details summary::before { content: "▸ "; }
+.tr-details[open] summary::before { content: "▾ "; }
+/* L'en-tête du tableau de bord passe à la ligne sur un écran étroit : titre
+   long et bouton ne doivent jamais pousser la page hors de l'écran. */
+.dash-tete { flex-wrap: wrap; }
+.dash-tete > div { min-width: 0; }
+.dash-tete .dash-sous { white-space: normal; }
+/* Une grille ne doit jamais prendre la largeur minimale de son contenu le
+   plus large : les cartes se plient à l'écran, pas l'inverse. */
+.dash, .dash > *, .dash-carte, .tr-heures, .tr-heure { min-width: 0; }
+.tr-heures { overflow: hidden; }
+.tr-heure { overflow: hidden; }
+.tr-heure small { max-width: 100%; overflow: hidden; }

@@ -1,42 +1,32 @@
 /* Le temps réel de l'administration : la forme de ce que rend
-   admin_temps_reel() (migration 0037), et quelques aides d'affichage. */
+   admin_temps_reel() (migration 0038), et quelques aides d'affichage.
+   Les administrateurs ne figurent dans aucun de ces chiffres. */
 
 export type TempsReel = {
   a: string;
-  maintenant: {
-    visiteurs_5min: number; pages_5min: number;
-    visiteurs_60min: number; pages_60min: number;
-    visiteurs_jour: number; pages_jour: number;
+  essentiel: {
+    visiteurs_5min: number;
+    visiteurs_24h: number;
+    comptes_crees_24h: number;
+    reconnexions_24h: number;
   };
-  par_minute: { t: string; n: number }[];
+  h24: {
+    pages: number; visiteurs_revenus: number; connexions: number;
+    sessions: number; duree_moyenne_s: number; pages_par_session: number;
+    annonces: number; messages: number; comptes_total: number;
+    visiteurs_7j: number; comptes_crees_7j: number;
+  };
+  par_heure: { t: string; h: string; n: number; v: number }[];
   sessions_actives: {
     cle: string; debut: string; fin: string; duree_s: number; pages: number;
     device: string | null; source: string | null; derniere: string; titre: string | null;
   }[];
-  sessions_jour: {
-    nb: number; duree_moyenne_s: number; duree_mediane_s: number; duree_max_s: number;
-    pages_moyennes: number; rebond_pct: number; visiteurs_revenus: number;
-  };
-  appareils_60min: Record<string, number>;
-  sources_60min: Record<string, number>;
-  appareils_jour: Record<string, number>;
-  sources_jour: Record<string, number>;
+  appareils_24h: Record<string, number>;
+  sources_24h: Record<string, number>;
   pages_top: { path: string; titre: string | null; n: number; visiteurs: number }[];
   flux: { t: string; path: string; titre: string | null; device: string | null; source: string | null; cle: string }[];
-  comptes: {
-    total: number; connectes_30min: number; connectes_2h?: number; connectes_24h: number;
-    connexions_jour: number; nouveaux_jour: number; nouveaux_7j: number;
-    dernieres: { id: string; nom: string; email: string | null; quand: string; inscrit: string; nouveau: boolean }[];
-  };
-  /* 0038 : la journée heure par heure, et son pic. */
-  pic_jour?: number;
-  heure_pic?: string | null;
-  par_heure_jour?: { h: string; n: number; v: number }[];
-  activite_jour: {
-    annonces: number; annonces_60min: number; messages: number; messages_60min: number;
-    conversations: number; signalements: number; alertes: number; favoris: number;
-    en_attente: number; en_ligne: number;
-  };
+  dernieres_connexions: { id: string; nom: string; email: string | null; quand: string; nouveau: boolean }[];
+  moderation: { en_attente: number; signalements_24h: number; en_ligne: number };
 };
 
 /* « 2 min 05 », « 48 s », « 1 h 12 » : une durée qu'on lit d'un coup. */

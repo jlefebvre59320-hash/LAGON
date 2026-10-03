@@ -1,5 +1,5 @@
 -- ============================================================
--- 0038 — Statistiques justes : ne compter que ce qui se voit.
+-- 0038 — Statistiques justes : ce qui se voit, sans les administrateurs.
 --
 -- Depuis la modération (0032), une annonce « active » peut être en attente
 -- ou retenue, donc invisible du public. Les statistiques de
@@ -7,8 +7,13 @@
 -- annonces comme « en ligne ». Les deux fonctions sont reprises à
 -- l'identique, à cette condition près : publiée ou surveillée.
 --
--- Le temps réel gagne la courbe du jour heure par heure, le pic du jour,
--- et les connexions sur deux heures ; une colonne inutilisée disparaît.
+-- Les administrateurs sortent de toutes les statistiques : leurs comptes
+-- ne sont plus comptés, et leurs pages vues ne sont plus enregistrées
+-- (record_page_view se tait quand l'appelant est administrateur).
+--
+-- Le temps réel est refait autour de quatre chiffres : visiteurs
+-- maintenant, visiteurs uniques sur 24 h, comptes créés sur 24 h,
+-- reconnexions sur 24 h — le reste passe en détails repliés.
 -- ============================================================
 
 create or replace function public.site_stats()
@@ -38,9 +43,9 @@ begin
     'listings_today',   (select count(*) from listings where created_at >= jour0),
     'listings_7d',      (select count(*) from listings where created_at > now() - interval '7 days'),
     'listings_30d',     (select count(*) from listings where created_at > now() - interval '30 days'),
-    'users_total',      (select count(*) from profiles),
-    'users_today',      (select count(*) from profiles where created_at >= jour0),
-    'users_30d',        (select count(*) from profiles where created_at > now() - interval '30 days'),
+    'users_total',      (select count(*) from profiles where not is_admin),
+    'users_today',      (select count(*) from profiles where not is_admin and created_at >= jour0),
+    'users_30d',        (select count(*) from profiles where not is_admin and created_at > now() - interval '30 days'),
     'views_total',      (select count(*) from page_views where listing_id is not null),
     'views_today',      (select count(*) from page_views where listing_id is not null and created_at >= jour0),
     'views_7d',         (select count(*) from page_views where listing_id is not null and created_at > now() - interval '7 days'),
@@ -194,8 +199,8 @@ begin
         'actuel',    (select count(*) from listings where created_at >= debut and created_at < fin),
         'precedent', (select count(*) from listings where created_at >= debut_prec and created_at < debut)),
       'comptes', jsonb_build_object(
-        'actuel',    (select count(*) from profiles where created_at >= debut and created_at < fin),
-        'precedent', (select count(*) from profiles where created_at >= debut_prec and created_at < debut)),
+        'actuel',    (select count(*) from profiles where not is_admin and created_at >= debut and created_at < fin),
+        'precedent', (select count(*) from profiles where not is_admin and created_at >= debut_prec and created_at < debut)),
       'favoris', jsonb_build_object(
         'actuel',    (select count(*) from favorites where created_at >= debut and created_at < fin),
         'precedent', (select count(*) from favorites where created_at >= debut_prec and created_at < debut)),
@@ -243,7 +248,7 @@ begin
       from (
         select g.t,
                (select count(*) from profiles p
-                 where p.created_at >= g.t and p.created_at < g.t + pas) as n
+                 where not p.is_admin and p.created_at >= g.t and p.created_at < g.t + pas) as n
         from generate_series(debut, fin, pas) g(t)
       ) b
     ), '[]'::jsonb),
@@ -319,12 +324,70 @@ begin
   return result;
 end $$;
 
+-- ---------- Les administrateurs ne comptent pas ----------
+
+create or replace function public.record_page_view(
+  p_path       text,
+  p_listing_id uuid default null,
+  p_viewer_key text default null,
+  p_device     text default null,
+  p_source     text default null
+)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if p_path is null or char_length(p_path) not between 1 and 300
+     or left(p_path, 1) <> '/' then
+    raise exception 'Chemin invalide.';
+  end if;
+  if p_path not in ('/', '/food', '/event', '/guide', '/soutenir')
+     and p_path !~ '^/(annonce|food/resto|guide/lieu)/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then
+    raise exception 'Page non mesurée.';
+  end if;
+  if p_viewer_key is null then
+    return;
+  end if;
+  -- Un administrateur qui vérifie le site n'est pas un visiteur : sa
+  -- navigation n'entre dans aucune statistique.
+  if auth.uid() is not null and public.is_admin() then
+    return;
+  end if;
+  if char_length(p_viewer_key) not between 16 and 100 then
+    raise exception 'Identifiant visiteur invalide.';
+  end if;
+  if p_listing_id is not null
+     and p_path <> '/annonce/' || p_listing_id::text then
+    raise exception 'Annonce et chemin incohérents.';
+  end if;
+
+  if not exists (
+    select 1 from public.page_views v
+    where v.path = p_path
+      and v.viewer_key = p_viewer_key
+      and v.created_at > now() - interval '30 minutes'
+  ) then
+    insert into public.page_views (path, listing_id, viewer_key, device, source)
+    values (
+      p_path, p_listing_id, p_viewer_key,
+      case when p_device in ('mobile', 'ordinateur', 'tablette') then p_device end,
+      case when p_source in ('direct', 'google', 'bing', 'facebook',
+                             'instagram', 'whatsapp', 'autre') then p_source end
+    );
+  end if;
+end;
+$$;
+
+-- ---------- Temps réel, version lisible ----------
+
 create or replace function public.admin_temps_reel()
 returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
   tz      text := 'America/St_Barthelemy';
   jour    timestamptz;
+  h24     timestamptz := now() - interval '24 hours';
   result  jsonb;
 begin
   if not public.is_admin() then raise exception 'Réservé aux administrateurs.'; end if;
@@ -332,8 +395,6 @@ begin
   jour := date_trunc('day', now() at time zone tz) at time zone tz;
 
   with
-  -- Les vues des 36 dernières heures, avec l'écart depuis la précédente du
-  -- même navigateur : plus de trente minutes, nouvelle session.
   v as (
     select viewer_key, created_at, path, listing_id, device, source,
            lag(created_at) over (partition by viewer_key order by created_at) as prec
@@ -352,22 +413,42 @@ begin
       from s group by viewer_key, sid
   ),
   actives as (select * from sess where fin > now() - interval '5 minutes'),
-  du_jour as (select * from sess where debut >= jour),
-  minutes as (
-    select gs as t, (select count(*) from public.page_views p
-                      where p.created_at >= gs and p.created_at < gs + interval '1 minute') as n
-      from generate_series(date_trunc('minute', now()) - interval '59 minutes', date_trunc('minute', now()), interval '1 minute') gs
+  recentes as (select * from sess where debut > h24),
+  membres as (select id, created_at, last_sign_in_at from auth.users u
+               where not coalesce((select is_admin from public.profiles p where p.id = u.id), false)),
+  heures as (
+    select gs as t,
+           (select count(*) from public.page_views p where p.created_at >= gs and p.created_at < gs + interval '1 hour') as n,
+           (select count(distinct viewer_key) from public.page_views p where p.created_at >= gs and p.created_at < gs + interval '1 hour') as v
+      from generate_series(date_trunc('hour', now()) - interval '23 hours', date_trunc('hour', now()), interval '1 hour') gs
   )
   select jsonb_build_object(
     'a', now(),
-    'maintenant', jsonb_build_object(
-      'visiteurs_5min',  (select count(distinct viewer_key) from public.page_views where created_at > now() - interval '5 minutes'),
-      'pages_5min',      (select count(*) from public.page_views where created_at > now() - interval '5 minutes'),
-      'visiteurs_60min', (select count(distinct viewer_key) from public.page_views where created_at > now() - interval '60 minutes'),
-      'pages_60min',     (select count(*) from public.page_views where created_at > now() - interval '60 minutes'),
-      'visiteurs_jour',  (select count(distinct viewer_key) from public.page_views where created_at >= jour),
-      'pages_jour',      (select count(*) from public.page_views where created_at >= jour)),
-    'par_minute', coalesce((select jsonb_agg(jsonb_build_object('t', t, 'n', n) order by t) from minutes), '[]'),
+    -- Les quatre chiffres qui comptent.
+    'essentiel', jsonb_build_object(
+      'visiteurs_5min',      (select count(distinct viewer_key) from public.page_views where created_at > now() - interval '5 minutes'),
+      'visiteurs_24h',       (select count(distinct viewer_key) from public.page_views where created_at > h24),
+      'comptes_crees_24h',   (select count(*) from membres where created_at > h24),
+      -- Reconnexion : un compte qui existait déjà hier et qui s'est reconnecté.
+      'reconnexions_24h',    (select count(*) from membres where last_sign_in_at > h24 and created_at <= h24)),
+    -- Le second rang, plus discret.
+    'h24', jsonb_build_object(
+      'pages',               (select count(*) from public.page_views where created_at > h24),
+      -- Visiteur revenu : vu ces 24 h, et déjà vu avant.
+      'visiteurs_revenus',   (select count(distinct a.viewer_key) from public.page_views a
+                               where a.created_at > h24
+                                 and exists (select 1 from public.page_views b where b.viewer_key = a.viewer_key and b.created_at <= h24)),
+      'connexions',          (select count(*) from membres where last_sign_in_at > h24),
+      'sessions',            (select count(*) from recentes),
+      'duree_moyenne_s',     (select coalesce(avg(extract(epoch from fin - debut)) filter (where pages > 1), 0)::int from recentes),
+      'pages_par_session',   (select coalesce(round(avg(pages)::numeric, 1), 0) from recentes),
+      'annonces',            (select count(*) from public.listings where created_at > h24),
+      'messages',            (select count(*) from public.messages where created_at > h24),
+      'comptes_total',       (select count(*) from membres),
+      'visiteurs_7j',        (select count(distinct viewer_key) from public.page_views where created_at > now() - interval '7 days'),
+      'comptes_crees_7j',    (select count(*) from membres where created_at > now() - interval '7 days')),
+    -- Les 24 dernières heures, heure par heure.
+    'par_heure', coalesce((select jsonb_agg(jsonb_build_object('t', t, 'h', to_char((t at time zone tz), 'HH24"h"'), 'n', n, 'v', v) order by t) from heures), '[]'),
     'sessions_actives', coalesce((
       select jsonb_agg(jsonb_build_object(
         'cle', left(md5(viewer_key), 6), 'debut', debut, 'fin', fin,
@@ -376,62 +457,32 @@ begin
         'titre', (select title from public.listings where id = dernier_listing))
         order by fin desc)
       from actives), '[]'),
-    'sessions_jour', (select jsonb_build_object(
-        'nb', count(*),
-        'duree_moyenne_s', coalesce(avg(extract(epoch from fin - debut)) filter (where pages > 1), 0)::int,
-        'duree_mediane_s', coalesce(percentile_cont(0.5) within group (order by extract(epoch from fin - debut)) filter (where pages > 1), 0)::int,
-        'duree_max_s', coalesce(max(extract(epoch from fin - debut)), 0)::int,
-        'pages_moyennes', coalesce(round(avg(pages)::numeric, 1), 0),
-        'rebond_pct', case when count(*) = 0 then 0 else round(100.0 * count(*) filter (where pages = 1) / count(*)) end,
-        'visiteurs_revenus', (select count(*) from (select viewer_key from du_jour group by viewer_key having count(*) > 1) r))
-      from du_jour),
-    'appareils_60min', coalesce((select jsonb_object_agg(coalesce(device, 'inconnu'), n) from (
-        select device, count(*) n from public.page_views where created_at > now() - interval '60 minutes' group by device) d), '{}'),
-    'sources_60min', coalesce((select jsonb_object_agg(coalesce(source, 'inconnu'), n) from (
-        select source, count(*) n from public.page_views where created_at > now() - interval '60 minutes' group by source) d), '{}'),
-    'appareils_jour', coalesce((select jsonb_object_agg(coalesce(device, 'inconnu'), n) from (
-        select device, count(*) n from public.page_views where created_at >= jour group by device) d), '{}'),
-    'sources_jour', coalesce((select jsonb_object_agg(coalesce(source, 'inconnu'), n) from (
-        select source, count(*) n from public.page_views where created_at >= jour group by source) d), '{}'),
+    -- Détails, repliés dans l'interface.
+    'appareils_24h', coalesce((select jsonb_object_agg(coalesce(device, 'inconnu'), n) from (
+        select device, count(*) n from public.page_views where created_at > h24 group by device) d), '{}'),
+    'sources_24h', coalesce((select jsonb_object_agg(coalesce(source, 'inconnu'), n) from (
+        select source, count(*) n from public.page_views where created_at > h24 group by source) d), '{}'),
     'pages_top', coalesce((
       select jsonb_agg(jsonb_build_object('path', path, 'titre', titre, 'n', n, 'visiteurs', visiteurs) order by n desc)
         from (select p.path, (select title from public.listings where id = p.listing_id) as titre,
                      count(*) n, count(distinct viewer_key) visiteurs
-                from public.page_views p where p.created_at > now() - interval '60 minutes'
-               group by p.path, p.listing_id order by count(*) desc limit 10) t), '[]'),
+                from public.page_views p where p.created_at > h24
+               group by p.path, p.listing_id order by count(*) desc limit 8) t), '[]'),
     'flux', coalesce((
       select jsonb_agg(jsonb_build_object('t', created_at, 'path', path, 'titre', titre,
                                           'device', device, 'source', source, 'cle', left(md5(viewer_key), 6)) order by created_at desc)
         from (select p.*, (select title from public.listings where id = p.listing_id) as titre
-                from public.page_views p order by p.created_at desc limit 40) f), '[]'),
-    'comptes', jsonb_build_object(
-      'total',           (select count(*) from auth.users),
-      'connectes_30min', (select count(*) from auth.users where last_sign_in_at > now() - interval '30 minutes'),
-      'connectes_2h',    (select count(*) from auth.users where last_sign_in_at > now() - interval '2 hours'),
-      'connectes_24h',   (select count(*) from auth.users where last_sign_in_at > now() - interval '24 hours'),
-      'connexions_jour', (select count(*) from auth.users where last_sign_in_at >= jour),
-      'nouveaux_jour',   (select count(*) from auth.users where created_at >= jour),
-      'nouveaux_7j',     (select count(*) from auth.users where created_at > now() - interval '7 days'),
-      'dernieres', coalesce((
-        select jsonb_agg(jsonb_build_object('id', u.id, 'nom', coalesce(p.display_name, 'Membre'), 'email', u.email,
-                                            'quand', u.last_sign_in_at, 'inscrit', u.created_at,
-                                            'nouveau', u.created_at > now() - interval '24 hours') order by u.last_sign_in_at desc)
-          from (select * from auth.users where last_sign_in_at is not null order by last_sign_in_at desc limit 15) u
-          left join public.profiles p on p.id = u.id), '[]')),
-    'pic_jour', (select coalesce(max(n), 0) from (select count(*) n from public.page_views where created_at >= jour group by date_trunc('hour', created_at)) h),
-    'heure_pic', (select to_char((h.t at time zone tz), 'HH24"h"') from (select date_trunc('hour', created_at) t, count(*) n from public.page_views where created_at >= jour group by 1 order by 2 desc limit 1) h),
-    'par_heure_jour', coalesce((select jsonb_agg(jsonb_build_object('h', to_char((gs at time zone tz), 'HH24"h"'), 'n', (select count(*) from public.page_views p where p.created_at >= gs and p.created_at < gs + interval '1 hour'), 'v', (select count(distinct viewer_key) from public.page_views p where p.created_at >= gs and p.created_at < gs + interval '1 hour')) order by gs) from generate_series(jour, date_trunc('hour', now()), interval '1 hour') gs), '[]'),
-    'activite_jour', jsonb_build_object(
-      'annonces',      (select count(*) from public.listings where created_at >= jour),
-      'annonces_60min',(select count(*) from public.listings where created_at > now() - interval '60 minutes'),
-      'messages',      (select count(*) from public.messages where created_at >= jour),
-      'messages_60min',(select count(*) from public.messages where created_at > now() - interval '60 minutes'),
-      'conversations', (select count(*) from public.conversations c where exists (select 1 from public.messages x where x.conversation_id = c.id and x.created_at >= jour)),
-      'signalements',  (select count(*) from public.reports where created_at >= jour),
-      'alertes',       (select count(*) from public.search_alerts where created_at >= jour),
-      'favoris',       (select count(*) from public.favorites where created_at >= jour),
-      'en_attente',    (select count(*) from public.moderation_cases where status = 'open'),
-      'en_ligne',      (select count(*) from public.listings where status = 'active' and review_state in ('published', 'watch')))
+                from public.page_views p order by p.created_at desc limit 30) f), '[]'),
+    'dernieres_connexions', coalesce((
+      select jsonb_agg(jsonb_build_object('id', u.id, 'nom', coalesce(p.display_name, 'Membre'), 'email', au.email,
+                                          'quand', u.last_sign_in_at, 'nouveau', u.created_at > h24) order by u.last_sign_in_at desc)
+        from (select * from membres where last_sign_in_at is not null order by last_sign_in_at desc limit 12) u
+        join auth.users au on au.id = u.id
+        left join public.profiles p on p.id = u.id), '[]'),
+    'moderation', jsonb_build_object(
+      'en_attente', (select count(*) from public.moderation_cases where status = 'open'),
+      'signalements_24h', (select count(*) from public.reports where created_at > h24),
+      'en_ligne', (select count(*) from public.listings where status = 'active' and review_state in ('published', 'watch')))
   ) into result;
 
   return result;
