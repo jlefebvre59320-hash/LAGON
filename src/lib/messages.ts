@@ -4,7 +4,10 @@
 
 export type Conversation = {
   id: string;
-  listing_id: string;
+  /* Nul pour un fil de support : la réponse de l'équipe à un retour
+     déposé depuis /retours. Pas d'annonce, pas de fiche, pas de blocage. */
+  listing_id: string | null;
+  support?: boolean;
   listing_title: string;
   listing_status: string | null;
   photo_key: string | null;

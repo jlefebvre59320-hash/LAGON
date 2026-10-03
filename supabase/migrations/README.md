@@ -24,7 +24,8 @@ production Ti Kanal au moment du renommage.
 - Un fichier ajoute une valeur à un type `enum` ? Il doit être exécuté
   **seul**, hors de toute transaction (Supabase enveloppe chaque exécution
   dans une transaction ; `alter type … add value` n'y survit pas quand la
-  valeur est utilisée plus bas). Exemple : `0030_module_services.sql`.
+  valeur est utilisée plus bas). Exemples : `0030_module_services.sql`,
+  `0039_module_jardin.sql` (à passer avant `0040`, qui déplace les annonces).
 - Chaque colonne lisible ou modifiable par un compte sur `profiles`,
   `listings`, `listing_photos`, `reports`, `search_alerts` doit recevoir un
   `grant` explicite : les droits sont donnés colonne par colonne depuis

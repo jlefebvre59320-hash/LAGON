@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { SiteHeader, Mark } from "@/components/Brand";
@@ -20,6 +20,11 @@ export default function Retours() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connecte, setConnecte] = useState(false);
+
+  useEffect(() => {
+    supabase().auth.getSession().then(({ data }) => setConnecte(Boolean(data.session)));
+  }, []);
 
   async function send() {
     if (message.trim().length < 3 || sending) return;
@@ -52,8 +57,14 @@ export default function Retours() {
           </p>
 
           {sent ? (
-            <p style={{ color: "var(--green)", fontSize: 14, background: "var(--green-100)", padding: "12px 14px", borderRadius: 10, textAlign: "center" }}>
+            <p style={{ color: "var(--green)", fontSize: 14, background: "var(--green-100)", padding: "12px 14px", borderRadius: 10, textAlign: "center", lineHeight: 1.5 }}>
               ✓ Merci ! Votre message est bien arrivé.
+              <br />
+              <span style={{ fontSize: 13 }}>
+                {connecte
+                  ? "Si l'équipe vous répond, la réponse arrivera dans vos messages, avec une notification."
+                  : contact.trim() ? "Si l'équipe vous répond, ce sera à l'adresse que vous avez laissée." : ""}
+              </span>
             </p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -67,8 +78,17 @@ export default function Retours() {
               </div>
               <textarea className="input" rows={5} value={message} onChange={(e) => setMessage(e.target.value)}
                 placeholder="Dites-nous tout…" maxLength={2000} style={{ resize: "vertical" }} />
-              <input className="input" value={contact} onChange={(e) => setContact(e.target.value)}
-                placeholder="Email ou téléphone si vous voulez une réponse (optionnel)" maxLength={200} />
+              {/* Connecté, la réponse arrive dans la messagerie : inutile de
+                  redemander une adresse. Sinon, seul un email permet de
+                  répondre — on le dit, un numéro resterait sans suite. */}
+              {connecte ? (
+                <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
+                  Vous êtes connecté : si l&apos;équipe vous répond, vous le verrez dans <strong>Messages</strong>, avec une notification.
+                </p>
+              ) : (
+                <input className="input" value={contact} onChange={(e) => setContact(e.target.value)}
+                  placeholder="Votre email si vous souhaitez une réponse (optionnel)" maxLength={200} />
+              )}
               {error && <p style={{ color: "var(--danger)", fontSize: 13, fontWeight: 600, margin: 0 }}>{error}</p>}
               <button className="btn btn-block" onClick={send} disabled={sending || message.trim().length < 3}
                 style={{ padding: "14px 0", fontSize: 15 }}>

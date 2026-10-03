@@ -77,7 +77,7 @@ export async function POST(request: Request) {
   const { data: cibles } = await service.rpc("destinataire_a_prevenir", {
     p_conversation_id: conversationId,
   });
-  const cible = (cibles as { user_id: string; autre_nom: string; listing_title: string; listing_id: string }[] | null)?.[0];
+  const cible = (cibles as Cible[] | null)?.[0];
   if (!cible) return ok("rien-a-envoyer");
 
   // 4. Le push part en premier : c'est le canal le plus rapide, et il ne
@@ -101,16 +101,20 @@ export async function POST(request: Request) {
   // 5. L'email ne contient pas le message. Une notification qui recopie
   //    le contenu se retrouve dans les aperçus d'écran verrouillé et dans
   //    les boîtes partagées — et elle enlève toute raison de revenir.
-  const lien = `${SITE_URL}/messages`;
-  const sujet = `Nouveau message de ${cible.autre_nom} — ${cible.listing_title}`;
+  const lien = `${SITE_URL}/messages?c=${encodeURIComponent(conversationId)}`;
+  /* Un fil de support n'a pas d'annonce : le sujet parle du retour, pas
+     d'un titre entre guillemets. */
+  const sujet = cible.support
+    ? `${cible.autre_nom} a répondu à votre retour`
+    : `Nouveau message de ${cible.autre_nom} — ${cible.listing_title}`;
+  const accroche = cible.support
+    ? `<strong>${echapper(cible.autre_nom)}</strong> a répondu au retour que vous avez envoyé sur Ti Kanal.`
+    : `<strong>${echapper(cible.autre_nom)}</strong> vous a écrit au sujet de « ${echapper(cible.listing_title)} ».`;
   const html = `
     <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#16292b">
       <p style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#8a6a2a;margin:0 0 4px">St Barth</p>
       <h1 style="font-family:Georgia,serif;font-size:24px;color:#05282c;margin:0 0 18px">Ti Kanal</h1>
-      <p style="font-size:15px;line-height:1.6;margin:0 0 8px">
-        <strong>${echapper(cible.autre_nom)}</strong> vous a écrit au sujet de
-        « ${echapper(cible.listing_title)} ».
-      </p>
+      <p style="font-size:15px;line-height:1.6;margin:0 0 8px">${accroche}</p>
       <p style="font-size:15px;line-height:1.6;margin:0 0 22px;color:#5f6f70">
         Le message vous attend dans votre boîte sur Ti Kanal.
       </p>
@@ -154,10 +158,9 @@ export async function POST(request: Request) {
    Un endpoint refusé (410 ou 404) désigne un appareil qui n'existe plus :
    application désinstallée, navigateur réinitialisé. Il est supprimé sur
    place, sinon chaque message suivant repartirait pour rien. */
-async function envoyerPush(
-  service: SupabaseClient,
-  cible: { user_id: string; autre_nom: string; listing_title: string },
-): Promise<number> {
+type Cible = { user_id: string; autre_nom: string; listing_title: string; listing_id: string | null; support?: boolean };
+
+async function envoyerPush(service: SupabaseClient, cible: Cible): Promise<number> {
   if (!VAPID_PUBLIQUE || !VAPID_PRIVEE) return 0;
 
   const { data } = await service.rpc("appareils_a_notifier", { p_user_id: cible.user_id });
@@ -167,8 +170,8 @@ async function envoyerPush(
   webpush.setVapidDetails(VAPID_SUJET, VAPID_PUBLIQUE, VAPID_PRIVEE);
 
   const charge = JSON.stringify({
-    titre: `Message de ${cible.autre_nom}`,
-    corps: `À propos de « ${cible.listing_title} »`,
+    titre: cible.support ? `Réponse de ${cible.autre_nom}` : `Message de ${cible.autre_nom}`,
+    corps: cible.support ? "À propos de votre retour" : `À propos de « ${cible.listing_title} »`,
     url: `${SITE_URL}/messages`,
     tag: `tikanal-${cible.user_id}`,
   });

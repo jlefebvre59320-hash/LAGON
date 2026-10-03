@@ -33,7 +33,7 @@ export const SITES: Record<SiteKey, SiteDef> = {
     overline: "St Barth",
     baseline: "Échanges & petites annonces",
     description:
-      "Les échanges et petites annonces de Saint-Barthélemy : véhicules et nautisme, immobilier, emploi, achats et ventes.",
+      "Les échanges et petites annonces de Saint-Barthélemy : achats et ventes, jardin et outillage, véhicules et nautisme, services, emploi, immobilier.",
     dot: "#c9a86a",
     themeColor: "#05282c",
     path: "/",

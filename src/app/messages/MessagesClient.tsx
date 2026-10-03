@@ -163,7 +163,7 @@ export default function MessagesClient() {
             </div>
             <p style={{ fontWeight: 700, color: "var(--green)", margin: "0 0 4px" }}>Aucun message pour l&apos;instant.</p>
             <p style={{ fontSize: 13.5, color: "var(--text-muted)", margin: "0 0 16px" }}>
-              Les conversations démarrées depuis une annonce apparaîtront ici.
+              Les conversations démarrées depuis une annonce, et les réponses de l&apos;équipe à vos retours, apparaîtront ici.
             </p>
             <Link href="/" className="btn btn-gold">Parcourir les annonces</Link>
           </div>
@@ -186,7 +186,7 @@ export default function MessagesClient() {
                     <span className="conv-heure">{heureMessage(c.last_message_at)}</span>
                   </span>
                   <span className="conv-annonce">
-                    {c.je_suis_auteur ? "Sur votre annonce" : "Votre demande"} · {c.listing_title}
+                    {c.support ? c.listing_title : `${c.je_suis_auteur ? "Sur votre annonce" : "Votre demande"} · ${c.listing_title}`}
                   </span>
                   {c.dernier && <span className="conv-extrait">{c.dernier}</span>}
                 </span>
@@ -211,29 +211,38 @@ function Fil({
   blocageBusy: boolean; basculerBlocage: (c: Conversation) => void;
   noter: boolean; setNoter: (v: boolean) => void;
 }) {
-  const retiree = conv.listing_status !== "active";
+  const support = conv.support === true || conv.listing_id == null;
+  /* Un fil de support n'a pas d'annonce à retirer : on y répond toujours. */
+  const retiree = !support && conv.listing_status !== "active";
   const bloque = conv.bloque === true;
   /* On ne propose de noter que si l'autre a écrit au moins une fois : c'est
      la règle de la base, autant ne pas afficher un bouton qui échouera. */
-  const autreARepondu = userId != null && fil.some((m) => m.sender_id !== userId);
+  const autreARepondu = !support && userId != null && fil.some((m) => m.sender_id !== userId);
+  const entete = (
+    <>
+      <span className="conv-vignette">
+        {conv.photo_key ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl(thumbKey(conv.photo_key))} alt=""
+            onError={(e) => { e.currentTarget.src = photoUrl(conv.photo_key!); }} />
+        ) : (
+          <Mark size={26} color="var(--gold-deep)" />
+        )}
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <strong style={{ display: "block", fontSize: 15 }}>{conv.autre_nom}</strong>
+        <span className="conv-annonce">{conv.listing_title}</span>
+      </span>
+      {!support && <span style={{ marginLeft: "auto", color: "var(--gold-deep)", fontSize: 18 }} aria-hidden="true">→</span>}
+    </>
+  );
   return (
     <>
-      <Link href={`/annonce/${conv.listing_id}`} className="panel conv-entete">
-        <span className="conv-vignette">
-          {conv.photo_key ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoUrl(thumbKey(conv.photo_key))} alt=""
-              onError={(e) => { e.currentTarget.src = photoUrl(conv.photo_key!); }} />
-          ) : (
-            <Mark size={26} color="var(--gold-deep)" />
-          )}
-        </span>
-        <span style={{ minWidth: 0 }}>
-          <strong style={{ display: "block", fontSize: 15 }}>{conv.autre_nom}</strong>
-          <span className="conv-annonce">{conv.listing_title}</span>
-        </span>
-        <span style={{ marginLeft: "auto", color: "var(--gold-deep)", fontSize: 18 }} aria-hidden="true">→</span>
-      </Link>
+      {support ? (
+        <div className="panel conv-entete">{entete}</div>
+      ) : (
+        <Link href={`/annonce/${conv.listing_id}`} className="panel conv-entete">{entete}</Link>
+      )}
 
       {/* Le blocage vit hors du lien vers l'annonce : un bouton imbriqué dans
           un lien se déclenche au mauvais endroit une fois sur deux. */}
@@ -270,7 +279,7 @@ function Fil({
 
       {/* Le rappel arrive avant le premier message, là où la tentation de
           « réserver » contre un acompte se joue. */}
-      {!retiree && <AvertissementPaiement compact style={{ marginBottom: 10 }} />}
+      {!retiree && !support && <AvertissementPaiement compact style={{ marginBottom: 10 }} />}
 
       <div className="fil">
         {fil.map((m) => (

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { MODULES, MODULE_ORDER, INTENT_ORDER, INTENT_LABEL, fieldsFor, type Intent, type ModuleKey, type FieldDef } from "@/lib/taxonomy";
 import { SiteHeader } from "@/components/Brand";
 import ModuleIcon from "@/components/ModuleIcon";
+import QuartierSelect from "@/components/QuartierSelect";
 import { compressImage, thumbKey } from "@/lib/images";
 import { PHOTOS_LIBRE, PHOTOS_EN_AVANT, finDeMiseEnAvant, DUREE_JOURS, MESSAGE_UNE_SEULE } from "@/lib/featured";
 import { connexionUrl, normalizePhoneNumber } from "@/lib/urls";
@@ -349,8 +350,7 @@ export default function Deposer() {
               <input className="input" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ""))}
                 placeholder={intent === "wanted" ? "Budget (€) — vide si à discuter" : "Prix (€) — vide si à discuter"}
                 inputMode="decimal" />
-              <input className="input" value={location} onChange={(e) => setLocation(e.target.value)}
-                placeholder="Quartier (ex. Lorient)" />
+              <QuartierSelect valeur={location} onChange={setLocation} />
             </div>
             {/* Être joignable n'est pas une option : une annonce que personne
                 ne peut contacter ne sert à rien, ni à son auteur ni au site.
