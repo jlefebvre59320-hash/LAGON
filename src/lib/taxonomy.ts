@@ -3,7 +3,7 @@
    ici et se déploie. Passage en table de config seulement si le besoin
    d'édition sans déploiement se confirme. */
 
-export type ModuleKey = "vehicle" | "housing" | "job" | "goods" | "service";
+export type ModuleKey = "vehicle" | "housing" | "job" | "goods" | "service" | "garden";
 
 /* Sens de l'annonce : 'offer' = je propose (le cas courant, valeur par défaut),
    'wanted' = je recherche. Le vocabulaire change selon l'univers — on ne « vend »
@@ -18,6 +18,7 @@ export const INTENT_LABEL: Record<ModuleKey, Record<Intent, string>> = {
   job:     { offer: "Je propose", wanted: "Je recherche" },
   goods:   { offer: "Je vends", wanted: "Je recherche" },
   service: { offer: "Je propose mes services", wanted: "Je cherche un pro" },
+  garden:  { offer: "Je vends", wanted: "Je recherche" },
 };
 
 /* Filtre de l'accueil : on se place du côté du visiteur, pas de l'annonceur. */
@@ -37,6 +38,8 @@ export const INTENT_FILTER: Record<Intent, string> = {
 /* Les sous-catégories de l'immobilier qui relèvent d'une vente et non d'une
    location : elles décident du libellé de la pastille comme du suffixe de prix. */
 const SALE_SUBS = ["Vente", "Terrains"];
+/* La seule catégorie de Jardin & Outillage qui se loue au lieu de se vendre. */
+const LOCATION_MATERIEL = "Location de matériel";
 
 export type IntentBadge = { texte: string; sens: Intent };
 
@@ -49,6 +52,8 @@ export function intentBadge(module: ModuleKey, sub: string, intent: Intent): Int
       return { texte: sub === "Offres d'emploi" ? "Recrute" : "Proposé", sens: "offer" };
     case "service":
       return { texte: "Propose", sens: "offer" };
+    case "garden":
+      return { texte: sub === LOCATION_MATERIEL ? "À louer" : "À vendre", sens: "offer" };
     default:
       return { texte: "À vendre", sens: "offer" };
   }
@@ -89,11 +94,13 @@ export const MODULES: Record<ModuleKey, {
       "Vente", "Bureaux & Locaux", "Terrains",
     ],
   },
+  /* « Emploi » tout court : les services ont leur propre univers depuis
+     0030, et « Services entre particuliers » y a rejoint « Autre service ». */
   job: {
-    label: "Emploi & Services", short: "Emploi",
+    label: "Emploi", short: "Emploi",
     color: "#2f6b4f", soft: "#e8f1eb", dark: "#1e4b37",
     subs: [
-      "Offres d'emploi", "Candidats", "Services entre particuliers", "Cours & Formations",
+      "Offres d'emploi", "Candidats", "Cours & Formations",
     ],
   },
   /* Aubergine profonde : la cinquième teinte devait se distinguer du marine,
@@ -126,8 +133,10 @@ export const MODULES: Record<ModuleKey, {
     subs: [
       "Meubles", "Maison & Déco", "Cuisine & Arts de la table", "Linge de maison",
       "Électroménager", "Climatisation & Ventilation", "Énergie & Groupe électrogène",
-      "Mobilier de jardin & Extérieur", "Piscine & Spa",
-      "Bricolage & Jardin", "Outillage", "Matériaux & Chantier",
+      /* « Bricolage & Jardin » et « Outillage » ont déménagé dans l'univers
+         Jardin & Outillage (migration 0040) ; le mobilier d'extérieur et la
+         piscine restent ici, ce sont des achats pour la maison. */
+      "Mobilier de jardin & Extérieur", "Piscine & Spa", "Matériaux & Chantier",
       "Électronique & TV", "Informatique", "Téléphonie", "Jeux vidéo & Consoles",
       "Vêtements & Chaussures", "Bagagerie & Voyage", "Beauté & Bien-être",
       "Sport & Loisirs", "Plage & Plein air", "Instruments de musique",
@@ -135,11 +144,29 @@ export const MODULES: Record<ModuleKey, {
       "Matériel pro & Restauration", "Dons (gratuit)", "Autre",
     ],
   },
+  /* Vert olive : la sixième teinte devait rester dans le registre sourd de
+     la charte tout en se lisant « jardin » au premier regard, sans se
+     confondre avec la palme de l'emploi ni le vert lagon de la marque. */
+  garden: {
+    label: "Jardin & Outillage", short: "Jardin",
+    color: "#5c6b2a", soft: "#eef0e2", dark: "#414d1c",
+    /* Les machines d'abord (ce qui se revend le plus cher), les outils,
+       puis le végétal et l'aménagement, la location à part. */
+    subs: [
+      "Tondeuses & Motoculture", "Tronçonneuses & Débroussailleuses",
+      "Outillage électroportatif", "Outillage à main", "Nettoyeurs haute pression",
+      "Échelles, Échafaudages & Bétonnières",
+      "Plantes, Palmiers & Semences", "Pots, Jardinières & Terreau",
+      "Arrosage & Récupération d'eau", "Clôtures, Terrasses & Pergolas",
+      "Barbecue & Plancha", "Éclairage & Déco extérieure",
+      LOCATION_MATERIEL, "Autre jardin & outillage",
+    ],
+  },
 };
 
 /* Ordre voulu par l'éditeur du site, appliqué partout d'un seul endroit :
    filtres de l'accueil, choix de catégorie au dépôt, colonnes des stats. */
-export const MODULE_ORDER: ModuleKey[] = ["goods", "vehicle", "service", "job", "housing"];
+export const MODULE_ORDER: ModuleKey[] = ["goods", "garden", "vehicle", "service", "job", "housing"];
 
 /* Les valeurs des trois critères filtrables des services. Elles vivent ici
    et non dans la page d'accueil : le formulaire de dépôt et le filtre lisent
@@ -155,6 +182,8 @@ export const DISPOS_SERVICE = ["En semaine", "Week-end", "Soirs", "7j/7", "Urgen
 const BOAT_SUBS = ["Bateaux à moteur", "Voiliers", "Jetskis"];
 const BIKE_SUBS = ["Vélos & Trottinettes"];
 const ETAT: FieldDef = { k: "État", t: "select", o: ["Neuf", "Très bon", "Bon", "À réparer"] };
+const REMISE: FieldDef = { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true };
+const ENERGIES = ["Thermique (essence)", "Électrique filaire", "Sur batterie", "Manuel"];
 
 export function fieldsFor(module: ModuleKey, sub: string): FieldDef[] {
   switch (module) {
@@ -258,14 +287,49 @@ export function fieldsFor(module: ModuleKey, sub: string): FieldDef[] {
         ETAT,
         { k: "Quantité", t: "text", ph: "ex : 12 sacs, 30 m²" },
         { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
-        { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
+        REMISE,
       ];
       return [
         ETAT,
         { k: "Marque", t: "text", ph: "optionnel", adv: true },
         { k: "Dimensions", t: "text", ph: "ex : L 200 x P 90 cm", adv: true },
         { k: "Sous garantie", t: "select", o: ["Oui", "Non"], adv: true },
-        { k: "Remise", t: "select", o: ["Main propre", "Livraison possible sur l'île", "Les deux"], adv: true },
+        REMISE,
+      ];
+    }
+    /* Sur l'île, la question qui précède toutes les autres pour une
+       machine : thermique ou batterie — le carburant se trouve, les
+       batteries de marque moins. Les plantes et la location ont leurs
+       propres questions. */
+    case "garden": {
+      if (sub === "Plantes, Palmiers & Semences") return [
+        { k: "Hauteur (cm)", t: "number" },
+        { k: "Conditionnement", t: "select", o: ["En pot", "En motte", "Graines / boutures", "À déterrer sur place"] },
+        { k: "Quantité", t: "text", ph: "ex : 3 pieds, 1 sachet", adv: true },
+        { k: "Exposition", t: "select", o: ["Plein soleil", "Mi-ombre", "Ombre"], adv: true },
+        REMISE,
+      ];
+      if (sub === LOCATION_MATERIEL) return [
+        { k: "Tarif", t: "select", o: ["À l'heure", "À la journée", "Au week-end", "À la semaine"] },
+        { k: "Énergie", t: "select", o: ENERGIES },
+        { k: "Caution demandée", t: "text", ph: "ex : 200 €", adv: true },
+        { k: "Livraison possible", t: "select", o: ["Oui", "Non"], adv: true },
+      ];
+      if (["Pots, Jardinières & Terreau", "Clôtures, Terrasses & Pergolas", "Éclairage & Déco extérieure"].includes(sub)) return [
+        ETAT,
+        { k: "Quantité", t: "text", ph: "ex : 4 pots, 12 m linéaires" },
+        { k: "Dimensions", t: "text", ph: "ex : Ø 40 cm, H 180 cm", adv: true },
+        { k: "Matière", t: "text", ph: "ex : terre cuite, bois, inox", adv: true },
+        REMISE,
+      ];
+      return [
+        ETAT,
+        { k: "Marque", t: "text", ph: "ex : Stihl, Honda, Makita" },
+        { k: "Énergie", t: "select", o: ENERGIES },
+        { k: "Puissance / capacité", t: "text", ph: "ex : 2 000 W, 50 cm de coupe", adv: true },
+        { k: "Batterie & chargeur inclus", t: "select", o: ["Oui", "Non", "Non concerné"], adv: true },
+        { k: "Entretien suivi (factures)", t: "select", o: ["Oui", "Non"], adv: true },
+        REMISE,
       ];
     }
   }
@@ -280,6 +344,7 @@ export const priceSuffix = (module: ModuleKey, sub: string) => {
   if (module === "housing" && !SALE_SUBS.includes(sub)) return " /mois";
   if (sub === "Places de port") return " /mois";
   if (sub === "Services entre particuliers") return " /h";
+  if (sub === LOCATION_MATERIEL) return " /jour";
   return "";
 };
 

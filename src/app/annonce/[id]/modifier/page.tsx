@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/Brand";
+import QuartierSelect from "@/components/QuartierSelect";
 import { compressImage, thumbKey } from "@/lib/images";
 import { supabase } from "@/lib/supabase";
 import { fieldsFor, INTENT_LABEL, INTENT_ORDER, MODULES, type FieldDef, type Intent } from "@/lib/taxonomy";
@@ -301,7 +302,7 @@ export default function ModifierAnnonce() {
                 <input className="input" value={price} onChange={(event) => setPrice(event.target.value.replace(/[^\d.,]/g, ""))} inputMode="decimal" placeholder="Vide si à discuter" style={{ marginTop: 5 }} />
               </label>
               <label style={{ fontSize: 12, fontWeight: 700 }}>Quartier
-                <input className="input" value={location} onChange={(event) => setLocation(event.target.value)} maxLength={100} style={{ marginTop: 5 }} />
+                <QuartierSelect valeur={location} onChange={setLocation} style={{ marginTop: 5 }} />
               </label>
             </div>
             <label style={{ fontSize: 12, fontWeight: 700 }}>Numéro WhatsApp

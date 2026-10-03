@@ -14,7 +14,7 @@ bandeau navigue entre les sections. Un seul projet Vercel suffit ; la variable
 
 ## Ti Kanal — petites annonces
 
-4 univers : Véhicules & Nautisme, Immobilier, Emploi & Services, Achats & Ventes.
+6 univers : Achats & Ventes, Jardin & Outillage, Véhicules & Nautisme, Services & Artisans, Emploi, Immobilier.
 
 ## St Barth Food — annuaire des restaurants
 

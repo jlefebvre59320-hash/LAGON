@@ -18,7 +18,10 @@ type View = "overview" | "live" | "moderation" | "content" | "users" | "analytic
 type Kind = "listing" | "restaurant" | "place" | "event";
 type Claim = { id:string; restaurant_id:string; kind:"claim"|"correction"|"removal"; message:string; contact:string; user_id:string|null; created_at:string; restaurant:{name:string}|null };
 type Report = { id:string; listing_id:string; reason:string; created_at:string; listing:{title:string;status:string}|null };
-type Feedback = { id:string; kind:"idee"|"probleme"|"avis"; message:string; contact:string|null; created_at:string };
+type Feedback = { id:string; kind:"idee"|"probleme"|"avis"; message:string; contact:string|null; user_id:string|null; created_at:string };
+/* Ce que la route de réponse renvoie : par quel canal la réponse est partie. */
+type Reponse = { ok:boolean; erreur?:string; mode?:"message"|"email"|"aucun"; push?:number; email?:boolean; contact?:string|null };
+const EST_EMAIL=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 type PendingEvent = { id:string; title:string; category:string; venue:string; quartier:string; starts_at:string; price:string; description:string; link:string|null; organizer:string; contact:string; created_at:string };
 type AdminUser = { id:string; email:string; display_name:string; created_at:string; last_sign_in:string|null; is_banned:boolean; is_admin:boolean; listings:number };
 type Content = { id:string; kind:Kind; title:string; detail:string; status:string; date:string|null; href:string; review?:string|null };
@@ -55,6 +58,7 @@ export default function AdminPage() {
   const [auditReady,setAuditReady] = useState(true);
   const [busy,setBusy] = useState<string|null>(null);
   const [error,setError] = useState<string|null>(null);
+  const [notice,setNotice] = useState<string|null>(null);
   const [userSearch,setUserSearch] = useState("");
   const [userFilter,setUserFilter] = useState<"all"|"admin"|"banned">("all");
   const [contentSearch,setContentSearch] = useState("");
@@ -109,6 +113,22 @@ export default function AdminPage() {
   const setClaim=(x:Claim,action:"grant"|"hide"|"done")=>act(x.id,()=>supabase().rpc("admin_resolve_claim",{p_claim_id:x.id,p_action:action}),"Demande non traitée");
   const setReport=(x:Report,remove:boolean)=>act(x.id,()=>supabase().rpc("admin_resolve_report",{p_report_id:x.id,p_remove_listing:remove}),"Signalement non traité");
   const resolveFeedback=(x:Feedback)=>act(x.id,()=>supabase().rpc("admin_resolve_feedback",{p_feedback_id:x.id}),"Retour non traité");
+  /* La réponse passe par la route serveur : c'est elle qui, après que la
+     base a déposé le message, prévient par push et par email. Le compte
+     rendu dit par quel canal la réponse est partie — ou pas. */
+  const repondreFeedback=async(x:Feedback,texte:string):Promise<boolean>=>{
+    setBusy(x.id);setError(null);setNotice(null);
+    try{
+      const {data:s}=await supabase().auth.getSession();
+      const r=await fetch("/api/repondre-retour",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${s.session?.access_token??""}`},body:JSON.stringify({feedback_id:x.id,body:texte})});
+      const j=(await r.json().catch(()=>({ok:false}))) as Reponse;
+      if(!r.ok||!j.ok){setError(`Réponse non envoyée : ${j.erreur??r.statusText}`);setBusy(null);return false;}
+      setNotice(j.mode==="message"?`Réponse déposée dans la messagerie de la personne${(j.push??0)>0?", notification envoyée":""}${j.email?", email envoyé.":" — email non envoyé."}`
+        :j.mode==="email"?(j.email?`Réponse envoyée par email à ${j.contact}.`:`Réponse enregistrée, mais l’email vers ${j.contact} n’est pas parti.`)
+        :`Réponse enregistrée, mais sans canal pour la transmettre${j.contact?` (contact laissé : ${j.contact})`:""}.`);
+      setBusy(null);await load();return true;
+    }catch{setError("Réponse non envoyée : le serveur n’a pas répondu.");setBusy(null);return false;}
+  };
   const toggleAdmin=(x:AdminUser)=>{if(confirm(x.is_admin?`Retirer les droits d’administration à ${x.email} ?`:`Nommer ${x.email} administrateur ?`))return act(x.id,()=>supabase().rpc("set_admin",{target_id:x.id,value:!x.is_admin}),"Droits non modifiés");};
   const toggleBan=(x:AdminUser)=>{if(confirm(x.is_banned?`Rétablir ${x.email} ?`:`Bannir ${x.email} ? Il ne pourra plus publier.`))return act(x.id,()=>supabase().rpc("admin_set_user_banned",{p_user_id:x.id,p_is_banned:!x.is_banned}),"Compte non modifié");};
   const toggleContent=(x:Content)=>{const table={listing:"listings",restaurant:"restaurants",place:"places",event:"events"}[x.kind];const visible=x.kind==="listing"?x.status==="active":x.kind==="event"?x.status==="approved":x.status==="active";const status=x.kind==="listing"?(visible?"removed":"active"):x.kind==="event"?(visible?"rejected":"approved"):(visible?"hidden":"active");if(confirm(`${visible?"Masquer":"Publier"} « ${x.title} » ?`))return act(x.id,()=>supabase().from(table).update({status}).eq("id",x.id),"Contenu non modifié");};
@@ -120,6 +140,7 @@ export default function AdminPage() {
     <header className={styles.heading}><div><span>Ti Kanal</span><h1>Administration</h1><p>Les urgences et les outils de pilotage au même endroit.</p></div><Link href="/mon-espace">Mon espace →</Link></header>
     <nav className={styles.nav} aria-label="Sections de l’administration">{VIEWS.map(x=><button key={x.key} onClick={()=>setView(x.key)} className={view===x.key?styles.active:""} aria-current={view===x.key?"page":undefined}>{x.label}{x.key==="moderation"&&queue>0&&<b>{queue}</b>}</button>)}</nav>
     {error&&<p className={styles.error} role="alert">{error}</p>}
+    {notice&&<p className={styles.notice} role="status">{notice}</p>}
     {view==="live"&&<TempsReel/>}
     {view==="overview"&&<Overview stats={stats} queue={[events.length,aVerifier,claims.length,feedback.length]} users={users} go={setView}/>}
     {/* La file reste montée quel que soit l'onglet : c'est elle qui donne le
@@ -128,7 +149,7 @@ export default function AdminPage() {
       <Head title="Modération" text={queue?"Les annonces à vérifier d’abord, puis les demandes classées par type.":"Rien n’attend votre intervention. La file, la surveillance et les réglages restent accessibles ci-dessous."}/>
       <FileModeration onEtat={onEtatMod}/>
     </div></div>
-    {view==="moderation"&&<Moderation events={events} reports={modDispo?[]:reports} claims={claims} feedback={feedback} busy={busy} setEvent={setEvent} setReport={setReport} setClaim={setClaim} setFeedback={resolveFeedback}/>}
+    {view==="moderation"&&<Moderation events={events} reports={modDispo?[]:reports} claims={claims} feedback={feedback} busy={busy} setEvent={setEvent} setReport={setReport} setClaim={setClaim} setFeedback={resolveFeedback} repondre={repondreFeedback}/>}
     {view==="content"&&<ContentPanel items={shownContent} total={content.length} search={contentSearch} setSearch={setContentSearch} filter={contentFilter} setFilter={setContentFilter} busy={busy} toggle={toggleContent} go={setView}/>}
     {view==="users"&&<UsersPanel users={shownUsers} total={users.length} search={userSearch} setSearch={setUserSearch} filter={userFilter} setFilter={setUserFilter} busy={busy} toggleAdmin={toggleAdmin} toggleBan={toggleBan}/>}
     {view==="analytics"&&<Analytics stats={stats}/>}
@@ -138,11 +159,29 @@ export default function AdminPage() {
 
 function Overview({stats,queue,users,go}:{stats:Stats;queue:number[];users:AdminUser[];go:(v:View)=>void}){const labels=["Événements","Signalements","Établissements","Retours"];return <div className={styles.stack}><Head title="À traiter" text={queue.reduce((a,b)=>a+b,0)?"Les actions qui demandent votre attention.":"Tout est à jour."}/><div className={styles.actions}>{queue.map((n,i)=><button key={labels[i]} onClick={()=>go("moderation")} className={n?styles.attention:styles.ok}><span>{labels[i]}</span><strong>{n}</strong><small>{n?"en attente":"À jour"}</small></button>)}</div><Section title="Activité du site"><Tiles data={[["Annonces en ligne",stats.listings_active,`${stats.listings_7d} nouvelles sur 7 j`],["Visiteurs sur 7 j",stats.visitors_7d,`${stats.visits_7d} pages vues`],["Comptes",stats.users_total,`${stats.users_30d} nouveaux sur 30 j`],["Administrateurs",users.filter(x=>x.is_admin).length,`${users.filter(x=>x.is_banned).length} compte(s) banni(s)`]]}/></Section><div className={styles.quick}>{[["Gérer les contenus","Publier ou masquer une fiche","content"],["Rechercher un compte","Rôles et bannissement","users"],["Temps réel","Qui est sur le site, maintenant","live"],["Voir les statistiques","Fréquentation par univers","analytics"]].map(x=><button key={x[0]} onClick={()=>go(x[2] as View)}><strong>{x[0]}</strong><span>{x[1]} →</span></button>)}</div></div>}
 
-function Moderation({events,reports,claims,feedback,busy,setEvent,setReport,setClaim,setFeedback}:{events:PendingEvent[];reports:Report[];claims:Claim[];feedback:Feedback[];busy:string|null;setEvent:(x:PendingEvent,s:"approved"|"rejected")=>void;setReport:(x:Report,r:boolean)=>void;setClaim:(x:Claim,a:"grant"|"hide"|"done")=>void;setFeedback:(x:Feedback)=>void}){if(!events.length&&!reports.length&&!claims.length&&!feedback.length)return null;return <div className={styles.stack} style={{marginTop:28}}>
+function Moderation({events,reports,claims,feedback,busy,setEvent,setReport,setClaim,setFeedback,repondre}:{events:PendingEvent[];reports:Report[];claims:Claim[];feedback:Feedback[];busy:string|null;setEvent:(x:PendingEvent,s:"approved"|"rejected")=>void;setReport:(x:Report,r:boolean)=>void;setClaim:(x:Claim,a:"grant"|"hide"|"done")=>void;setFeedback:(x:Feedback)=>void;repondre:(x:Feedback,texte:string)=>Promise<boolean>}){if(!events.length&&!reports.length&&!claims.length&&!feedback.length)return null;return <div className={styles.stack} style={{marginTop:28}}>
   {!!events.length&&<Section title={`Événements à valider (${events.length})`} text="Rien ne paraît sans votre accord.">{events.map(x=><Card key={x.id} badge={x.category} title={x.title} meta={`${new Date(x.starts_at).toLocaleString("fr-FR",{timeZone:"America/St_Barthelemy",dateStyle:"medium",timeStyle:"short"})}${x.venue?` · ${x.venue}`:""}`} body={x.description} extra={<>Par <strong>{x.organizer}</strong> · {x.contact}{safeExternalUrl(x.link)&&<> · <a href={safeExternalUrl(x.link)!} target="_blank" rel="noopener noreferrer">lien ↗</a></>}</>} actions={<><button className="btn" disabled={busy===x.id} onClick={()=>setEvent(x,"approved")}>Publier</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>confirm("Refuser cet événement ?")&&setEvent(x,"rejected")}>Refuser</button></>}/>)}</Section>}
   {!!reports.length&&<Section title={`Signalements (${reports.length})`} text="Vérifiez l’annonce avant de la retirer.">{reports.map(x=><Card key={x.id} badge="Signalement" title={x.listing?.title??"Annonce supprimée"} href={`/annonce/${x.listing_id}`} meta={shortDate(x.created_at)} body={x.reason} actions={<><button className={`btn ${styles.danger}`} disabled={busy===x.id} onClick={()=>confirm("Retirer cette annonce ?")&&setReport(x,true)}>Retirer</button><button className="link-quiet" disabled={busy===x.id} onClick={()=>setReport(x,false)}>Classer sans suite</button></>}/>)}</Section>}
   {!!claims.length&&<Section title={`Demandes des établissements (${claims.length})`} text="Vérifiez le contact avant un transfert de gestion.">{claims.map(x=><Card key={x.id} badge={CLAIM[x.kind]} danger={x.kind==="removal"} title={x.restaurant?.name??"Fiche supprimée"} href={`/food/resto/${x.restaurant_id}`} meta={shortDate(x.created_at)} body={x.message} extra={<>Contact : <strong>{x.contact}</strong>{x.kind==="claim"&&!x.user_id&&" · demande sans compte"}</>} actions={<>{x.kind==="claim"&&x.user_id&&<button className="btn" disabled={busy===x.id} onClick={()=>confirm("Donner la gestion de cette fiche ?")&&setClaim(x,"grant")}>Donner la main</button>}{x.kind==="removal"&&<button className={`btn ${styles.danger}`} disabled={busy===x.id} onClick={()=>confirm("Masquer cette fiche ?")&&setClaim(x,"hide")}>Masquer</button>}<button className="link-quiet" disabled={busy===x.id} onClick={()=>setClaim(x,"done")}>Traité sans action</button></>}/>)}</Section>}
-  {!!feedback.length&&<Section title={`Retours (${feedback.length})`} text="Idées, problèmes et avis des utilisateurs.">{feedback.map(x=><Card key={x.id} badge={FEEDBACK[x.kind]} title={x.contact??"Sans contact"} meta={shortDate(x.created_at)} body={x.message} actions={<button className="link-quiet" disabled={busy===x.id} onClick={()=>setFeedback(x)}>Marquer lu</button>}/>)}</Section>}
+  {!!feedback.length&&<Section title={`Retours (${feedback.length})`} text="Idées, problèmes et avis des utilisateurs. Répondre dépose la réponse dans leur messagerie, avec notification et email.">{feedback.map(x=><RetourCard key={x.id} x={x} busy={busy} marquerLu={setFeedback} repondre={repondre}/>)}</Section>}
+  </div>}
+
+/* Un retour et, si un canal existe, de quoi y répondre sur place. Le canal
+   se lit avant d'écrire : messagerie pour un compte, email pour un visiteur
+   qui a laissé une adresse, rien pour un numéro de téléphone. */
+function RetourCard({x,busy,marquerLu,repondre}:{x:Feedback;busy:string|null;marquerLu:(x:Feedback)=>void;repondre:(x:Feedback,texte:string)=>Promise<boolean>}){
+  const [ouvert,setOuvert]=useState(false);const [texte,setTexte]=useState("");
+  const email=x.contact&&EST_EMAIL.test(x.contact.trim())?x.contact.trim():null;
+  const canal=x.user_id?"Compte Ti Kanal : la réponse arrive dans sa messagerie, avec notification et email.":email?`Sans compte : la réponse part par email à ${email}.`:null;
+  const occupe=busy===x.id;
+  return <div className={styles.retour}>
+    <Card badge={FEEDBACK[x.kind]} title={x.user_id?(x.contact??"Membre connecté"):(x.contact??"Sans contact")} meta={shortDate(x.created_at)} body={x.message}
+      extra={canal??<>Aucun canal de réponse : pas de compte, et le contact laissé n’est pas un email{x.contact?<> (<strong>{x.contact}</strong>)</>:""}.</>}
+      actions={<>{canal&&!ouvert&&<button className="btn" disabled={occupe} onClick={()=>setOuvert(true)}>Répondre</button>}<button className="link-quiet" disabled={occupe} onClick={()=>marquerLu(x)}>Marquer lu</button></>}/>
+    {ouvert&&<form className={styles.reponse} onSubmit={async e=>{e.preventDefault();if(await repondre(x,texte.trim())){setTexte("");setOuvert(false);}}}>
+      <textarea className="input" rows={3} value={texte} onChange={e=>setTexte(e.target.value.slice(0,1500))} placeholder="Votre réponse…" aria-label="Votre réponse" autoFocus/>
+      <div><button className="btn" disabled={occupe||!texte.trim()}>{occupe?"Envoi…":"Envoyer la réponse"}</button><button type="button" className="link-quiet" disabled={occupe} onClick={()=>setOuvert(false)}>Annuler</button><small>{texte.length}/1500</small></div>
+    </form>}
   </div>}
 
 function ContentPanel({items,total,search,setSearch,filter,setFilter,busy,toggle,go}:{items:Content[];total:number;search:string;setSearch:(s:string)=>void;filter:"all"|Kind;setFilter:(k:"all"|Kind)=>void;busy:string|null;toggle:(x:Content)=>void;go:(v:View)=>void}){return <div className={styles.stack}><Head title={`Contenus (${total})`} text="Les 100 éléments les plus récents de chaque univers."/><Toolbar search={search} setSearch={setSearch} placeholder="Rechercher un titre, un lieu…">{(["all","listing","restaurant","place","event"] as const).map(k=><button key={k} className={filter===k?styles.selected:""} onClick={()=>setFilter(k)}>{k==="all"?"Tous":KIND[k]}</button>)}</Toolbar>{!items.length?<Empty title="Aucun résultat" text="Essayez un autre mot ou un autre type de contenu."/>:<div className={styles.rows}>{items.map(x=>{

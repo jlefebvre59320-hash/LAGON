@@ -1,4 +1,4 @@
--- Le strict nécessaire pour rejouer les migrations 0032 → 0036 hors
+-- Le strict nécessaire pour rejouer les migrations 0032 → 0040 hors
 -- Supabase : le schéma auth, les rôles, et les tables des migrations
 -- antérieures réduites aux colonnes que ces migrations touchent.
 do $$ begin
@@ -46,9 +46,17 @@ create table public.reports (
   reporter_id uuid, reason text, handled boolean default false, created_at timestamptz default now()
 );
 create table public.conversations (
-  id uuid primary key default gen_random_uuid(), listing_id uuid, buyer_id uuid, seller_id uuid,
-  last_message_at timestamptz default now()
+  id uuid primary key default gen_random_uuid(), listing_id uuid not null references public.listings(id) on delete cascade,
+  buyer_id uuid not null, seller_id uuid not null,
+  created_at timestamptz default now(), last_message_at timestamptz default now(),
+  buyer_read_at timestamptz, seller_read_at timestamptz, buyer_notified_at timestamptz, seller_notified_at timestamptz,
+  constraint conversations_deux_personnes check (buyer_id <> seller_id)
 );
+create unique index uq_conversations_listing_buyer on public.conversations (listing_id, buyer_id);
+-- 0028 : blocage entre deux personnes (mes_conversations et destinataire_a_prevenir le lisent).
+create table public.blocked_users (blocker_id uuid, blocked_id uuid);
+create or replace function public.blocage_entre(a uuid, b uuid) returns boolean language sql stable as
+  $$ select exists (select 1 from public.blocked_users where (blocker_id = a and blocked_id = b) or (blocker_id = b and blocked_id = a)) $$;
 create table public.messages (
   id uuid primary key default gen_random_uuid(), conversation_id uuid references public.conversations(id),
   sender_id uuid, body text not null, created_at timestamptz default now()
@@ -67,7 +75,12 @@ create table public.page_views (
 );
 create table public.favorites (user_id uuid, listing_id uuid, created_at timestamptz default now());
 -- site_stats et admin_dashboard (0038) lisent aussi ces tables.
-create table public.feedback (id uuid primary key default gen_random_uuid(), handled boolean default false, created_at timestamptz default now());
+create table public.feedback (
+  id uuid primary key default gen_random_uuid(), kind text not null check (kind in ('idee', 'probleme', 'avis')),
+  message text not null check (char_length(message) between 3 and 2000), contact text,
+  user_id uuid references public.profiles(id) on delete set null,
+  handled boolean default false, created_at timestamptz default now()
+);
 create table public.restaurant_claims (id uuid primary key default gen_random_uuid(), handled boolean default false, created_at timestamptz default now());
 create table public.events (id uuid primary key default gen_random_uuid(), title text, status text, starts_at timestamptz, ends_at timestamptz);
 create table public.places (id uuid primary key default gen_random_uuid(), name text, status text);

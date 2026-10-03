@@ -223,4 +223,99 @@ begin
   assert (tr->'h24'->>'visiteurs_revenus')::int = 1, 'temps réel : B est revenu (vu il y a 3 h et il y a 50 min)';
 end $$;
 
+-- ---------- Jardin & Outillage (0039, 0040) ----------
+do $$ begin
+  assert 'garden' = any (enum_range(null::listing_module)::text[]), 'la valeur garden existe';
+end $$;
+insert into public.listings (id, user_id, module, subcategory, title, description, price_cents, location) values
+  ('aaaaaaaa-0000-0000-0000-000000000009', '33333333-3333-3333-3333-333333333333', 'garden', 'Tondeuses & Motoculture', 'Tondeuse Honda thermique', 'Révisée', 25000, 'Lorient');
+do $$ begin
+  assert (select review_state from public.listings where id = 'aaaaaaaa-0000-0000-0000-000000000009') = 'published', 'une annonce de jardin se publie comme les autres';
+end $$;
+
+-- ---------- Réponse aux retours (0040) ----------
+insert into public.feedback (id, kind, message, contact, user_id, created_at) values
+  ('ffffffff-0000-0000-0000-000000000001', 'idee', 'Une rubrique jardin et outillage, ce serait bien pour tout le monde ici.', null, '33333333-3333-3333-3333-333333333333', now() - interval '3 days'),
+  ('ffffffff-0000-0000-0000-000000000002', 'probleme', 'Le bouton ne marche pas', 'visiteur@test.local', null, now()),
+  ('ffffffff-0000-0000-0000-000000000003', 'avis', 'Bravo pour le site', '0690 00 00 00', null, now()),
+  ('ffffffff-0000-0000-0000-000000000004', 'probleme', 'Et une photo qui ne charge pas', null, '33333333-3333-3333-3333-333333333333', now());
+
+-- Un non-administrateur est refusé.
+set app.uid = '22222222-2222-2222-2222-222222222222';
+do $$ begin
+  begin
+    perform public.admin_repondre_retour('ffffffff-0000-0000-0000-000000000001', 'Merci');
+    raise exception 'admin_repondre_retour aurait dû refuser un non-admin';
+  exception when others then
+    if sqlerrm <> 'Réservé aux administrateurs.' then raise; end if;
+  end;
+end $$;
+
+set app.uid = '11111111-1111-1111-1111-111111111111';
+do $$
+declare r jsonb; c uuid; corps text;
+begin
+  r := public.admin_repondre_retour('ffffffff-0000-0000-0000-000000000001', 'Merci Marie, c''est en ligne !');
+  assert r->>'mode' = 'message', 'une personne avec compte : réponse dans la messagerie';
+  c := (r->>'conversation_id')::uuid;
+  assert (select listing_id is null and buyer_id = '33333333-3333-3333-3333-333333333333' and seller_id = '11111111-1111-1111-1111-111111111111'
+            from public.conversations where id = c), 'fil de support : sans annonce, la personne en intéressée, l''admin en vendeur';
+  select body into corps from public.messages where conversation_id = c;
+  assert corps like 'En réponse à votre idée du %', 'le message rappelle le retour';
+  assert corps like '%Merci Marie, c''est en ligne !', 'et contient la réponse';
+  assert (select handled and reply = 'Merci Marie, c''est en ligne !' and replied_by = '11111111-1111-1111-1111-111111111111'
+            from public.feedback where id = 'ffffffff-0000-0000-0000-000000000001'), 'le retour est traité et garde la réponse';
+
+  -- Un second retour de la même personne : même fil.
+  r := public.admin_repondre_retour('ffffffff-0000-0000-0000-000000000004', 'Corrigé ce matin.');
+  assert (r->>'conversation_id')::uuid = c, 'un seul fil de support par personne';
+  assert (select count(*) from public.messages where conversation_id = c) = 2, 'deux messages dans le fil';
+
+  -- Déjà répondu : refusé.
+  begin
+    perform public.admin_repondre_retour('ffffffff-0000-0000-0000-000000000001', 'encore');
+    raise exception 'aurait dû refuser une seconde réponse';
+  exception when others then
+    if sqlerrm <> 'Ce retour a déjà reçu une réponse.' then raise; end if;
+  end;
+
+  -- Sans compte, avec un email : la route serveur enverra l'email.
+  r := public.admin_repondre_retour('ffffffff-0000-0000-0000-000000000002', 'Corrigé, merci du signalement.');
+  assert r->>'mode' = 'email' and r->>'contact' = 'visiteur@test.local', 'sans compte : par email';
+  assert (select handled from public.feedback where id = 'ffffffff-0000-0000-0000-000000000002'), 'traité aussi';
+
+  -- Sans compte ni email : enregistrée, mais aucun canal.
+  r := public.admin_repondre_retour('ffffffff-0000-0000-0000-000000000003', 'Merci !');
+  assert r->>'mode' = 'aucun', 'un numéro de téléphone n''est pas un canal';
+end $$;
+
+-- Marie voit le fil comme une conversation avec l'équipe, sans fiche ni blocage.
+set app.uid = '33333333-3333-3333-3333-333333333333';
+do $$
+declare x jsonb;
+begin
+  select v into x from jsonb_array_elements(public.mes_conversations()) v where (v->>'support')::boolean;
+  assert x is not null, 'le fil de support est dans la boîte de Marie';
+  assert x->>'autre_nom' = 'Équipe Ti Kanal', 'l''interlocuteur est l''équipe';
+  assert x->>'listing_title' = 'Votre retour à l''équipe', 'le titre dit de quoi il s''agit';
+  assert x->'autre_id' = 'null'::jsonb, 'pas de fiche à voir';
+  assert (x->>'non_lus')::int = 2, 'deux non-lus';
+end $$;
+-- Et côté administrateur, le fil porte le nom de la personne.
+set app.uid = '11111111-1111-1111-1111-111111111111';
+do $$
+declare x jsonb; d record;
+begin
+  select v into x from jsonb_array_elements(public.mes_conversations()) v where (v->>'support')::boolean;
+  assert x->>'autre_nom' = 'Marie' and x->>'listing_title' = 'Réponse à un retour', 'côté admin : Marie, réponse à un retour';
+  -- Qui prévenir : Marie, par « L'équipe Ti Kanal », à propos de son retour.
+  select * into d from public.destinataire_a_prevenir((x->>'id')::uuid);
+  assert d.user_id = '33333333-3333-3333-3333-333333333333' and d.support and d.autre_nom = 'L''équipe Ti Kanal' and d.listing_title = 'votre retour',
+    'destinataire_a_prevenir : le fil de support prévient la personne au nom de l''équipe';
+  -- Même si elle a coupé les emails de messagerie : c'est une réponse à sa demande.
+  update public.profiles set notify_email = false where id = '33333333-3333-3333-3333-333333333333';
+  select * into d from public.destinataire_a_prevenir((x->>'id')::uuid);
+  assert d.user_id is not null, 'la réponse de l''équipe part malgré notify_email = false';
+end $$;
+
 \echo Toutes les règles passent.

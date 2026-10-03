@@ -1,8 +1,8 @@
 import type { ModuleKey } from "@/lib/taxonomy";
 
 /* Un pictogramme par univers, au trait, dans la couleur de l'univers.
-   Cinq dessins simples qu'on reconnaît de loin : une voiture, une maison,
-   une mallette, une clé à molette, une étiquette de prix. Ils remplacent
+   Six dessins simples qu'on reconnaît de loin : une voiture, une maison,
+   une mallette, une clé à molette, une étiquette de prix, une feuille. Ils remplacent
    l'île partout où l'on choisit ou illustre un univers — l'île, c'est la
    marque, pas une catégorie. */
 
@@ -39,6 +39,14 @@ const TRACES: Record<ModuleKey, React.ReactNode> = {
     <>
       <path d="M3.5 12.5V5a1.5 1.5 0 0 1 1.5-1.5h7.5l8 8-9 9z" />
       <path d="M7.5 7.5h.01" />
+    </>
+  ),
+  /* Une feuille et sa nervure : le jardin se reconnaît avant l'outil. */
+  garden: (
+    <>
+      <path d="M5 19c0-7.5 4.5-12 14.5-12.5C19 16.5 14.5 20.5 7 19.5" />
+      <path d="M5 19 13.5 10.5" />
+      <path d="M9.5 14.5c1.5.3 3 .2 4.5-.3" />
     </>
   ),
 };
