@@ -60,3 +60,9 @@ create table public.ratings (
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table public.push_subscriptions (id uuid primary key default gen_random_uuid(), user_id uuid, endpoint text, p256dh text, auth text);
+alter table auth.users add column if not exists last_sign_in_at timestamptz;
+create table public.page_views (
+  id bigint generated always as identity primary key, path text not null, listing_id uuid references public.listings(id) on delete cascade,
+  viewer_key text, device text, source text, created_at timestamptz not null default now()
+);
+create table public.favorites (user_id uuid, listing_id uuid, created_at timestamptz default now());
